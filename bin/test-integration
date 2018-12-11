@@ -11,9 +11,8 @@ remove_namespace() {
 trap remove_namespace EXIT
 
 # we could create CRD from Go
-kubectl apply -f  deploy/helm/cf-operator/templates/fissile_v1alpha1_boshdeployment_crd.yaml
+kubectl apply -f  deploy/helm/cf-operator/templates/
 kubectl get customresourcedefinitions
 kubectl create namespace "$TEST_NAMESPACE"
 
-
-ginkgo integration/ e2e/
+ginkgo integration/

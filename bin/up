@@ -14,8 +14,8 @@ if [ -z "$SKIP_IMAGE" ]; then
     eval ${dockerenv}
   fi
 
-  . bin/include/versioning
-  . .envrc
+  . ./bin/include/versioning
+  . ./.envrc
 
   export DOCKER_IMAGE_TAG=${VERSION_TAG}
 

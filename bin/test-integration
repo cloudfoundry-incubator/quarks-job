@@ -39,4 +39,10 @@ fi
 
 NODES=${NODES:-3}
 FLAKE_ATTEMPTS=${FLAKE_ATTEMPTS:-3}
-ginkgo --randomizeAllSpecs --nodes="$NODES" --slowSpecThreshold=50 --flakeAttempts="$FLAKE_ATTEMPTS" $COV_ARG integration/
+ginkgo \
+  --randomizeAllSpecs \
+  --nodes="$NODES" \
+  --slowSpecThreshold=50 \
+  --flakeAttempts="$FLAKE_ATTEMPTS" \
+  $COV_ARG \
+  integration/

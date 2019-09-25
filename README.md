@@ -31,7 +31,7 @@ manifest, i.e. via `k edit errand1` and change `trigger.strategy: manual` to `tr
 
 After completion, this value is reset to `manual`.
 
-Look [here](https://github.com/cloudfoundry-incubator/cf-operator/blob/master/docs/examples/extended-job/exjob_errand.yaml) for a full example of an errand.
+Look [here](https://github.com/cloudfoundry-incubator/quarks-job/blob/master/docs/examples/exjob_errand.yaml) for a full example of an errand.
 
 ### One-Off Jobs / Auto-Errands
 
@@ -90,4 +90,4 @@ Each versioned secret has the following characteristics:
 
 ## `ExtendedJob` Examples
 
-See https://github.com/cloudfoundry-incubator/cf-operator/tree/master/docs/examples/extended-job
+See https://github.com/cloudfoundry-incubator/quarks-job/tree/master/docs/examples

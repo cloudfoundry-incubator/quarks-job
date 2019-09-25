@@ -1,8 +1,11 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 code.cloudfoundry.org/cf-operator v0.3.2-0.20190827122451-14179fa07bf4 h1:AIDP/YnIucAMX5A5AyUX3yaVdDcZwl4UX/J0XL1mdqQ=
 code.cloudfoundry.org/cf-operator v0.3.2-0.20190827122451-14179fa07bf4/go.mod h1:9Y75C57TbVN0EIUfR056qVI1Ss9bLkAi5NY9cusJx4o=
+code.cloudfoundry.org/cf-operator v0.4.1/go.mod h1:4uKos1f4YChtpZ9J9xn6CqewW7W93Mpia4/Rynw3TtY=
 code.cloudfoundry.org/cf-operator v0.4.2-0.20190925122657-30f4e063e8ba h1:TOi4wiATnFsm5/wAt/F4FFbIgrW1HW+KtjyL1D2gYlQ=
 code.cloudfoundry.org/cf-operator v0.4.2-0.20190925122657-30f4e063e8ba/go.mod h1:QPag12dzA1DbPRGciayK9OIy8aiLRhYoyfdpIaOhmiA=
+code.cloudfoundry.org/quarks-utils v0.0.0-20190925140134-fb003d8f8307 h1:0bDuoXQDZbB4Fpnled1DPzcpNjGemZC0MQfRcyddFc8=
+code.cloudfoundry.org/quarks-utils v0.0.0-20190925140134-fb003d8f8307/go.mod h1:vsLj2lwATUHOfqixyFtoYr9M5k0PZytxkBXqFNjLwxU=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=

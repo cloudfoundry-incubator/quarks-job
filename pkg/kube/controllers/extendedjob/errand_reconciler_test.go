@@ -26,12 +26,12 @@ import (
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 	vss "code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
 	helper "code.cloudfoundry.org/cf-operator/pkg/testhelper"
-	"code.cloudfoundry.org/cf-operator/testing"
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	. "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
+	"code.cloudfoundry.org/quarks-job/testing"
 )
 
 var _ = Describe("ErrandReconciler", func() {

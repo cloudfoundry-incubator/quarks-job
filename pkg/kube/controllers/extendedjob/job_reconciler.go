@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"reflect"
 
-	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
-
 	"github.com/pkg/errors"
 
 	batchv1 "k8s.io/api/batch/v1"
@@ -20,7 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/mutate"

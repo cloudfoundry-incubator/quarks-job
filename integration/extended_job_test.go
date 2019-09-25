@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"code.cloudfoundry.org/cf-operator/integration/environment"
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util"
 
 	corev1 "k8s.io/api/core/v1"

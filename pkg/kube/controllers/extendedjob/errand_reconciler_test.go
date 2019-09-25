@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,15 +22,16 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/controllers"
-	. "code.cloudfoundry.org/cf-operator/pkg/kube/controllers/extendedjob"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/controllers/fakes"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 	vss "code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
 	helper "code.cloudfoundry.org/cf-operator/pkg/testhelper"
 	"code.cloudfoundry.org/cf-operator/testing"
+
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
+	. "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 )
 
 var _ = Describe("ErrandReconciler", func() {

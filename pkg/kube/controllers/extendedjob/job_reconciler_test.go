@@ -20,15 +20,15 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	ejapi "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/controllers"
-	ej "code.cloudfoundry.org/cf-operator/pkg/kube/controllers/extendedjob"
-	cfakes "code.cloudfoundry.org/cf-operator/pkg/kube/controllers/fakes"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
 	helper "code.cloudfoundry.org/cf-operator/pkg/testhelper"
 	"code.cloudfoundry.org/cf-operator/testing"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
+	ej "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
+	cfakes "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 )
 
 var _ = Describe("ReconcileExtendedJob", func() {
@@ -40,7 +40,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 		logs         *observer.ObservedLogs
 		client       *cfakes.FakeClient
 		podLogGetter *cfakes.FakePodLogGetter
-		ejob         *ejapi.ExtendedJob
+		ejob         *ejv1.ExtendedJob
 		job          *batchv1.Job
 		pod1         *corev1.Pod
 		pod2         *corev1.Pod
@@ -56,7 +56,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 		client = &cfakes.FakeClient{}
 		client.GetCalls(func(context context.Context, nn types.NamespacedName, object runtime.Object) error {
 			switch object := object.(type) {
-			case *ejapi.ExtendedJob:
+			case *ejv1.ExtendedJob:
 				ejob.DeepCopyInto(object)
 				return nil
 			case *batchv1.Job:
@@ -108,7 +108,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 
 		Context("when output persistence is configured", func() {
 			JustBeforeEach(func() {
-				ejob.Spec.Output = &ejapi.Output{
+				ejob.Spec.Output = &ejv1.Output{
 					NamePrefix: "foo-",
 					SecretLabels: map[string]string{
 						"key": "value",
@@ -180,7 +180,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 
 		Context("when WriteOnFailure is set", func() {
 			JustBeforeEach(func() {
-				ejob.Spec.Output = &ejapi.Output{
+				ejob.Spec.Output = &ejv1.Output{
 					NamePrefix:     "foo-",
 					WriteOnFailure: true,
 				}
@@ -220,7 +220,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 	Context("Job returns invalid JSON", func() {
 		Context("when output persistence is configured", func() {
 			JustBeforeEach(func() {
-				ejob.Spec.Output = &ejapi.Output{NamePrefix: "foo-"}
+				ejob.Spec.Output = &ejv1.Output{NamePrefix: "foo-"}
 			})
 
 			BeforeEach(func() {

@@ -1,112 +1,93 @@
-# quarks-job
+# ExtendedJob
 
-[![godoc](https://godoc.org/code.cloudfoundry.org/cf-operator?status.svg)](https://godoc.org/code.cloudfoundry.org/cf-operator)
-[![master](https://ci.flintstone.cf.cloud.ibm.com/api/v1/teams/quarks/pipelines/cf-operator/badge)](https://ci.flintstone.cf.cloud.ibm.com/teams/quarks/pipelines/cf-operator)
-[![go report card](https://goreportcard.com/badge/code.cloudfoundry.org/cf-operator)](https://goreportcard.com/report/code.cloudfoundry.org/cf-operator)
-[![Coveralls github](https://img.shields.io/coveralls/github/cloudfoundry-incubator/cf-operator.svg?style=flat)](https://coveralls.io/github/cloudfoundry-incubator/cf-operator?branch=HEAD)
+- [ExtendedJob](#extendedjob)
+  - [Description](#description)
+  - [Features](#features)
+    - [Errand Jobs](#errand-jobs)
+    - [One-Off Jobs / Auto-Errands](#one-off-jobs--auto-errands)
+      - [Restarting on Config Change](#restarting-on-config-change)
+    - [Persisted Output](#persisted-output)
+      - [Versioned Secrets](#versioned-secrets)
+  - [`ExtendedJob` Examples](#extendedjob-examples)
 
-|Nightly build|[![nightly](https://ci.flintstone.cf.cloud.ibm.com/api/v1/teams/quarks/pipelines/cf-operator-nightly/badge)](https://ci.flintstone.cf.cloud.ibm.com/teams/quarks/pipelines/cf-operator-nightly)|
-|-|-|
+## Description
 
-<img align="right" width="200" height="39" src="https://github.com/cloudfoundry-incubator/cf-operator/raw/master/docs/cf-operator-logo.png">
+An `ExtendedJob` allows the developer to run jobs when something interesting happens. It also allows the developer to store the output of the job into a `Secret`.
+The job started by an `ExtendedJob` is deleted automatically after it succeeds.
 
-cf-operator enables the deployment of BOSH Releases, especially Cloud Foundry, to Kubernetes.
+There are two different kinds of `ExtendedJob`:
 
-It's implemented as a k8s operator, an active controller component which acts upon custom k8s resources.
+- **one-offs**: automatically runs once after it's created
+- **errands**: needs to be run manually by a user
 
-* Incubation Proposal: [Containerizing Cloud Foundry](https://docs.google.com/document/d/1_IvFf-cCR4_Hxg-L7Z_R51EKhZfBqlprrs5NgC2iO2w/edit#heading=h.lybtsdyh8res)
-* Slack: #quarks-dev on <https://slack.cloudfoundry.org>
-* Backlog: [Pivotal Tracker](https://www.pivotaltracker.com/n/projects/2192232)
-* Docker: https://hub.docker.com/r/cfcontainerization/cf-operator/tags
+## Features
 
-## Installing
+### Errand Jobs
 
-### **Using the helm chart**
+Errands are run manually by the user. They are created by setting `trigger.strategy: manual`.
 
-The `cf-operator` can be installed via `helm`. Make sure you have a running Kubernetes cluster and that tiller is reachable.
+After the `ExtendedJob` is created, run an errand by editing and applying the
+manifest, i.e. via `k edit errand1` and change `trigger.strategy: manual` to `trigger.strategy: now`. A `kubectl patch` is also a good way to trigger this type of `ExtendedJob`.
 
-See the [releases page](https://github.com/cloudfoundry-incubator/cf-operator/releases) for up-to-date instructions on how to install the operator.
+After completion, this value is reset to `manual`.
 
-For more information about the `cf-operator` helm chart and how to configure it, please refer to [deploy/helm/cf-operator/README.md](deploy/helm/cf-operator/README.md)
+Look [here](https://github.com/cloudfoundry-incubator/cf-operator/blob/master/docs/examples/extended-job/exjob_errand.yaml) for a full example of an errand.
 
-### Recovering from a crash
+### One-Off Jobs / Auto-Errands
 
-If the operator pod crashes, it cannot be restarted in the same namespace before the existing mutating webhook configuration for that namespace is removed.
-The operator uses mutating webhooks to modify pods on the fly and Kubernetes fails to create pods if the webhook server is unreachable.
-The webhook configurations are installed cluster wide and don't belong to a single namespace, just like custom resources.
+One-off jobs run directly when created, just like native k8s jobs.
 
-To remove the webhook configurations for the cf-operator namespace run:
+They are created with `trigger.strategy: once` and switch to `done` when
+finished.
 
-```bash
-CF_OPERATOR_NAMESPACE=cf-operator
-kubectl delete mutatingwebhookconfiguration "cf-operator-hook-$CF_OPERATOR_NAMESPACE"
-kubectl delete validatingwebhookconfiguration "cf-operator-hook-$CF_OPERATOR_NAMESPACE"
-```
+If a versioned secret is referenced in the pod spec of an eJob, the most recent
+version of that secret will be used when the batchv1.Job is created.
 
-From **Kubernetes 1.15** onwards, it is possible to instead patch the webhook configurations for the cf-operator namespace via:
-```bash
-CF_OPERATOR_NAMESPACE=cf-operator
-kubectl patch mutatingwebhookconfigurations "cf-operator-hook-$CF_OPERATOR_NAMESPACE" -p '
-webhooks:
-- name: mutate-pods.fissile.cloudfoundry.org
-  objectSelector:
-    matchExpressions:
-    - key: name
-      operator: NotIn
-      values:
-      - "cf-operator"
-'
-```
+#### Restarting on Config Change
 
-## Using your fresh installation
+Just like an `ExtendedStatefulSet`, a **one-off** `ExtendedJob` can
+automatically be restarted if its environment/mounts have changed, due to a
+`ConfigMap` or a `Secret` being updated. This also works for [Versioned Secrets](#versioned-secrets).
 
-With a running `cf-operator` pod, you can try one of the files (see [docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml](docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml) ), as follows:
+This requires the attribute `updateOnConfigChange` to be set to true.
 
-```bash
-kubectl -n cf-operator create -f docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
-```
+Once `updateOnConfigChange` is enabled, modifying the `data` of any `ConfigMap` or `Secret` referenced by the `template` section of the job will trigger the job again.
 
-The above will spawn two pods in your `cf-operator` namespace (which needs to be created upfront), running the BOSH nats release.
+### Persisted Output
 
-You can access the `cf-operator` logs by following the operator pod's output:
+The developer can specify a `Secret` where the standard output/error output of
+the `ExtendedJob` is stored.
 
-```bash
-kubectl logs -f -n cf-operator cf-operator
-```
+One secret is created or overwritten per container in the pod. The secrets'
+names are `<namePrefix>-<containerName>`.
 
-Or look at the k8s event log:
+The only supported output type currently is json with a flat structure, i.e.
+all values being string values.
 
-```bash
-kubectl get events -n cf-operator --watch
-```
+**Note:** Output of previous runs is overwritten.
 
-For now deployments have to be in the namespace the operator is running in.
+The behavior of storing the output is controlled by specifying the following parameters:
 
-## Variables
+- `namePrefix` - Prefix for the name of the secret(s) that will hold the output.
+- `outputType` - Currently only `json` is supported. (default: `json`)
+- `secretLabels` - An optional map of labels which will be attached to the generated secret(s)
+- `writeOnFailure` - if true, output is written even though the Job failed. (default: `false`)
+- `versioned` - if true, the output is written in a [Versioned Secret](#versioned-secrets)
 
-BOSH releases consume two types of variables, explicit and implicit ones.
+#### Versioned Secrets
 
-### Implicit Variables
+Versioned Secrets are a set of `Secrets`, where each of them is immutable, and contains data for one iteration. Implementation can be found in the [versionedsecretstore](https://github.com/cloudfoundry-incubator/cf-operator/blob/master/pkg/kube/util/versionedsecretstore) package.
 
-Implicit variables have to be created before creating a BOSH deployment resource.
-The [previous example](docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml) creates a secret named `nats-deployment.var-custom-password`. That value will be used to fill `((custom-password))` place holders in the BOSH manifest.
+When an `ExtendedJob` is configured to save to "Versioned Secrets", the controller looks for the `Secret` with the largest ordinal, adds `1` to that value, and _creates a new Secret_.
 
-The name of the secret has to follow this scheme: '<bosh-deployment-cr.name>.var-<variable-name>'
+Each versioned secret has the following characteristics:
 
-Missing implicit variables are treated as an error.
+- its name is calculated like this: `<name>-v<ORDINAL>` e.g. `mysecret-v2`
+- it has the following labels:
+  - `fissile.cloudfoundry.org/secret-kind` with a value of `versionedSecret`
+  - `fissile.cloudfoundry.org/secret-version` with a value set to the `ordinal` of the secret
+- an annotation of `fissile.cloudfoundry.org/source-description` that contains arbitrary information about the creator of the secret
 
-### Explicit Variables
+## `ExtendedJob` Examples
 
-Explicit variables are explicitly defined in the [BOSH manifest](https://bosh.io/docs/manifest-v2/#variables). They are generated automatically upon deployment and stored in secrets.
-
-The naming scheme is the same as for implicit variables.
-
-If an explicit variable secret already exists, it will not be generated. This allows users to set their own passwords, etc.
-
-## Development and Tests
-
-For more information about the operator development, see [docs/development.md](docs/development.md)
-
-For more information about testing, see [docs/testing.md](docs/testing.md)
-
-For more information about building the operator from source, see [docs/building.md](docs/building.md)
+See https://github.com/cloudfoundry-incubator/cf-operator/tree/master/docs/examples/extended-job

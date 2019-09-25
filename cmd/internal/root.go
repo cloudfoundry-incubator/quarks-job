@@ -21,6 +21,7 @@ import (
 	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
+
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
 	"code.cloudfoundry.org/quarks-job/version"
 )
@@ -124,10 +125,10 @@ func init() {
 	viper.BindPFlag("max-extendedjob-workers", pf.Lookup("max-extendedjob-workers"))
 
 	argToEnv := map[string]string{
-		"kubeconfig":                      "KUBECONFIG",
-		"log-level":                       "LOG_LEVEL",
-		"cf-operator-namespace":           "CF_OPERATOR_NAMESPACE",
-		"max-extendedjob-workers":         "MAX_EXTENDEDJOB_WORKERS",
+		"kubeconfig":              "KUBECONFIG",
+		"log-level":               "LOG_LEVEL",
+		"cf-operator-namespace":   "CF_OPERATOR_NAMESPACE",
+		"max-extendedjob-workers": "MAX_EXTENDEDJOB_WORKERS",
 	}
 
 	// Add env variables to help

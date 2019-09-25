@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,8 +20,7 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	bdv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/boshdeployment/v1alpha1"
-	ejapi "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
@@ -37,9 +37,10 @@ var _ = Describe("ReconcileExtendedJob", func() {
 		reconciler   reconcile.Reconciler
 		request      reconcile.Request
 		log          *zap.SugaredLogger
+		logs         *observer.ObservedLogs
 		client       *cfakes.FakeClient
 		podLogGetter *cfakes.FakePodLogGetter
-		ejob         *ejapi.ExtendedJob
+		ejob         *ejv1.ExtendedJob
 		job          *batchv1.Job
 		pod1         *corev1.Pod
 		pod2         *corev1.Pod
@@ -50,12 +51,12 @@ var _ = Describe("ReconcileExtendedJob", func() {
 		controllers.AddToScheme(scheme.Scheme)
 		manager = &cfakes.FakeManager{}
 		request = reconcile.Request{NamespacedName: types.NamespacedName{Name: "foo", Namespace: "default"}}
-		_, log = helper.NewTestLogger()
+		logs, log = helper.NewTestLogger()
 
 		client = &cfakes.FakeClient{}
 		client.GetCalls(func(context context.Context, nn types.NamespacedName, object runtime.Object) error {
 			switch object := object.(type) {
-			case *ejapi.ExtendedJob:
+			case *ejv1.ExtendedJob:
 				ejob.DeepCopyInto(object)
 				return nil
 			case *batchv1.Job:
@@ -64,7 +65,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 			}
 			return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
 		})
-		client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOptionFunc) error {
+		client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
 			switch object := object.(type) {
 			case *corev1.PodList:
 				list := corev1.PodList{
@@ -107,7 +108,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 
 		Context("when output persistence is configured", func() {
 			JustBeforeEach(func() {
-				ejob.Spec.Output = &ejapi.Output{
+				ejob.Spec.Output = &ejv1.Output{
 					NamePrefix: "foo-",
 					SecretLabels: map[string]string{
 						"key": "value",
@@ -122,7 +123,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 			})
 
 			It("adds configured labels to the generated secrets", func() {
-				client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOptionFunc) error {
+				client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOption) error {
 					secret := object.(*corev1.Secret)
 					Expect(secret.ObjectMeta.Labels["key"]).To(Equal("value"))
 					return nil
@@ -135,15 +136,15 @@ var _ = Describe("ReconcileExtendedJob", func() {
 			It("creates versioned manifest secret and persists the output", func() {
 				ejob.Spec.Output.Versioned = true
 				secretLabels := ejob.Spec.Output.SecretLabels
-				secretLabels[bdv1.LabelDeploymentName] = "fake-deployment"
+				secretLabels["fake-label"] = "fake-deployment"
 				ejob.Spec.Output.SecretLabels = secretLabels
 
-				client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOptionFunc) error {
+				client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOption) error {
 					secret := object.(*corev1.Secret)
 					secretName := secret.GetName()
 
 					Expect(secret.Labels).To(HaveKeyWithValue("key", "value"))
-					Expect(secret.Labels).To(HaveKeyWithValue(bdv1.LabelDeploymentName, "fake-deployment"))
+					Expect(secret.Labels).To(HaveKeyWithValue("fake-label", "fake-deployment"))
 					Expect(secret.Labels).To(HaveKeyWithValue(versionedsecretstore.LabelSecretKind, "versionedSecret"))
 					Expect(secret.Labels).To(HaveKeyWithValue(versionedsecretstore.LabelVersion, "1"))
 					Expect(secretName).To(Equal("foo-busybox-v1"))
@@ -179,7 +180,7 @@ var _ = Describe("ReconcileExtendedJob", func() {
 
 		Context("when WriteOnFailure is set", func() {
 			JustBeforeEach(func() {
-				ejob.Spec.Output = &ejapi.Output{
+				ejob.Spec.Output = &ejv1.Output{
 					NamePrefix:     "foo-",
 					WriteOnFailure: true,
 				}
@@ -191,13 +192,13 @@ var _ = Describe("ReconcileExtendedJob", func() {
 			})
 
 			It("does persist the output of the latest pod", func() {
-				client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOptionFunc) error {
+				client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOption) error {
 					secret := object.(*corev1.Secret)
 					Expect(secret.GetName()).To(Equal("foo-busybox-latest"))
 					return nil
 				})
 
-				client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOptionFunc) error {
+				client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
 					switch object := object.(type) {
 					case *corev1.PodList:
 						list := corev1.PodList{
@@ -212,6 +213,24 @@ var _ = Describe("ReconcileExtendedJob", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(client.CreateCallCount()).To(Equal(1))
 				Expect(reconcile.Result{}).To(Equal(result))
+			})
+		})
+	})
+
+	Context("Job returns invalid JSON", func() {
+		Context("when output persistence is configured", func() {
+			JustBeforeEach(func() {
+				ejob.Spec.Output = &ejv1.Output{NamePrefix: "foo-"}
+			})
+
+			BeforeEach(func() {
+				podLogGetter.GetReturns([]byte(`invalid json`), nil)
+			})
+
+			It("logs the error", func() {
+				reconciler.Reconcile(request)
+				Expect(logs.FilterMessageSnippet(
+					"Could not persist output: 'secret 'foo-busybox' cannot be created. Invalid JSON output was emitted by container 'foo-pod/foo-job': 'invalid json'").Len()).To(Equal(1))
 			})
 		})
 	})

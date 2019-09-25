@@ -4,19 +4,37 @@ import (
 	"context"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
+	"code.cloudfoundry.org/cf-operator/pkg/kube/util/meltdown"
 	vss "code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
 )
 
 var _ reconcile.Reconciler = &ErrandReconciler{}
+
+const (
+	// EnvKubeAz is set by available zone name
+	EnvKubeAz = "KUBE_AZ"
+	// EnvBoshAz is set by available zone name
+	EnvBoshAz = "BOSH_AZ"
+	// EnvReplicas describes the number of replicas in the ExtendedStatefulSet
+	EnvReplicas = "REPLICAS"
+	// EnvCfOperatorAz is set by available zone name
+	EnvCfOperatorAz = "CF_OPERATOR_AZ"
+	// EnvCfOperatorAzIndex is set by available zone index
+	EnvCfOperatorAzIndex = "AZ_INDEX"
+	// EnvPodOrdinal is the pod's index
+	EnvPodOrdinal = "POD_ORDINAL"
+)
 
 // NewErrandReconciler returns a new reconciler for errand jobs.
 func NewErrandReconciler(
@@ -68,6 +86,11 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if meltdown.NewWindow(r.config.MeltdownDuration, eJob.Status.LastReconcile).Contains(time.Now()) {
+		ctxlog.WithEvent(eJob, "Meltdown").Debugf(ctx, "Resource '%s' is in meltdown, requeue reconcile after %s", eJob.Name, r.config.MeltdownRequeueAfter)
+		return reconcile.Result{RequeueAfter: r.config.MeltdownRequeueAfter}, nil
+	}
+
 	if eJob.Spec.Trigger.Strategy == ejv1.TriggerNow {
 		// Set Strategy back to manual for errand jobs.
 		eJob.Spec.Trigger.Strategy = ejv1.TriggerManual
@@ -76,6 +99,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
+	r.injectContainerEnv(&eJob.Spec.Template.Spec)
 	if retry, err := r.jobCreator.Create(ctx, *eJob); err != nil {
 		return reconcile.Result{}, ctxlog.WithEvent(eJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", eJob.Name, err)
 	} else if retry {
@@ -93,9 +117,56 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		// Traverse Strategy into the final 'done' state.
 		eJob.Spec.Trigger.Strategy = ejv1.TriggerDone
 		if err := r.client.Update(ctx, eJob); err != nil {
-			return reconcile.Result{Requeue: false}, ctxlog.WithEvent(eJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", eJob.Name, err)
+			ctxlog.WithEvent(eJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", eJob.Name, err)
+			return reconcile.Result{Requeue: false}, nil
 		}
 	}
 
+	now := metav1.Now()
+	eJob.Status.LastReconcile = &now
+	err := r.client.Status().Update(ctx, eJob)
+	if err != nil {
+		ctxlog.WithEvent(eJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", eJob.Name, eJob.ResourceVersion, err)
+		return reconcile.Result{Requeue: false}, nil
+	}
+
 	return reconcile.Result{}, nil
+}
+
+// injectContainerEnv injects AZ info to container envs
+// errands always have an AZ_INDEX of 1
+func (r *ErrandReconciler) injectContainerEnv(podSpec *corev1.PodSpec) {
+
+	containers := []*corev1.Container{}
+	for i := 0; i < len(podSpec.Containers); i++ {
+		containers = append(containers, &podSpec.Containers[i])
+	}
+	for i := 0; i < len(podSpec.InitContainers); i++ {
+		containers = append(containers, &podSpec.InitContainers[i])
+	}
+	for _, container := range containers {
+		envs := container.Env
+
+		// Default to zone 1, with 1 replica
+		envs = upsertEnvs(envs, EnvCfOperatorAzIndex, "1")
+		envs = upsertEnvs(envs, EnvReplicas, "1")
+		envs = upsertEnvs(envs, EnvPodOrdinal, "0")
+
+		container.Env = envs
+	}
+}
+
+func upsertEnvs(envs []corev1.EnvVar, name string, value string) []corev1.EnvVar {
+	for idx, env := range envs {
+		if env.Name == name {
+			envs[idx].Value = value
+			return envs
+		}
+	}
+
+	envs = append(envs, corev1.EnvVar{
+		Name:  name,
+		Value: value,
+	})
+	return envs
 }

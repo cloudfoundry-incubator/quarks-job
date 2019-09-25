@@ -15,12 +15,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 )
 
-// AddJob creates a new ExtendedJob controller and adds it to the Manager
+// AddJob creates a new Job controller to collect the output from jobs, persist
+// that output as a secret and delete the k8s job afterwards.
 func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) error {
 	client, err := corev1client.NewForConfig(mgr.GetConfig())
 	if err != nil {
@@ -58,7 +59,7 @@ func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) err
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(o).Debug(
 					ctx, e.MetaNew, "batchv1.Job",
-					fmt.Sprintf("EJob job-output update predicate passed for %s, existing batchv1.Job has changed to a final state, either succeeded or failed",
+					fmt.Sprintf("Update predicate passed for '%s', existing batchv1.Job has changed to a final state, either succeeded or failed",
 						e.MetaNew.GetName()),
 				)
 			}

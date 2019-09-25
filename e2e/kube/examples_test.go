@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/testing"
 
 	. "github.com/onsi/ginkgo"
@@ -46,17 +46,17 @@ var _ = Describe("Examples", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Checking for pods")
-				err = kubectlHelper.Wait(namespace, "ready", "pod/example-extendedstatefulset-v3-0", kubectlHelper.PollTimeout)
+				err = kubectlHelper.Wait(namespace, "ready", "pod/example-extendedstatefulset-v2-0", kubectlHelper.PollTimeout)
 				Expect(err).ToNot(HaveOccurred())
 
-				err = kubectlHelper.Wait(namespace, "ready", "pod/example-extendedstatefulset-v3-1", kubectlHelper.PollTimeout)
+				err = kubectlHelper.Wait(namespace, "ready", "pod/example-extendedstatefulset-v2-1", kubectlHelper.PollTimeout)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Checking the updated value in the env")
-				err = kubectlHelper.RunCommandWithCheckString(namespace, "example-extendedstatefulset-v3-0", "env", "SPECIAL_KEY=value1Updated")
+				err = kubectlHelper.RunCommandWithCheckString(namespace, "example-extendedstatefulset-v2-0", "env", "SPECIAL_KEY=value1Updated")
 				Expect(err).ToNot(HaveOccurred())
 
-				err = kubectlHelper.RunCommandWithCheckString(namespace, "example-extendedstatefulset-v3-1", "env", "SPECIAL_KEY=value1Updated")
+				err = kubectlHelper.RunCommandWithCheckString(namespace, "example-extendedstatefulset-v2-1", "env", "SPECIAL_KEY=value1Updated")
 				Expect(err).ToNot(HaveOccurred())
 			})
 

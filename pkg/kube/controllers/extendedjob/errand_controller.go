@@ -17,16 +17,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	bdv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/boshdeployment/v1alpha1"
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
+	"code.cloudfoundry.org/cf-operator/pkg/kube/util/names"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/reference"
 	vss "code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
 )
 
-// AddErrand creates a new ExtendedJob controller to start errands when their
-// trigger strategy matches
+// AddErrand creates a new ExtendedJob controller to start errands, when their
+// trigger strategy matches 'now' or 'once', or their configuration changed.
 func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) error {
 	f := controllerutil.SetControllerReference
 	ctx = ctxlog.NewContextWithRecorder(ctx, "ext-job-errand-reconciler", mgr.GetEventRecorderFor("ext-job-errand-recorder"))
@@ -50,7 +50,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(eJob).Debug(
 					ctx, e.Meta, ejv1.LabelExtendedJob,
-					fmt.Sprintf("Errand eJob's create predicate passed for %s, existing extendedJob spec.Trigger.Strategy  matches the values 'now' or 'once'",
+					fmt.Sprintf("Create predicate passed for '%s', existing extendedJob spec.Trigger.Strategy  matches the values 'now' or 'once'",
 						e.Meta.GetName()),
 				)
 			}
@@ -76,7 +76,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(o).Debug(
 					ctx, e.MetaNew, ejv1.LabelExtendedJob,
-					fmt.Sprintf("Errand eJob's update predicate passed for %s, a change in it´s referenced secrets have been detected",
+					fmt.Sprintf("Update predicate passed for '%s', a change in it´s referenced secrets have been detected",
 						e.MetaNew.GetName()),
 				)
 			}
@@ -118,7 +118,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			}
 
 			for _, reconciliation := range reconciles {
-				ctxlog.NewMappingEvent(a.Object).Debug(ctx, reconciliation, "ExtendedJob", a.Meta.GetName(), bdv1.ConfigMapReference)
+				ctxlog.NewMappingEvent(a.Object).Debug(ctx, reconciliation, "ExtendedJob", a.Meta.GetName(), names.ConfigMap)
 			}
 			return reconciles
 		}),
@@ -166,7 +166,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			}
 
 			for _, reconciliation := range reconciles {
-				ctxlog.NewMappingEvent(a.Object).Debug(ctx, reconciliation, "ExtendedJob", a.Meta.GetName(), bdv1.SecretReference)
+				ctxlog.NewMappingEvent(a.Object).Debug(ctx, reconciliation, "ExtendedJob", a.Meta.GetName(), names.Secret)
 			}
 
 			return reconciles

@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	ejv1 "code.cloudfoundry.org/cf-operator/pkg/kube/apis/extendedjob/v1alpha1"
+	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
@@ -21,6 +21,9 @@ const (
 	WebhookConfigDir = "/tmp"
 )
 
+// Theses funcs construct controllers and add them to the controller-runtime
+// manager. The manager will set fields on the controllers and start them, when
+// itself is started.
 var addToManagerFuncs = []func(context.Context, *config.Config, manager.Manager) error{
 	extendedjob.AddErrand,
 	extendedjob.AddJob,

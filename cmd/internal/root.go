@@ -21,6 +21,7 @@ import (
 	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
+
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
 	"code.cloudfoundry.org/quarks-job/version"
 )

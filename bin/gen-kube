@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+GO111MODULE=${GO111MODULE:-on} #Always on, so it works also inside GOPATH
+GIT_ROOT=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
+cd "$GIT_ROOT"
+
+if [ -z ${CODEGEN_PKG+x} ] || [ ! -d "$CODEGEN_PKG" ]; then
+  echo 'Please set CODEGEN_PKG to the location of kubernetes/code-generator'
+  echo 'Make sure version of code-generator matches version of used kubernetes libraries.'
+  echo 'Tag 1.14.* was used in the past'.
+  echo
+  echo 'git clone https://github.com/kubernetes/code-generator.git ../code-generator'
+  echo
+  echo 'IMPORTANT! Remember that all generated code is created in your GOPATH.'
+  exit 1
+fi
+
+# The groups and their versions in the format "groupA:v1,v2 groupB:v1 groupC:v2"
+GROUP_VERSIONS="extendedjob:v1alpha1"
+
+env GO111MODULE="$GO111MODULE" "${CODEGEN_PKG}/generate-groups.sh" "deepcopy,client,lister" \
+  code.cloudfoundry.org/cf-operator/pkg/kube/client \
+  code.cloudfoundry.org/cf-operator/pkg/kube/apis \
+  "${GROUP_VERSIONS}" \
+  --go-header-file "${GIT_ROOT}/gen/header.go.txt"

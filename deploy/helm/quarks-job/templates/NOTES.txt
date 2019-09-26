@@ -18,8 +18,8 @@ Interacting with the quarks-job pod
   export OPERATOR_POD=$(kubectl get pods -l name=quarks-job --namespace {{ .Release.Namespace }} --output name)
   kubectl -n {{ .Release.Namespace }} logs $OPERATOR_POD -f
 
-3. Apply one of the BOSH deployment manifest examples
-  kubectl -n {{ .Release.Namespace }} create -f docs/examples/bosh-deployment/boshdeployment-with-custom-variable.yaml
+3. Apply one of the Quarks job examples
+  kubectl -n {{ .Release.Namespace }} create -f docs/examples/exjob_output.yaml
 
 4. See the quarks-job in action!
   watch -c "kubectl -n {{ .Release.Namespace }} get pods"

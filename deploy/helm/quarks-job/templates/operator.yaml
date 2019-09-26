@@ -33,9 +33,3 @@ spec:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
               value: "quarks-job"
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: 2999
-              scheme: "HTTPS"
-            initialDelaySeconds: 2

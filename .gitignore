@@ -1,5 +1,6 @@
 # Temporary Build Files
 binaries
+helm
 # Temp dir for generated kube files
 /_tmp
 /helm

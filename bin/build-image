@@ -1,0 +1,31 @@
+#!/bin/bash
+
+set -o errexit
+
+GIT_ROOT="${GIT_ROOT:-$(git rev-parse --show-toplevel)}"
+. "${GIT_ROOT}/bin/include/versioning"
+
+if [ -z ${DOCKER_IMAGE_ORG+x} ]; then
+  DOCKER_IMAGE_ORG="cfcontainerization"
+  export DOCKER_IMAGE_ORG
+fi
+
+if [ -z ${DOCKER_IMAGE_TAG+x} ]; then
+  DOCKER_IMAGE_TAG=${VERSION_TAG}
+  export DOCKER_IMAGE_TAG
+fi
+
+image="${DOCKER_IMAGE_ORG}/quarks-job:${DOCKER_IMAGE_TAG}"
+
+docker build "${GIT_ROOT}" \
+  --file "${GIT_ROOT}/Dockerfile" \
+  --build-arg GO111MODULE="${GO111MODULE:-on}" \
+  --tag "${image}"
+
+if [ -n "${SAVE_TARBALL}" ] && [[ "${SAVE_TARBALL}" == "true" ]]; then
+  dst_dir="${GIT_ROOT}/binaries"
+  mkdir -p "${dst_dir}"
+  dst_file="${dst_dir}/quarks-job-image.tgz"
+  docker save "${image}" --output "${dst_file}"
+  echo "Saved ${image} to ${dst_file}"
+fi

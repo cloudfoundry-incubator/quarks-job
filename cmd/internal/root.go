@@ -50,14 +50,14 @@ var rootCmd = &cobra.Command{
 			return wrapError(err, "Couldn't check Kubeconfig. Ensure kubeconfig is correct to continue.")
 		}
 
-		cfOperatorNamespace := viper.GetString("cf-operator-namespace")
+		cfOperatorNamespace := viper.GetString("namespace")
 
 		log.Infof("Starting quarks-job %s with namespace %s", version.Version, cfOperatorNamespace)
 
 		cfg := &config.Config{
 			Namespace:             cfOperatorNamespace,
 			Fs:                    afero.NewOsFs(),
-			MaxExtendedJobWorkers: viper.GetInt("max-extendedjob-workers"),
+			MaxExtendedJobWorkers: viper.GetInt("max-workers"),
 			ApplyCRD:              viper.GetBool("apply-crd"),
 		}
 		ctx := ctxlog.NewParentContext(log)
@@ -108,21 +108,21 @@ func init() {
 
 	pf.StringP("kubeconfig", "c", "", "Path to a kubeconfig, not required in-cluster")
 	pf.StringP("log-level", "l", "debug", "Only print log messages from this level onward")
-	pf.StringP("cf-operator-namespace", "n", "default", "Namespace to watch")
-	pf.Int("max-extendedjob-workers", 1, "Maximum of number concurrently running ExtendedJob controller")
+	pf.StringP("namespace", "n", "default", "Namespace to watch")
+	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
 	pf.Bool("apply-crd", true, "If true, apply CRDs on start")
 	viper.BindPFlag("kubeconfig", pf.Lookup("kubeconfig"))
 	viper.BindPFlag("log-level", pf.Lookup("log-level"))
-	viper.BindPFlag("cf-operator-namespace", pf.Lookup("cf-operator-namespace"))
-	viper.BindPFlag("max-extendedjob-workers", pf.Lookup("max-extendedjob-workers"))
+	viper.BindPFlag("namespace", pf.Lookup("namespace"))
+	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))
 	viper.BindPFlag("apply-crd", rootCmd.PersistentFlags().Lookup("apply-crd"))
 
 	argToEnv := map[string]string{
-		"kubeconfig":              "KUBECONFIG",
-		"log-level":               "LOG_LEVEL",
-		"cf-operator-namespace":   "CF_OPERATOR_NAMESPACE",
-		"max-extendedjob-workers": "MAX_EXTENDEDJOB_WORKERS",
-		"apply-crd":               "APPLY_CRD",
+		"kubeconfig":  "KUBECONFIG",
+		"log-level":   "LOG_LEVEL",
+		"namespace":   "NAMESPACE",
+		"max-workers": "MAX_WORKERS",
+		"apply-crd":   "APPLY_CRD",
 	}
 
 	// Add env variables to help

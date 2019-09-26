@@ -1,0 +1,24 @@
+# Default values for quarks-job.
+image:
+  repository: quarks-job
+  org: cfcontainerization
+  tag: foobar
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+rbacEnable: true
+
+serviceAccount:
+  cfOperatorServiceAccount:
+    create: true
+    name:
+
+provider: ""

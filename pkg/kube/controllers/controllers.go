@@ -12,11 +12,6 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
 )
 
-const (
-	// HTTPReadyzEndpoint route
-	HTTPReadyzEndpoint = "/readyz"
-)
-
 // Theses funcs construct controllers and add them to the controller-runtime
 // manager. The manager will set fields on the controllers and start them, when
 // itself is started.

@@ -32,12 +32,12 @@ var (
 )
 
 func wrapError(err error, msg string) error {
-	return errors.Wrap(err, "cf-operator command failed. "+msg)
+	return errors.Wrap(err, "quarks-job command failed. "+msg)
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "cf-operator",
-	Short: "cf-operator manages BOSH deployments on Kubernetes",
+	Use:   "quarks-job",
+	Short: "quarks-job starts the operator",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		log = newLogger(zap.AddCallerSkip(1))
 		defer log.Sync()
@@ -54,18 +54,12 @@ var rootCmd = &cobra.Command{
 
 		log.Infof("Starting quarks-job %s with namespace %s", version.Version, cfOperatorNamespace)
 
-		config := config.NewConfig(
-			cfOperatorNamespace,
-			"",
-			"",
-			int32(0),
-			afero.NewOsFs(),
-			viper.GetInt("max-boshdeployment-workers"),
-			viper.GetInt("max-extendedjob-workers"),
-			viper.GetInt("max-extendedsecret-workers"),
-			viper.GetInt("max-extendedstatefulset-workers"),
-			viper.GetBool("apply-crd"),
-		)
+		cfg := &config.Config{
+			Namespace:             cfOperatorNamespace,
+			Fs:                    afero.NewOsFs(),
+			MaxExtendedJobWorkers: viper.GetInt("max-extendedjob-workers"),
+			ApplyCRD:              viper.GetBool("apply-crd"),
+		}
 		ctx := ctxlog.NewParentContext(log)
 
 		if viper.GetBool("apply-crd") {
@@ -76,29 +70,27 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
-		mgr, err := operator.NewManager(ctx, config, restConfig, manager.Options{
+		mgr, err := operator.NewManager(ctx, cfg, restConfig, manager.Options{
 			Namespace:          cfOperatorNamespace,
 			MetricsBindAddress: "0",
 			LeaderElection:     false,
-			Port:               int(0),
-			Host:               "0.0.0.0",
 		})
 		if err != nil {
 			return wrapError(err, "Failed to create new manager.")
 		}
 
-		ctxlog.Info(ctx, "Waiting for configurations to be applied into a BOSHDeployment resource...")
+		ctxlog.Info(ctx, "Waiting for Quarks job resources...")
 
 		err = mgr.Start(signals.SetupSignalHandler())
 		if err != nil {
-			return wrapError(err, "Failed to start cf-operator manager.")
+			return wrapError(err, "Failed to start quarks-job manager.")
 		}
 		return nil
 	},
 	TraverseChildren: true,
 }
 
-// NewCFOperatorCommand returns the `cf-operator` command.
+// NewCFOperatorCommand returns the `quarks-job` command.
 func NewCFOperatorCommand() *cobra.Command {
 	return rootCmd
 }
@@ -116,19 +108,21 @@ func init() {
 
 	pf.StringP("kubeconfig", "c", "", "Path to a kubeconfig, not required in-cluster")
 	pf.StringP("log-level", "l", "debug", "Only print log messages from this level onward")
-	pf.StringP("cf-operator-namespace", "n", "default", "Namespace to watch for BOSH deployments")
+	pf.StringP("cf-operator-namespace", "n", "default", "Namespace to watch")
 	pf.Int("max-extendedjob-workers", 1, "Maximum of number concurrently running ExtendedJob controller")
 	pf.Bool("apply-crd", true, "If true, apply CRDs on start")
 	viper.BindPFlag("kubeconfig", pf.Lookup("kubeconfig"))
 	viper.BindPFlag("log-level", pf.Lookup("log-level"))
 	viper.BindPFlag("cf-operator-namespace", pf.Lookup("cf-operator-namespace"))
 	viper.BindPFlag("max-extendedjob-workers", pf.Lookup("max-extendedjob-workers"))
+	viper.BindPFlag("apply-crd", rootCmd.PersistentFlags().Lookup("apply-crd"))
 
 	argToEnv := map[string]string{
 		"kubeconfig":              "KUBECONFIG",
 		"log-level":               "LOG_LEVEL",
 		"cf-operator-namespace":   "CF_OPERATOR_NAMESPACE",
 		"max-extendedjob-workers": "MAX_EXTENDEDJOB_WORKERS",
+		"apply-crd":               "APPLY_CRD",
 	}
 
 	// Add env variables to help

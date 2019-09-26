@@ -28,12 +28,12 @@ var _ = Describe("CLI", func() {
 			session, err := act("help")
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session.Out).Should(Say(`Flags:
-      --apply-crd                      \(APPLY_CRD\) If true, apply CRDs on start \(default true\)
-  -n, --cf-operator-namespace string   \(CF_OPERATOR_NAMESPACE\) Namespace to watch \(default "default"\)
-  -h, --help                           help for quarks-job
-  -c, --kubeconfig string              \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
-  -l, --log-level string               \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
-      --max-extendedjob-workers int    \(MAX_EXTENDEDJOB_WORKERS\) Maximum of number concurrently running ExtendedJob controller \(default 1\)
+      --apply-crd           \(APPLY_CRD\) If true, apply CRDs on start \(default true\)
+  -h, --help                help for quarks-job
+  -c, --kubeconfig string   \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
+  -l, --log-level string    \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
+      --max-workers int     \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
+  -n, --namespace string    \(NAMESPACE\) Namespace to watch \(default "default"\)
 `))
 		})
 
@@ -59,11 +59,11 @@ var _ = Describe("CLI", func() {
 		Context("when specifying namespace", func() {
 			Context("via environment variables", func() {
 				BeforeEach(func() {
-					os.Setenv("CF_OPERATOR_NAMESPACE", "env-test")
+					os.Setenv("NAMESPACE", "env-test")
 				})
 
 				AfterEach(func() {
-					os.Setenv("CF_OPERATOR_NAMESPACE", "")
+					os.Setenv("NAMESPACE", "")
 				})
 
 				It("should start for namespace", func() {
@@ -75,7 +75,7 @@ var _ = Describe("CLI", func() {
 
 			Context("via using switches", func() {
 				It("should start for namespace", func() {
-					session, err := act("--cf-operator-namespace", "switch-test")
+					session, err := act("--namespace", "switch-test")
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(session.Err).Should(Say(`Starting quarks-job \d+\.\d+\.\d+ with namespace switch-test`))
 				})

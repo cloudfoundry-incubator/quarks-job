@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/mutate"
@@ -27,6 +26,8 @@ import (
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 )
+
+const EnvInstanceGroupName = "INSTANCE_GROUP_NAME"
 
 // NewJobReconciler returns a new Reconciler
 func NewJobReconciler(ctx context.Context, config *config.Config, mgr manager.Manager, podLogGetter PodLogGetter) (reconcile.Reconciler, error) {
@@ -214,7 +215,7 @@ func (r *ReconcileJob) persistOutput(ctx context.Context, instance *batchv1.Job,
 		}
 
 		secretLabels[ejv1.LabelPersistentSecretContainer] = c.Name
-		if ig, ok := podutil.LookupEnv(c.Env, converter.EnvInstanceGroupName); ok {
+		if ig, ok := podutil.LookupEnv(c.Env, EnvInstanceGroupName); ok {
 			secretLabels[ejv1.LabelInstanceGroup] = ig
 		}
 

@@ -15,10 +15,6 @@ import (
 const (
 	// HTTPReadyzEndpoint route
 	HTTPReadyzEndpoint = "/readyz"
-	// WebhookConfigPrefix is the prefix for the dir containing the webhook SSL certs
-	WebhookConfigPrefix = "cf-operator-hook-"
-	// WebhookConfigDir contains the dir with the webhook SSL certs
-	WebhookConfigDir = "/tmp"
 )
 
 // Theses funcs construct controllers and add them to the controller-runtime

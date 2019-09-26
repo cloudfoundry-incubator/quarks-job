@@ -114,6 +114,28 @@ func (c *Catalog) ConfigPodTemplate() corev1.PodTemplateSpec {
 	}
 }
 
+// FailingMultiContainerPodTemplate returns a spec with a given command for busybox and a second container which fails
+func (c *Catalog) FailingMultiContainerPodTemplate(cmd []string) corev1.PodTemplateSpec {
+	return corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: util.Int64(1),
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: cmd,
+				},
+				{
+					Name:    "failing",
+					Image:   "busybox",
+					Command: []string{"exit", "1"},
+				},
+			},
+		},
+	}
+}
+
 // CmdPodTemplate returns the spec with a given command for busybox
 func (c *Catalog) CmdPodTemplate(cmd []string) corev1.PodTemplateSpec {
 	return corev1.PodTemplateSpec{

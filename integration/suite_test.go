@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"testing"
 
-	"code.cloudfoundry.org/cf-operator/integration/environment"
-	cmdHelper "code.cloudfoundry.org/cf-operator/testing"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"code.cloudfoundry.org/quarks-job/integration/environment"
+	cmdHelper "code.cloudfoundry.org/quarks-utils/testing"
 )
 
 func TestIntegration(t *testing.T) {
@@ -36,10 +36,6 @@ var _ = AfterSuite(func() {
 		err := cmdHelper.DeleteNamespace(namespace)
 		if err != nil {
 			fmt.Printf("WARNING: failed to delete namespace %s: %v\n", namespace, err)
-		}
-		err = cmdHelper.DeleteWebhooks(namespace)
-		if err != nil {
-			fmt.Printf("WARNING: failed to delete mutatingwebhookconfiguration in %s: %v\n", namespace, err)
 		}
 	}
 })

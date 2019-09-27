@@ -4,7 +4,6 @@ import (
 	"fmt"
 	golog "log"
 	"os"
-	"time"
 
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
@@ -26,10 +25,7 @@ import (
 	"code.cloudfoundry.org/quarks-job/version"
 )
 
-var (
-	log              *zap.SugaredLogger
-	debugGracePeriod = time.Second * 5
-)
+var log *zap.SugaredLogger
 
 func wrapError(err error, msg string) error {
 	return errors.Wrap(err, "quarks-job command failed. "+msg)
@@ -59,6 +55,9 @@ var rootCmd = &cobra.Command{
 			Fs:                    afero.NewOsFs(),
 			MaxExtendedJobWorkers: viper.GetInt("max-workers"),
 			ApplyCRD:              viper.GetBool("apply-crd"),
+			CtxTimeOut:            config.CtxTimeOut,
+			MeltdownDuration:      config.MeltdownDuration,
+			MeltdownRequeueAfter:  config.MeltdownRequeueAfter,
 		}
 		ctx := ctxlog.NewParentContext(log)
 

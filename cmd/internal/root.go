@@ -4,6 +4,7 @@ import (
 	"fmt"
 	golog "log"
 	"os"
+	"time"
 
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
@@ -26,6 +27,9 @@ import (
 )
 
 var log *zap.SugaredLogger
+
+// CtxTimeOut is the default context.Context timeout
+const CtxTimeOut = 30 * time.Second
 
 func wrapError(err error, msg string) error {
 	return errors.Wrap(err, "quarks-job command failed. "+msg)
@@ -55,7 +59,7 @@ var rootCmd = &cobra.Command{
 			Fs:                    afero.NewOsFs(),
 			MaxExtendedJobWorkers: viper.GetInt("max-workers"),
 			ApplyCRD:              viper.GetBool("apply-crd"),
-			CtxTimeOut:            config.CtxTimeOut,
+			CtxTimeOut:            CtxTimeOut,
 			MeltdownDuration:      config.MeltdownDuration,
 			MeltdownRequeueAfter:  config.MeltdownRequeueAfter,
 		}

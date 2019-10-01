@@ -22,10 +22,7 @@ docker build "${GIT_ROOT}" \
   --build-arg GO111MODULE="${GO111MODULE:-on}" \
   --tag "${image}"
 
-if [ -n "${SAVE_TARBALL}" ] && [[ "${SAVE_TARBALL}" == "true" ]]; then
-  dst_dir="${GIT_ROOT}/binaries"
-  mkdir -p "${dst_dir}"
-  dst_file="${dst_dir}/quarks-job-image.tgz"
-  docker save "${image}" --output "${dst_file}"
-  echo "Saved ${image} to ${dst_file}"
+
+if [ -n "$USE_KIND" ]; then
+	kind load docker-image "$image"
 fi

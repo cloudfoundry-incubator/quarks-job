@@ -1,5 +1,7 @@
 # ExtendedJob
 
+[![Build Status](https://api.travis-ci.org/cloudfoundry-incubator/quarks-job.svg?branch=master)](https://travis-ci.org/cloudfoundry-incubator/quarks-job)
+
 - [ExtendedJob](#extendedjob)
   - [Description](#description)
   - [Features](#features)

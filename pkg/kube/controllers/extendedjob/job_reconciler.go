@@ -27,6 +27,7 @@ import (
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 )
 
+// EnvInstanceGroupName is the ENV variable name for the instance group name
 const EnvInstanceGroupName = "INSTANCE_GROUP_NAME"
 
 // NewJobReconciler returns a new Reconciler

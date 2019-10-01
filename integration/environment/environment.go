@@ -11,12 +11,14 @@ import (
 	"code.cloudfoundry.org/quarks-job/testing"
 )
 
+// Environment test env with helpers to create structs and k8s resources
 type Environment struct {
 	*utils.Environment
 	Machine
 	testing.Catalog
 }
 
+// NewEnvironment returns a new test environment
 func NewEnvironment(kubeConfig *rest.Config) *Environment {
 	return &Environment{
 		Environment: utils.NewEnvironment(kubeConfig),

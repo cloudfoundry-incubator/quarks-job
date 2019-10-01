@@ -59,6 +59,9 @@ var _ = BeforeEach(func() {
 	namespacesToNuke = append(namespacesToNuke, env.Namespace)
 
 	err = env.SetupClientsets()
+	if err != nil {
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	}
 
 	env.Stop, err = env.StartOperator()
 	if err != nil {

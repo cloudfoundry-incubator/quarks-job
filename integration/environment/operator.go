@@ -7,6 +7,7 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
 )
 
+// StartOperator starts the extended job operator
 func (e *Environment) StartOperator() (chan struct{}, error) {
 	mgr, err := e.setupCFOperator()
 	if err != nil {

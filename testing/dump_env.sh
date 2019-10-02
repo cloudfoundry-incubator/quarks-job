@@ -83,15 +83,14 @@ for SECRET in "${SECRETS[@]}"; do
 done
 
 # Iterate over jobs, Extended*
-for i in jobs ests ejobs esecs sts; do
-  RESOURCES=($(get_resources "$i"))
-  for RESOURCE in "${RESOURCES[@]}"; do
-    printf "$i \e[0;32m$RESOURCE\e[0m\n"
+i=jobs
+RESOURCES=($(get_resources "$i"))
+for RESOURCE in "${RESOURCES[@]}"; do
+  printf "$i \e[0;32m$RESOURCE\e[0m\n"
 
-    RESOURCE_DIR="${NAMESPACE_DIR}/$i/${RESOURCE}"
-    mkdir -p ${RESOURCE_DIR}
-    describe_resource "$i" "$RESOURCE" "${RESOURCE_DIR}/describe.txt"
-  done
+  RESOURCE_DIR="${NAMESPACE_DIR}/$i/${RESOURCE}"
+  mkdir -p ${RESOURCE_DIR}
+  describe_resource "$i" "$RESOURCE" "${RESOURCE_DIR}/describe.txt"
 done
 
 # Iterate over pods and their containers

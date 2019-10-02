@@ -17,6 +17,9 @@ fi
 
 image="${DOCKER_IMAGE_ORG}/quarks-job:${DOCKER_IMAGE_TAG}"
 
+go mod vendor
+GO111MODULE=off
+
 docker build "${GIT_ROOT}" \
   --file "${GIT_ROOT}/Dockerfile" \
   --build-arg GO111MODULE="${GO111MODULE:-on}" \

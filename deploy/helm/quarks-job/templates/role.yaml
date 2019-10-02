@@ -9,10 +9,21 @@ rules:
   resources:
   - pods
   - services
+  - endpoints
+  - persistentvolumeclaims
   - events
   - configmaps
   - secrets
   - namespaces
+  verbs:
+  - '*'
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
   verbs:
   - '*'
 - apiGroups:

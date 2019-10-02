@@ -12,6 +12,8 @@ import (
 	"code.cloudfoundry.org/cf-operator/e2e/kube/e2ehelper"
 )
 
+const examplesDir = "../../docs/examples/"
+
 var (
 	nsIndex   int
 	teardown  e2ehelper.TearDownFunc
@@ -42,7 +44,7 @@ var _ = BeforeEach(func() {
 	dir, err := os.Getwd()
 	Expect(err).ToNot(HaveOccurred())
 
-	chartPath := fmt.Sprintf("%s%s", dir, "/../../helm/cf-operator")
+	chartPath := fmt.Sprintf("%s%s", dir, "/../../helm/quarks-job")
 	namespace, teardown, err = e2ehelper.SetUpEnvironment(chartPath)
 	Expect(err).ToNot(HaveOccurred())
 })

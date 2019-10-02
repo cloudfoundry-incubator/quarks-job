@@ -1,7 +1,7 @@
 module code.cloudfoundry.org/quarks-job
 
 require (
-	code.cloudfoundry.org/cf-operator v0.4.2-0.20190925122657-30f4e063e8ba
+	code.cloudfoundry.org/cf-operator v0.4.2-0.20191001124425-2102efb3ace3
 	code.cloudfoundry.org/quarks-utils v0.0.0-20190925142043-b81639db2c88
 	github.com/go-logr/zapr v0.1.1
 	github.com/go-test/deep v1.0.4

@@ -12,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	utils "code.cloudfoundry.org/cf-operator/integration/environment"
+
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 )
 
@@ -23,7 +25,7 @@ func (m *Machine) GetExtendedJob(namespace string, name string) (*ejv1.ExtendedJ
 }
 
 // CreateExtendedJob creates an ExtendedJob
-func (m *Machine) CreateExtendedJob(namespace string, job ejv1.ExtendedJob) (*ejv1.ExtendedJob, TearDownFunc, error) {
+func (m *Machine) CreateExtendedJob(namespace string, job ejv1.ExtendedJob) (*ejv1.ExtendedJob, utils.TearDownFunc, error) {
 	client := m.VersionedClientset.ExtendedjobV1alpha1().ExtendedJobs(namespace)
 	d, err := client.Create(&job)
 	return d, func() error {

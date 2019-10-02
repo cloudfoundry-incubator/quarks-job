@@ -14,9 +14,6 @@ if [ -z ${TEST_NAMESPACE+x} ]; then
   export TEST_NAMESPACE
 fi
 
-# Build the required helm charts to run the cf-operator
-./bin/build-helm
-
 NODES=${NODES:-3}
 FLAKE_ATTEMPTS=${FLAKE_ATTEMPTS:-3}
 ginkgo \

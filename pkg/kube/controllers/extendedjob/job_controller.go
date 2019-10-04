@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
-
 	batchv1 "k8s.io/api/batch/v1"
-	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"

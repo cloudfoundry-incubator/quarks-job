@@ -7,12 +7,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest/observer"
 
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -22,7 +20,6 @@ import (
 
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
 	helper "code.cloudfoundry.org/cf-operator/pkg/testhelper"
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
@@ -38,13 +35,10 @@ var _ = Describe("ReconcileExtendedJob", func() {
 		reconciler   reconcile.Reconciler
 		request      reconcile.Request
 		log          *zap.SugaredLogger
-		logs         *observer.ObservedLogs
 		client       *cfakes.FakeClient
-		podLogGetter *cfakes.FakePodLogGetter
 		ejob         *ejv1.ExtendedJob
 		job          *batchv1.Job
 		pod1         *corev1.Pod
-		pod2         *corev1.Pod
 		env          testing.Catalog
 	)
 

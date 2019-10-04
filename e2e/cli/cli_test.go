@@ -53,7 +53,7 @@ var _ = Describe("CLI", func() {
 			session, err := act()
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session.Err).Should(Say(`Starting quarks-job \d+\.\d+\.\d+ with namespace`))
-			Eventually(session.Err).ShouldNot(Say(`Applying CRD...`))
+			Eventually(session.Err).ShouldNot(Say(`Applying CRDs...`))
 		})
 
 		Context("when specifying namespace", func() {

@@ -24,13 +24,8 @@ import (
 // AddJob creates a new Job controller to collect the output from jobs, persist
 // that output as a secret and delete the k8s job afterwards.
 func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) error {
-	client, err := corev1client.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return errors.Wrap(err, "Could not get kube client")
-	}
-	podLogGetter := NewPodLogGetter(client)
 	ctx = ctxlog.NewContextWithRecorder(ctx, "ext-job-job-reconciler", mgr.GetEventRecorderFor("ext-job-job-recorder"))
-	jobReconciler, err := NewJobReconciler(ctx, config, mgr, podLogGetter)
+	jobReconciler, err := NewJobReconciler(ctx, config, mgr)
 	if err != nil {
 		return err
 	}

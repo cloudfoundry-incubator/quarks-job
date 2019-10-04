@@ -21,6 +21,13 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/reference"
 )
 
+const (
+	outputPersistDirName      = "output-persist-dir"
+	outputPersistDirMountPath = "/mnt/output-persist/"
+	serviceAccountName        = "persist-output-service-account"
+	mountPath                 = "/mnt/quarks/"
+)
+
 type setOwnerReferenceFunc func(owner, object metav1.Object, scheme *runtime.Scheme) error
 
 // NewJobCreator returns a new job creator
@@ -35,7 +42,7 @@ func NewJobCreator(client crc.Client, scheme *runtime.Scheme, f setOwnerReferenc
 
 // JobCreator is the interface that wraps the basic Create method.
 type JobCreator interface {
-	Create(ctx context.Context, eJob ejv1.ExtendedJob) (retry bool, err error)
+	Create(ctx context.Context, eJob ejv1.ExtendedJob, namespace string) (retry bool, err error)
 }
 
 type jobCreatorImpl struct {
@@ -47,8 +54,96 @@ type jobCreatorImpl struct {
 
 // Create satisfies the JobCreator interface. It creates a Job to complete ExJob. It returns the
 // retry if one of the references are not present.
-func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob) (retry bool, err error) {
+func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob,namespace string) (retry bool, err error) {
 	template := eJob.Spec.Template.DeepCopy()
+
+	// Create a service account for the pod
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: namespace,
+		},
+	}
+
+	// Bind read only role to the service account
+	roleBinding := &v1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "cluster-admin-role",
+			Namespace: namespace,
+		},
+		Subjects: []v1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      serviceAccountName,
+				Namespace: namespace,
+			},
+		},
+		RoleRef: v1.RoleRef{
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+			APIGroup: "rbac.authorization.k8s.io",
+		},
+	}
+
+	// Set serviceaccount to the pod
+	template.Spec.ServiceAccountName = serviceAccountName
+
+	err = j.client.Create(ctx, serviceAccount)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return false, errors.Wrapf(err, "could not create service account for pod in ejob %s.", eJob.Name)
+		}
+	}
+
+	err = j.client.Create(ctx, roleBinding)
+	if err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return false, errors.Wrapf(err, "could not create role binding for pod in ejob '%s'", eJob.Name)
+		}
+	}
+
+	// Create a container for persisting output
+	outputPersistContainer := corev1.Container{
+		Name:    "output-persist",
+		Image:   converter.GetOperatorDockerImage(),
+		Command: []string{"/usr/bin/dumb-init", "--"},
+		Args: []string{
+			"/bin/sh",
+			"-xc",
+			"cf-operator util persist-output",
+		},
+		Env: []corev1.EnvVar{
+			{
+				Name:  EnvCFONamespace,
+				Value: namespace,
+			},
+		},
+	}
+
+	// Loop through containers and add quarks logging volume specs.
+	for containerIndex, container := range template.Spec.Containers {
+
+		// Add pod volume specs to the pod
+		podVolumeSpec := corev1.Volume{
+			Name:         names.Sanitize(fmt.Sprintf("%s%s", "output-", container.Name)),
+			VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+		}
+		template.Spec.Volumes = append(template.Spec.Volumes, podVolumeSpec)
+
+		// Add container volume specs to continer
+		containerVolumeMountSpec := corev1.VolumeMount{
+			Name:      names.Sanitize(fmt.Sprintf("%s%s", "output-", container.Name)),
+			MountPath: mountPath,
+		}
+		template.Spec.Containers[containerIndex].VolumeMounts = append(template.Spec.Containers[containerIndex].VolumeMounts, containerVolumeMountSpec)
+
+		// Add container volume spec to output persist container
+		containerVolumeMountSpec.MountPath = filepath.Join(mountPath, container.Name)
+		outputPersistContainer.VolumeMounts = append(outputPersistContainer.VolumeMounts, containerVolumeMountSpec)
+	}
+
+	// Add output persist container to the pod template
+	template.Spec.Containers = append(template.Spec.Containers, outputPersistContainer)
 
 	if template.Labels == nil {
 		template.Labels = map[string]string{}

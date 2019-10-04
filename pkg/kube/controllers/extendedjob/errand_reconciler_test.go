@@ -151,7 +151,8 @@ var _ = Describe("ErrandReconciler", func() {
 
 				It("should log create error and requeue", func() {
 					_, err := act()
-					Expect(logs.FilterMessageSnippet("Failed to create job 'fake-ejob': fake-error").Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet("Failed to create job 'fake-ejob': could not create service account for " +
+						"pod in ejob fake-ejob.: fake-error").Len()).To(Equal(1))
 					Expect(err).To(HaveOccurred())
 					Expect(client.CreateCallCount()).To(Equal(1))
 				})
@@ -170,7 +171,7 @@ var _ = Describe("ErrandReconciler", func() {
 					Expect(result.Requeue).To(BeFalse())
 
 					Expect(logs.FilterMessageSnippet("Skip 'fake-ejob': already running").Len()).To(Equal(1))
-					Expect(client.CreateCallCount()).To(Equal(1))
+					Expect(client.CreateCallCount()).To(Equal(3))
 				})
 			})
 
@@ -192,16 +193,6 @@ var _ = Describe("ErrandReconciler", func() {
 
 				It("should set run back and create a job", func() {
 					Expect(eJob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerNow))
-
-					client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOption) error {
-						switch job := object.(type) {
-						case *batchv1.Job:
-							Expect(deep.Equal(job.Spec.Template.Spec, eJob.Spec.Template.Spec)).To(HaveLen(0))
-							return nil
-						}
-
-						return nil
-					})
 
 					callQueue := helper.NewCallQueue(
 						func(context context.Context, object runtime.Object) error {
@@ -232,15 +223,6 @@ var _ = Describe("ErrandReconciler", func() {
 				})
 
 				It("should set the trigger strategy to done and immediately trigger the job", func() {
-					client.CreateCalls(func(context context.Context, object runtime.Object, _ ...crc.CreateOption) error {
-						switch job := object.(type) {
-						case *batchv1.Job:
-							Expect(deep.Equal(job.Spec.Template.Spec, eJob.Spec.Template.Spec)).To(HaveLen(0))
-							return nil
-						}
-
-						return nil
-					})
 
 					callQueue := helper.NewCallQueue(
 						func(context context.Context, object runtime.Object) error {
@@ -296,16 +278,6 @@ var _ = Describe("ErrandReconciler", func() {
 							return nil
 						}
 						return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
-					})
-
-					client.CreateCalls(func(context context.Context, obj runtime.Object, _ ...crc.CreateOption) error {
-						switch job := obj.(type) {
-						case *batchv1.Job:
-							Expect(deep.Equal(job.Spec.Template.Spec, eJob.Spec.Template.Spec)).To(HaveLen(0))
-							return nil
-						}
-
-						return nil
 					})
 
 					callQueue := helper.NewCallQueue(

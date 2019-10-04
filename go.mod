@@ -2,7 +2,7 @@ module code.cloudfoundry.org/quarks-job
 
 require (
 	code.cloudfoundry.org/cf-operator v0.4.2-0.20191001124425-2102efb3ace3
-	code.cloudfoundry.org/quarks-utils v0.0.0-20190925142043-b81639db2c88
+	code.cloudfoundry.org/quarks-utils v0.0.0-20191004102241-97317c1068d8
 	github.com/go-logr/zapr v0.1.1
 	github.com/go-test/deep v1.0.4
 	github.com/onsi/ginkgo v1.10.1

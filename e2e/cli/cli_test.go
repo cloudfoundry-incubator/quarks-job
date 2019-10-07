@@ -17,6 +17,10 @@ var _ = Describe("CLI", func() {
 		return
 	}
 
+	BeforeEach(func() {
+		os.Setenv("DOCKER_IMAGE_TAG", "v0.0.0")
+	})
+
 	Describe("help", func() {
 		It("should show the help for server", func() {
 			session, err := act("help")
@@ -28,12 +32,15 @@ var _ = Describe("CLI", func() {
 			session, err := act("help")
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session.Out).Should(Say(`Flags:
-      --apply-crd           \(APPLY_CRD\) If true, apply CRDs on start \(default true\)
-  -h, --help                help for quarks-job
-  -c, --kubeconfig string   \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
-  -l, --log-level string    \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
-      --max-workers int     \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
-  -n, --namespace string    \(NAMESPACE\) Namespace to watch \(default "default"\)
+      --apply-crd                        \(APPLY_CRD\) If true, apply CRDs on start \(default true\)
+  -o, --docker-image-org string          \(DOCKER_IMAGE_ORG\) Dockerhub organization that provides the operator docker image \(default "cfcontainerization"\)
+  -r, --docker-image-repository string   \(DOCKER_IMAGE_REPOSITORY\) Dockerhub repository that provides the operator docker image \(default "cf-operator"\)
+  -t, --docker-image-tag string          \(DOCKER_IMAGE_TAG\) Tag of the operator docker image
+  -h, --help                             help for quarks-job
+  -c, --kubeconfig string                \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
+  -l, --log-level string                 \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
+      --max-workers int                  \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
+  -n, --namespace string                 \(NAMESPACE\) Namespace to watch \(default "default"\)
 `))
 		})
 
@@ -49,6 +56,7 @@ var _ = Describe("CLI", func() {
 	})
 
 	Describe("default", func() {
+
 		It("should start the server", func() {
 			session, err := act()
 			Expect(err).ToNot(HaveOccurred())

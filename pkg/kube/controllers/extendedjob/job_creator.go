@@ -8,9 +8,9 @@ import (
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,7 +58,7 @@ type jobCreatorImpl struct {
 
 // Create satisfies the JobCreator interface. It creates a Job to complete ExJob. It returns the
 // retry if one of the references are not present.
-func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob,namespace string) (retry bool, err error) {
+func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, namespace string) (retry bool, err error) {
 	template := eJob.Spec.Template.DeepCopy()
 
 	// Create a service account for the pod

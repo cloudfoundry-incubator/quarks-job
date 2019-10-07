@@ -34,6 +34,9 @@ jobs:
         - export KUBECONFIG="$(kind get kubeconfig-path)"
         - export USE_KIND="true"
 
+        # Set CF-OPERATER Docker Image Tag
+        - export DOCKER_IMAGE_TAG="v0.4.1-120.g604925f0"
+
         # Download and install helm
         - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
         - chmod 700 get_helm.sh

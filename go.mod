@@ -1,7 +1,7 @@
 module code.cloudfoundry.org/quarks-job
 
 require (
-	code.cloudfoundry.org/cf-operator v0.4.2-0.20191007100126-4c05ca37a456
+	code.cloudfoundry.org/cf-operator v0.4.3-0.20191008134521-47a56bb5c67a
 	code.cloudfoundry.org/quarks-utils v0.0.0-20191004132444-f2e6f5e6afe8
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/go-logr/zapr v0.1.1

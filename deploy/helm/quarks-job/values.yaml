@@ -2,7 +2,7 @@
 image:
   repository: quarks-job
   org: cfcontainerization
-  tag: foobar
+  tag: v0.4.1-120.g604925f0
   pullPolicy: IfNotPresent
 
 nameOverride: ""

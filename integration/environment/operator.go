@@ -1,9 +1,13 @@
 package environment
 
 import (
+	"os"
+
+	"github.com/pkg/errors"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
 )
 
@@ -25,6 +29,26 @@ func (e *Environment) StartOperator() (chan struct{}, error) {
 
 func (e *Environment) setupCFOperator() (manager.Manager, error) {
 	ctx := e.SetupLoggerContext("quarks-job")
+
+	dockerImageOrg, found := os.LookupEnv("DOCKER_IMAGE_ORG")
+	if !found {
+		dockerImageOrg = "cfcontainerization"
+	}
+
+	dockerImageRepo, found := os.LookupEnv("DOCKER_IMAGE_REPOSITORY")
+	if !found {
+		dockerImageRepo = "cf-operator"
+	}
+
+	dockerImageTag, found := os.LookupEnv("DOCKER_IMAGE_TAG")
+	if !found {
+		return nil, errors.Errorf("required environment variable DOCKER_IMAGE_TAG not set")
+	}
+
+	err := converter.SetupOperatorDockerImage(dockerImageOrg, dockerImageRepo, dockerImageTag)
+	if err != nil {
+		return nil, err
+	}
 
 	mgr, err := operator.NewManager(ctx, e.Config, e.KubeConfig, manager.Options{
 		Namespace:          e.Namespace,

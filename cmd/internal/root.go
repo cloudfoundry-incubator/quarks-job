@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
+	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
 	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
@@ -53,6 +54,20 @@ var rootCmd = &cobra.Command{
 		cfOperatorNamespace := viper.GetString("namespace")
 
 		log.Infof("Starting quarks-job %s with namespace %s", version.Version, cfOperatorNamespace)
+
+		dockerImageTag := viper.GetString("docker-image-tag")
+		if dockerImageTag == "" {
+			return errors.Errorf("environment variable DOCKER_IMAGE_TAG not set")
+		}
+
+		err = converter.SetupOperatorDockerImage(
+			viper.GetString("docker-image-org"),
+			viper.GetString("docker-image-repository"),
+			dockerImageTag,
+		)
+		if err != nil {
+			return wrapError(err, "Couldn't parse cf-operator docker image reference.")
+		}
 
 		cfg := &config.Config{
 			Namespace:             cfOperatorNamespace,
@@ -113,19 +128,28 @@ func init() {
 	pf.StringP("log-level", "l", "debug", "Only print log messages from this level onward")
 	pf.StringP("namespace", "n", "default", "Namespace to watch")
 	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
+	pf.StringP("docker-image-org", "o", "cfcontainerization", "Dockerhub organization that provides the operator docker image")
+	pf.StringP("docker-image-repository", "r", "cf-operator", "Dockerhub repository that provides the operator docker image")
+	pf.StringP("docker-image-tag", "t", "", "Tag of the operator docker image")
 	pf.Bool("apply-crd", true, "If true, apply CRDs on start")
 	viper.BindPFlag("kubeconfig", pf.Lookup("kubeconfig"))
 	viper.BindPFlag("log-level", pf.Lookup("log-level"))
 	viper.BindPFlag("namespace", pf.Lookup("namespace"))
 	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))
 	viper.BindPFlag("apply-crd", rootCmd.PersistentFlags().Lookup("apply-crd"))
+	viper.BindPFlag("docker-image-org", pf.Lookup("docker-image-org"))
+	viper.BindPFlag("docker-image-repository", pf.Lookup("docker-image-repository"))
+	viper.BindPFlag("docker-image-tag", rootCmd.PersistentFlags().Lookup("docker-image-tag"))
 
 	argToEnv := map[string]string{
-		"kubeconfig":  "KUBECONFIG",
-		"log-level":   "LOG_LEVEL",
-		"namespace":   "NAMESPACE",
-		"max-workers": "MAX_WORKERS",
-		"apply-crd":   "APPLY_CRD",
+		"kubeconfig":              "KUBECONFIG",
+		"log-level":               "LOG_LEVEL",
+		"namespace":               "NAMESPACE",
+		"max-workers":             "MAX_WORKERS",
+		"apply-crd":               "APPLY_CRD",
+		"docker-image-org":        "DOCKER_IMAGE_ORG",
+		"docker-image-repository": "DOCKER_IMAGE_REPOSITORY",
+		"docker-image-tag":        "DOCKER_IMAGE_TAG",
 	}
 
 	// Add env variables to help

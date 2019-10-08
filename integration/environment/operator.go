@@ -7,7 +7,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" //from https://github.com/kubernetes/client-go/issues/345
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
 )
 
@@ -45,7 +45,7 @@ func (e *Environment) setupCFOperator() (manager.Manager, error) {
 		return nil, errors.Errorf("required environment variable DOCKER_IMAGE_TAG not set")
 	}
 
-	err := converter.SetupOperatorDockerImage(dockerImageOrg, dockerImageRepo, dockerImageTag)
+	err := extendedjob.SetupOperatorDockerImage(dockerImageOrg, dockerImageRepo, dockerImageTag)
 	if err != nil {
 		return nil, err
 	}

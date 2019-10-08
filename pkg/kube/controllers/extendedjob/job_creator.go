@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/names"
@@ -109,7 +108,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
 		Name:    "output-persist",
-		Image:   converter.GetOperatorDockerImage(),
+		Image:   GetOperatorDockerImage(),
 		Command: []string{"/usr/bin/dumb-init", "--"},
 		Args: []string{
 			"/bin/sh",

@@ -18,11 +18,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	"code.cloudfoundry.org/cf-operator/pkg/bosh/converter"
 	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
 	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
 
+	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
 	"code.cloudfoundry.org/quarks-job/version"
 )
@@ -60,7 +60,7 @@ var rootCmd = &cobra.Command{
 			return errors.Errorf("environment variable DOCKER_IMAGE_TAG not set")
 		}
 
-		err = converter.SetupOperatorDockerImage(
+		err = extendedjob.SetupOperatorDockerImage(
 			viper.GetString("docker-image-org"),
 			viper.GetString("docker-image-repository"),
 			dockerImageTag,

@@ -5,6 +5,8 @@ image:
   tag: v0.4.1-120.g604925f0
   pullPolicy: IfNotPresent
 
+operator:
+  watchNamespace: ""
 nameOverride: ""
 fullnameOverride: ""
 
@@ -20,5 +22,3 @@ serviceAccount:
   quarksJobServiceAccount:
     create: true
     name:
-
-provider: ""

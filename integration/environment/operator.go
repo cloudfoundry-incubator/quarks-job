@@ -28,7 +28,7 @@ func (e *Environment) StartOperator() (chan struct{}, error) {
 }
 
 func (e *Environment) setupCFOperator() (manager.Manager, error) {
-	ctx := e.SetupLoggerContext("quarks-job")
+	ctx := e.SetupLoggerContext("quarks-job-tests")
 
 	dockerImageOrg, found := os.LookupEnv("DOCKER_IMAGE_ORG")
 	if !found {

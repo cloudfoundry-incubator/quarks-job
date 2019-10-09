@@ -4,7 +4,6 @@ import (
 	"fmt"
 	golog "log"
 	"os"
-	"time"
 
 	"github.com/go-logr/zapr"
 	"github.com/pkg/errors"
@@ -18,19 +17,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	kubeConfig "code.cloudfoundry.org/cf-operator/pkg/kube/config"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
-
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
 	"code.cloudfoundry.org/quarks-job/version"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
+	kubeConfig "code.cloudfoundry.org/quarks-utils/pkg/kubeconfig"
 )
 
 var log *zap.SugaredLogger
-
-// CtxTimeOut is the default context.Context timeout
-const CtxTimeOut = 30 * time.Second
 
 func wrapError(err error, msg string) error {
 	return errors.Wrap(err, "quarks-job command failed. "+msg)
@@ -51,9 +46,12 @@ var rootCmd = &cobra.Command{
 			return wrapError(err, "Couldn't check Kubeconfig. Ensure kubeconfig is correct to continue.")
 		}
 
-		cfOperatorNamespace := viper.GetString("namespace")
-
-		log.Infof("Starting quarks-job %s with namespace %s", version.Version, cfOperatorNamespace)
+		operatorNamespace := viper.GetString("operator-namespace")
+		watchNamespace := viper.GetString("watch-namespace")
+		if watchNamespace == "" {
+			log.Infof("No watch namespace defined. Falling back to the operator namespace.")
+			watchNamespace = operatorNamespace
+		}
 
 		dockerImageTag := viper.GetString("docker-image-tag")
 		if dockerImageTag == "" {
@@ -66,18 +64,19 @@ var rootCmd = &cobra.Command{
 			dockerImageTag,
 		)
 		if err != nil {
-			return wrapError(err, "Couldn't parse cf-operator docker image reference.")
+			return wrapError(err, "Couldn't parse quarks-job docker image reference.")
 		}
 
-		cfg := &config.Config{
-			Namespace:             cfOperatorNamespace,
-			Fs:                    afero.NewOsFs(),
-			MaxExtendedJobWorkers: viper.GetInt("max-workers"),
-			ApplyCRD:              viper.GetBool("apply-crd"),
-			CtxTimeOut:            CtxTimeOut,
-			MeltdownDuration:      config.MeltdownDuration,
-			MeltdownRequeueAfter:  config.MeltdownRequeueAfter,
-		}
+		log.Infof("Starting quarks-job %s with namespace %s", version.Version, watchNamespace)
+		log.Infof("quarks-job docker image: %s", extendedjob.GetOperatorDockerImage())
+
+		cfg := config.NewJobConfig(
+			watchNamespace,
+			operatorNamespace,
+			viper.GetInt("ctx-timeout"),
+			afero.NewOsFs(),
+			viper.GetInt("max-workers"),
+		)
 		ctx := ctxlog.NewParentContext(log)
 
 		if viper.GetBool("apply-crd") {
@@ -89,7 +88,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		mgr, err := operator.NewManager(ctx, cfg, restConfig, manager.Options{
-			Namespace:          cfOperatorNamespace,
+			Namespace:          watchNamespace,
 			MetricsBindAddress: "0",
 			LeaderElection:     false,
 		})
@@ -124,32 +123,39 @@ func Execute() {
 func init() {
 	pf := rootCmd.PersistentFlags()
 
-	pf.StringP("kubeconfig", "c", "", "Path to a kubeconfig, not required in-cluster")
-	pf.StringP("log-level", "l", "debug", "Only print log messages from this level onward")
-	pf.StringP("namespace", "n", "default", "Namespace to watch")
-	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
+	pf.Bool("apply-crd", true, "If true, apply CRDs on start")
+	pf.Int("ctx-timeout", 30, "context timeout for each k8s API request in seconds")
+	pf.StringP("operator-namespace", "n", "default", "The operator namespace")
 	pf.StringP("docker-image-org", "o", "cfcontainerization", "Dockerhub organization that provides the operator docker image")
 	pf.StringP("docker-image-repository", "r", "cf-operator", "Dockerhub repository that provides the operator docker image")
 	pf.StringP("docker-image-tag", "t", "", "Tag of the operator docker image")
-	pf.Bool("apply-crd", true, "If true, apply CRDs on start")
-	viper.BindPFlag("kubeconfig", pf.Lookup("kubeconfig"))
-	viper.BindPFlag("log-level", pf.Lookup("log-level"))
-	viper.BindPFlag("namespace", pf.Lookup("namespace"))
-	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))
+	pf.StringP("kubeconfig", "c", "", "Path to a kubeconfig, not required in-cluster")
+	pf.StringP("log-level", "l", "debug", "Only print log messages from this level onward")
+	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
+	pf.StringP("watch-namespace", "", "", "Namespace to watch for BOSH deployments")
+
 	viper.BindPFlag("apply-crd", rootCmd.PersistentFlags().Lookup("apply-crd"))
+	viper.BindPFlag("ctx-timeout", pf.Lookup("ctx-timeout"))
+	viper.BindPFlag("operator-namespace", pf.Lookup("operator-namespace"))
 	viper.BindPFlag("docker-image-org", pf.Lookup("docker-image-org"))
 	viper.BindPFlag("docker-image-repository", pf.Lookup("docker-image-repository"))
 	viper.BindPFlag("docker-image-tag", rootCmd.PersistentFlags().Lookup("docker-image-tag"))
+	viper.BindPFlag("kubeconfig", pf.Lookup("kubeconfig"))
+	viper.BindPFlag("log-level", pf.Lookup("log-level"))
+	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))
+	viper.BindPFlag("watch-namespace", pf.Lookup("watch-namespace"))
 
 	argToEnv := map[string]string{
-		"kubeconfig":              "KUBECONFIG",
-		"log-level":               "LOG_LEVEL",
-		"namespace":               "NAMESPACE",
-		"max-workers":             "MAX_WORKERS",
 		"apply-crd":               "APPLY_CRD",
+		"ctx-timeout":             "CTX_TIMEOUT",
+		"operator-namespace":      "OPERATOR_NAMESPACE",
 		"docker-image-org":        "DOCKER_IMAGE_ORG",
 		"docker-image-repository": "DOCKER_IMAGE_REPOSITORY",
 		"docker-image-tag":        "DOCKER_IMAGE_TAG",
+		"kubeconfig":              "KUBECONFIG",
+		"log-level":               "LOG_LEVEL",
+		"max-workers":             "MAX_WORKERS",
+		"watch-namespace":         "WATCH_NAMESPACE",
 	}
 
 	// Add env variables to help

@@ -20,16 +20,15 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
-	vss "code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
-	helper "code.cloudfoundry.org/cf-operator/pkg/testhelper"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	. "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	"code.cloudfoundry.org/quarks-job/testing"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
+	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
+	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
 )
 
 var _ = Describe("ErrandReconciler", func() {

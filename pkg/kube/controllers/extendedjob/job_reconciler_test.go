@@ -18,28 +18,27 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
-	helper "code.cloudfoundry.org/cf-operator/pkg/testhelper"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	ej "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
 	cfakes "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	"code.cloudfoundry.org/quarks-job/testing"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
+	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
 )
 
 var _ = Describe("ReconcileExtendedJob", func() {
 	var (
-		manager      *cfakes.FakeManager
-		reconciler   reconcile.Reconciler
-		request      reconcile.Request
-		log          *zap.SugaredLogger
-		client       *cfakes.FakeClient
-		ejob         *ejv1.ExtendedJob
-		job          *batchv1.Job
-		pod1         *corev1.Pod
-		env          testing.Catalog
+		manager    *cfakes.FakeManager
+		reconciler reconcile.Reconciler
+		request    reconcile.Request
+		log        *zap.SugaredLogger
+		client     *cfakes.FakeClient
+		ejob       *ejv1.ExtendedJob
+		job        *batchv1.Job
+		pod1       *corev1.Pod
+		env        testing.Catalog
 	)
 
 	BeforeEach(func() {
@@ -103,6 +102,5 @@ var _ = Describe("ReconcileExtendedJob", func() {
 			Expect(client.DeleteCallCount()).To(Equal(0))
 		})
 
-		
 	})
 })

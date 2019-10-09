@@ -9,10 +9,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	utils "code.cloudfoundry.org/cf-operator/integration/environment"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
+	"code.cloudfoundry.org/quarks-utils/testing/machine"
 )
 
 var _ = Describe("ExtendedJob", func() {
@@ -22,8 +21,8 @@ var _ = Describe("ExtendedJob", func() {
 			Kind:               "ExtendedJob",
 			Name:               eJob.Name,
 			UID:                eJob.UID,
-			Controller:         util.Bool(true),
-			BlockOwnerDeletion: util.Bool(true),
+			Controller:         pointers.Bool(true),
+			BlockOwnerDeletion: pointers.Bool(true),
 		}
 	}
 
@@ -35,7 +34,7 @@ var _ = Describe("ExtendedJob", func() {
 
 		var (
 			ej        ejv1.ExtendedJob
-			tearDowns []utils.TearDownFunc
+			tearDowns []machine.TearDownFunc
 		)
 
 		BeforeEach(func() {
@@ -49,7 +48,7 @@ var _ = Describe("ExtendedJob", func() {
 		It("immediately starts the job", func() {
 			_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 			Expect(err).NotTo(HaveOccurred())
-			defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 			jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob), 1)
 			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from extendedjob")
@@ -60,7 +59,7 @@ var _ = Describe("ExtendedJob", func() {
 			It("cleans up job immediately", func() {
 				_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 				Expect(err).NotTo(HaveOccurred())
-				defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+				defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 				jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob), 1)
 				Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from extendedjob")
@@ -82,7 +81,7 @@ var _ = Describe("ExtendedJob", func() {
 					It("removes job's pod", func() {
 						_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 						Expect(err).NotTo(HaveOccurred())
-						defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+						defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 						jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob), 1)
 						Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from extendedjob")
@@ -103,7 +102,7 @@ var _ = Describe("ExtendedJob", func() {
 					It("keeps the job's pod", func() {
 						_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 						Expect(err).NotTo(HaveOccurred())
-						defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+						defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 						jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob), 1)
 						Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from extendedjob")
@@ -126,7 +125,7 @@ var _ = Describe("ExtendedJob", func() {
 			It("cleans it up when the ExtendedJob is deleted", func() {
 				_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 				Expect(err).NotTo(HaveOccurred())
-				defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+				defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 				jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob), 1)
 				Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from extendedjob")
@@ -145,7 +144,7 @@ var _ = Describe("ExtendedJob", func() {
 			var (
 				configMap  corev1.ConfigMap
 				secret     corev1.Secret
-				tearDownEJ utils.TearDownFunc
+				tearDownEJ machine.TearDownFunc
 			)
 
 			BeforeEach(func() {
@@ -197,7 +196,7 @@ var _ = Describe("ExtendedJob", func() {
 			var (
 				configMap  corev1.ConfigMap
 				secret     corev1.Secret
-				tearDownEJ utils.TearDownFunc
+				tearDownEJ machine.TearDownFunc
 			)
 
 			BeforeEach(func() {
@@ -228,8 +227,8 @@ var _ = Describe("ExtendedJob", func() {
 			var (
 				configMap  corev1.ConfigMap
 				secret     corev1.Secret
-				tearDownEJ utils.TearDownFunc
-				tearDown   utils.TearDownFunc
+				tearDownEJ machine.TearDownFunc
+				tearDown   machine.TearDownFunc
 			)
 
 			BeforeEach(func() {
@@ -252,13 +251,13 @@ var _ = Describe("ExtendedJob", func() {
 				})
 
 				It("the job starts", func() {
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDownEJ)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDownEJ)
 
 					By("creating the config map")
 					tearDown, err := env.CreateConfigMap(env.Namespace, configMap)
 					Expect(err).ToNot(HaveOccurred())
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 					By("waiting for the job to start")
 					_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob))
@@ -277,13 +276,13 @@ var _ = Describe("ExtendedJob", func() {
 				})
 
 				It("the job starts", func() {
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDownEJ)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDownEJ)
 
 					By("creating the secret")
 					tearDown, err := env.CreateSecret(env.Namespace, secret)
 					Expect(err).ToNot(HaveOccurred())
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 					By("waiting for the job to start")
 					_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob))
@@ -299,16 +298,16 @@ var _ = Describe("ExtendedJob", func() {
 				})
 
 				It("the job starts", func() {
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDownEJ)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDownEJ)
 
 					By("creating the configs")
 					tearDown, err := env.CreateSecret(env.Namespace, secret)
 					Expect(err).ToNot(HaveOccurred())
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 					tearDown, err = env.CreateConfigMap(env.Namespace, configMap)
 					Expect(err).ToNot(HaveOccurred())
-					defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 					By("waiting for the job to start")
 					_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob))
@@ -326,7 +325,7 @@ var _ = Describe("ExtendedJob", func() {
 			ej.Spec.Trigger.Strategy = ejv1.TriggerManual
 			_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 			Expect(err).NotTo(HaveOccurred())
-			defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 			exists, err := env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob))
 			Expect(err).NotTo(HaveOccurred())
@@ -348,7 +347,7 @@ var _ = Describe("ExtendedJob", func() {
 			ej := env.ErrandExtendedJob("extendedjob")
 			_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 			Expect(err).NotTo(HaveOccurred())
-			defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 			jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", ejv1.LabelExtendedJob), 1)
 			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from extendedjob")
@@ -360,7 +359,7 @@ var _ = Describe("ExtendedJob", func() {
 			ej.Spec.Trigger.Strategy = ejv1.TriggerManual
 			_, tearDown, err := env.CreateExtendedJob(env.Namespace, ej)
 			Expect(err).NotTo(HaveOccurred())
-			defer func(tdf utils.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 			latest, err := env.GetExtendedJob(env.Namespace, ej.Name)
 			Expect(err).NotTo(HaveOccurred())

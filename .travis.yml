@@ -35,7 +35,7 @@ jobs:
         - export USE_KIND="true"
 
         # Set CF-OPERATER Docker Image Tag
-        - export DOCKER_IMAGE_TAG="v0.4.1-120.g604925f0"
+        - export DOCKER_IMAGE_TAG="v0.4.2-0.g604925f0"
 
         # Download and install helm
         - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh

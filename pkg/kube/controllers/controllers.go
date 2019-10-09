@@ -6,10 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 )
 
 // Theses funcs construct controllers and add them to the controller-runtime

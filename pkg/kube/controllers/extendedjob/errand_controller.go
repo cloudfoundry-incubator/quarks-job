@@ -17,13 +17,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/config"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/names"
-	vss "code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-utils/pkg/reference"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
+	"code.cloudfoundry.org/quarks-utils/pkg/names"
+	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
 // AddErrand creates a new ExtendedJob controller to start errands, when their

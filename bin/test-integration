@@ -11,7 +11,7 @@ if [ -z ${TEST_NAMESPACE+x} ]; then
 fi
 
 : "${CF_OPERATOR_TESTING_TMP:=/tmp}"
-echo "Test logs are here: ${CF_OPERATOR_TESTING_TMP}/cf-operator-tests.log"
+echo "Test logs are here: ${CF_OPERATOR_TESTING_TMP}/quarks-job-tests.log"
 setup_testing_tmp
 trap cleanup_testing_tmp EXIT
 

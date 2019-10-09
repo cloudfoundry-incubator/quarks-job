@@ -10,10 +10,9 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	utils "code.cloudfoundry.org/cf-operator/integration/environment"
-
 	"code.cloudfoundry.org/quarks-job/integration/environment"
 	cmdHelper "code.cloudfoundry.org/quarks-utils/testing"
+	utils "code.cloudfoundry.org/quarks-utils/testing/integration"
 )
 
 func TestIntegration(t *testing.T) {
@@ -35,7 +34,7 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 	}
 
 	// Ginkgo node 1 gets to setup the CRDs
-	err = utils.ApplyCRDs(kubeConfig)
+	err = environment.ApplyCRDs(kubeConfig)
 	if err != nil {
 		fmt.Printf("WARNING: failed to apply CRDs: %v\n", err)
 	}
@@ -52,16 +51,16 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = BeforeEach(func() {
 	env = environment.NewEnvironment(kubeConfig)
 
-	err := env.SetupNamespace()
+	err := env.SetupClientsets()
+	if err != nil {
+		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+	}
+
+	err = env.SetupNamespace()
 	if err != nil {
 		fmt.Printf("WARNING: failed to setup namespace %s: %v\n", env.Namespace, err)
 	}
 	namespacesToNuke = append(namespacesToNuke, env.Namespace)
-
-	err = env.SetupClientsets()
-	if err != nil {
-		gomega.Expect(err).NotTo(gomega.HaveOccurred())
-	}
 
 	env.Stop, err = env.StartOperator()
 	if err != nil {

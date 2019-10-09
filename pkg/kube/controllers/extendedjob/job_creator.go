@@ -15,13 +15,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/ctxlog"
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util/names"
-	vss "code.cloudfoundry.org/cf-operator/pkg/kube/util/versionedsecretstore"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-utils/pkg/reference"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
+	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
+	"code.cloudfoundry.org/quarks-utils/pkg/names"
+	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
+	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
 const (
@@ -201,7 +200,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		return false, errors.Wrapf(err, "could not generate job name for eJob '%s'", eJob.Name)
 	}
 
-	backoffLimit := util.Int32(2)
+	backoffLimit := pointers.Int32(2)
 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{

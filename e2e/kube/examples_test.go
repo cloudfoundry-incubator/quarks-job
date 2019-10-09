@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"path"
 
-	"code.cloudfoundry.org/cf-operator/testing"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	"code.cloudfoundry.org/quarks-utils/testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

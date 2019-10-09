@@ -33,6 +33,7 @@ var _ = Describe("CLI", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session.Out).Should(Say(`Flags:
       --apply-crd                        \(APPLY_CRD\) If true, apply CRDs on start \(default true\)
+      --ctx-timeout int                  \(CTX_TIMEOUT\) context timeout for each k8s API request in seconds \(default 30\)
   -o, --docker-image-org string          \(DOCKER_IMAGE_ORG\) Dockerhub organization that provides the operator docker image \(default "cfcontainerization"\)
   -r, --docker-image-repository string   \(DOCKER_IMAGE_REPOSITORY\) Dockerhub repository that provides the operator docker image \(default "cf-operator"\)
   -t, --docker-image-tag string          \(DOCKER_IMAGE_TAG\) Tag of the operator docker image
@@ -40,7 +41,9 @@ var _ = Describe("CLI", func() {
   -c, --kubeconfig string                \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
   -l, --log-level string                 \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
       --max-workers int                  \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
-  -n, --namespace string                 \(NAMESPACE\) Namespace to watch \(default "default"\)
+  -n, --operator-namespace string        \(OPERATOR_NAMESPACE\) The operator namespace \(default "default"\)
+      --watch-namespace string           \(WATCH_NAMESPACE\) Namespace to watch for BOSH deployments
+
 `))
 		})
 
@@ -67,11 +70,11 @@ var _ = Describe("CLI", func() {
 		Context("when specifying namespace", func() {
 			Context("via environment variables", func() {
 				BeforeEach(func() {
-					os.Setenv("NAMESPACE", "env-test")
+					os.Setenv("OPERATOR_NAMESPACE", "env-test")
 				})
 
 				AfterEach(func() {
-					os.Setenv("NAMESPACE", "")
+					os.Setenv("OPERATOR_NAMESPACE", "")
 				})
 
 				It("should start for namespace", func() {
@@ -83,7 +86,7 @@ var _ = Describe("CLI", func() {
 
 			Context("via using switches", func() {
 				It("should start for namespace", func() {
-					session, err := act("--namespace", "switch-test")
+					session, err := act("--operator-namespace", "switch-test")
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(session.Err).Should(Say(`Starting quarks-job \d+\.\d+\.\d+ with namespace switch-test`))
 				})

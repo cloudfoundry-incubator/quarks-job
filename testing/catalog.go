@@ -4,22 +4,13 @@
 package testing
 
 import (
-	"context"
-
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"code.cloudfoundry.org/cf-operator/pkg/kube/util"
-
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
 )
-
-// NewContext returns a non-nil empty context, for usage when it is unclear
-// which context to use.  Mostly used in tests.
-func NewContext() context.Context {
-	return context.TODO()
-}
 
 // Catalog provides several instances for tests
 type Catalog struct{}
@@ -47,7 +38,7 @@ func (c *Catalog) DefaultSecret(name string) corev1.Secret {
 // Sleep1hPodSpec defines a simple pod that sleeps 60*60s for testing
 func (c *Catalog) Sleep1hPodSpec() corev1.PodSpec {
 	return corev1.PodSpec{
-		TerminationGracePeriodSeconds: util.Int64(1),
+		TerminationGracePeriodSeconds: pointers.Int64(1),
 		Containers: []corev1.Container{
 			{
 				Name:    "busybox",
@@ -119,7 +110,7 @@ func (c *Catalog) FailingMultiContainerPodTemplate(cmd []string) corev1.PodTempl
 	return corev1.PodTemplateSpec{
 		Spec: corev1.PodSpec{
 			RestartPolicy:                 corev1.RestartPolicyNever,
-			TerminationGracePeriodSeconds: util.Int64(1),
+			TerminationGracePeriodSeconds: pointers.Int64(1),
 			Containers: []corev1.Container{
 				{
 					Name:    "busybox",
@@ -141,7 +132,7 @@ func (c *Catalog) CmdPodTemplate(cmd []string) corev1.PodTemplateSpec {
 	return corev1.PodTemplateSpec{
 		Spec: corev1.PodSpec{
 			RestartPolicy:                 corev1.RestartPolicyNever,
-			TerminationGracePeriodSeconds: util.Int64(1),
+			TerminationGracePeriodSeconds: pointers.Int64(1),
 			Containers: []corev1.Container{
 				{
 					Name:    "busybox",
@@ -175,7 +166,7 @@ func (c *Catalog) DefaultExtendedJob(name string) *ejv1.ExtendedJob {
 // DefaultExtendedJobWithSucceededJob returns an ExtendedJob and a Job owned by it
 func (c *Catalog) DefaultExtendedJobWithSucceededJob(name string) (*ejv1.ExtendedJob, *batchv1.Job, *corev1.Pod) {
 	ejob := c.DefaultExtendedJob(name)
-	backoffLimit := util.Int32(2)
+	backoffLimit := pointers.Int32(2)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name + "-job",
@@ -183,7 +174,7 @@ func (c *Catalog) DefaultExtendedJobWithSucceededJob(name string) (*ejv1.Extende
 				{
 					Name:       name,
 					UID:        "",
-					Controller: util.Bool(true),
+					Controller: pointers.Bool(true),
 				},
 			},
 		},

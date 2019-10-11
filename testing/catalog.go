@@ -105,6 +105,28 @@ func (c *Catalog) ConfigPodTemplate() corev1.PodTemplateSpec {
 	}
 }
 
+// ExJobPodTemplate returns the spec with a given output-persist container
+func (c *Catalog) ExJobPodTemplate(cmd []string) corev1.PodTemplateSpec {
+	return corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: pointers.Int64(1),
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: cmd,
+				},
+				{
+					Name:    "output-persist",
+					Image:   "busybox",
+					Command: cmd,
+				},
+			},
+		},
+	}
+}
+
 // FailingMultiContainerPodTemplate returns a spec with a given command for busybox and a second container which fails
 func (c *Catalog) FailingMultiContainerPodTemplate(cmd []string) corev1.PodTemplateSpec {
 	return corev1.PodTemplateSpec{
@@ -158,7 +180,36 @@ func (c *Catalog) DefaultExtendedJob(name string) *ejv1.ExtendedJob {
 			Trigger: ejv1.Trigger{
 				Strategy: ejv1.TriggerNow,
 			},
-			Template: c.CmdPodTemplate(cmd),
+			Template: c.ExJobPodTemplate(cmd),
+		},
+	}
+}
+
+// DefaultExJobPod defines a pod with a simple web server and with a output-persist container
+func (c *Catalog) DefaultExJobPod(name string) corev1.Pod {
+	return corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: c.Sleep1hExJobPodSpec(),
+	}
+}
+
+// Sleep1hExJobPodSpec defines a simple pod that sleeps 60*60s for testing with a output-persist container
+func (c *Catalog) Sleep1hExJobPodSpec() corev1.PodSpec {
+	return corev1.PodSpec{
+		TerminationGracePeriodSeconds: pointers.Int64(1),
+		Containers: []corev1.Container{
+			{
+				Name:    "busybox",
+				Image:   "busybox",
+				Command: []string{"sleep", "3600"},
+			},
+			{
+				Name:    "output-persist",
+				Image:   "busybox",
+				Command: []string{"sleep", "3600"},
+			},
 		},
 	}
 }
@@ -181,7 +232,7 @@ func (c *Catalog) DefaultExtendedJobWithSucceededJob(name string) (*ejv1.Extende
 		Spec:   batchv1.JobSpec{BackoffLimit: backoffLimit},
 		Status: batchv1.JobStatus{Succeeded: 1},
 	}
-	pod := c.DefaultPod(name + "-pod")
+	pod := c.DefaultExJobPod(name + "-pod")
 	pod.Labels = map[string]string{
 		"job-name": job.GetName(),
 	}

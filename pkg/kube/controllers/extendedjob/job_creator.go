@@ -109,9 +109,10 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	image = strings.Replace(image, "quarks-job", "cf-operator", 1)
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
-		Name:    "output-persist",
-		Image:   image,
-		Command: []string{"/usr/bin/dumb-init", "--"},
+		Name:            "output-persist",
+		Image:           image,
+		ImagePullPolicy: GetOperatorImagePullPolicy(),
+		Command:         []string{"/usr/bin/dumb-init", "--"},
 		Args: []string{
 			"/bin/sh",
 			"-xc",

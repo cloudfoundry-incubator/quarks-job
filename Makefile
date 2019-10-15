@@ -10,3 +10,6 @@ test-cluster:
 
 lint:
 	bin/lint
+
+gen-command-docs:
+	go run cmd/docs/gen-command-docs.go

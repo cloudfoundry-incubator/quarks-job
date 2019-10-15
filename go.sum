@@ -1,6 +1,6 @@
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
-code.cloudfoundry.org/quarks-utils v0.0.0-20191014181026-684f43d7182c h1:hl2BH7SpjOBo5fPrrqadFeH/q66mcj+LxjxAkhbbdM0=
-code.cloudfoundry.org/quarks-utils v0.0.0-20191014181026-684f43d7182c/go.mod h1:H6fVNegFsTZqOU2Cggvue8X5vfAdeGDKemikmwc7RBc=
+code.cloudfoundry.org/quarks-utils v0.0.0-20191015123549-39fc1d311d7c h1:NW6/Lq7ErwKjndFumwYU1JG1GHlqT5QxYbE3ki/jukk=
+code.cloudfoundry.org/quarks-utils v0.0.0-20191015123549-39fc1d311d7c/go.mod h1:H6fVNegFsTZqOU2Cggvue8X5vfAdeGDKemikmwc7RBc=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/NYTimes/gziphandler v0.0.0-20170623195520-56545f4a5d46/go.mod h1:3wb06e3pkSAbeQ52E9H9iFoQsEEwGN64994WTCIhntQ=

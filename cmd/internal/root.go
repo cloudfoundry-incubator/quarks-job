@@ -81,8 +81,8 @@ var rootCmd = &cobra.Command{
 	TraverseChildren: true,
 }
 
-// NewCFOperatorCommand returns the `quarks-job` command.
-func NewCFOperatorCommand() *cobra.Command {
+// NewOperatorCommand returns the `quarks-job` command.
+func NewOperatorCommand() *cobra.Command {
 	return rootCmd
 }
 

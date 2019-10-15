@@ -22,7 +22,7 @@ func GetSecretsReferencedBy(ctx context.Context, client crc.Client, object inter
 }
 
 func getSecretRefFromEJob(object ejv1.ExtendedJob) map[string]bool {
-	return getSecretRefFromPod(object.Spec.Template.Spec)
+	return getSecretRefFromPod(object.Spec.Template.Spec.Template.Spec)
 }
 
 func getSecretRefFromPod(object corev1.PodSpec) map[string]bool {

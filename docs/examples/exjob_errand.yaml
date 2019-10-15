@@ -4,14 +4,17 @@ metadata:
   name: manual-sleep
 spec:
   template:
+    backoffLimit: 2
     spec:
-      containers:
-      - command:
-        - sleep
-        - "15"
-        image: busybox
-        name: busybox
-      restartPolicy: Never
-      terminationGracePeriodSeconds: 1
+      template:
+        spec:
+          containers:
+          - command:
+            - sleep
+            - "15"
+            image: busybox
+            name: busybox
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 1
   trigger:
     strategy: manual

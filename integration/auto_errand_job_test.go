@@ -61,7 +61,7 @@ var _ = Describe("AutoErrandJob", func() {
 			Context("when pod template has delete label", func() {
 				Context("when delete is set to pod", func() {
 					BeforeEach(func() {
-						ej.Spec.Template.Labels = map[string]string{"delete": "pod"}
+						ej.Spec.Template.Spec.Template.Labels = map[string]string{"delete": "pod"}
 					})
 
 					It("removes job's pod", func() {
@@ -105,7 +105,7 @@ var _ = Describe("AutoErrandJob", func() {
 
 		Context("when the job failed", func() {
 			BeforeEach(func() {
-				ej.Spec.Template = env.FailingMultiContainerPodTemplate([]string{"echo", "{}"})
+				ej.Spec.Template = env.FailingMultiContainerJobTemplate([]string{"echo", "{}"})
 			})
 
 			It("cleans it up when the ExtendedJob is deleted", func() {
@@ -135,7 +135,7 @@ var _ = Describe("AutoErrandJob", func() {
 
 			BeforeEach(func() {
 				ej.Spec.UpdateOnConfigChange = true
-				ej.Spec.Template = env.ConfigPodTemplate()
+				ej.Spec.Template = env.ConfigJobTemplate()
 
 				configMap = env.DefaultConfigMap("config1")
 				secret = env.DefaultSecret("secret1")
@@ -187,7 +187,7 @@ var _ = Describe("AutoErrandJob", func() {
 
 			BeforeEach(func() {
 				ej.Spec.UpdateOnConfigChange = false
-				ej.Spec.Template = env.ConfigPodTemplate()
+				ej.Spec.Template = env.ConfigJobTemplate()
 
 				configMap = env.DefaultConfigMap("config1")
 				secret = env.DefaultSecret("secret1")
@@ -219,7 +219,7 @@ var _ = Describe("AutoErrandJob", func() {
 
 			BeforeEach(func() {
 				ej.Spec.UpdateOnConfigChange = true
-				ej.Spec.Template = env.ConfigPodTemplate()
+				ej.Spec.Template = env.ConfigJobTemplate()
 
 				configMap = env.DefaultConfigMap("config1")
 				secret = env.DefaultSecret("secret1")

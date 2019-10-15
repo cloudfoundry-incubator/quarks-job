@@ -5,13 +5,16 @@ metadata:
 spec:
   template:
     spec:
-      containers:
-      - command:
-        - sleep
-        - "15"
-        image: busybox
-        name: busybox
-      restartPolicy: Never
-      terminationGracePeriodSeconds: 1
+      backoffLimit: 2
+      template:
+        spec:
+          containers:
+          - command:
+            - sleep
+            - "15"
+            image: busybox
+            name: busybox
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 1
   trigger:
     strategy: once

@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
+	bacthv1 "k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/apis"
@@ -34,10 +34,10 @@ var (
 
 // ExtendedJobSpec defines the desired state of ExtendedJob
 type ExtendedJobSpec struct {
-	Output               *Output                `json:"output,omitempty"`
-	Trigger              Trigger                `json:"trigger"`
-	Template             corev1.PodTemplateSpec `json:"template"`
-	UpdateOnConfigChange bool                   `json:"updateOnConfigChange"`
+	Output               *Output                 `json:"output,omitempty"`
+	Trigger              Trigger                 `json:"trigger"`
+	Template             bacthv1.JobTemplateSpec `json:"template"`
+	UpdateOnConfigChange bool                    `json:"updateOnConfigChange"`
 }
 
 // Strategy describes the trigger strategy

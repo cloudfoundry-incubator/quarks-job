@@ -257,7 +257,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
 					eJob = env.AutoErrandExtendedJob("fake-pod")
-					eJob.Spec.Template = env.ConfigPodTemplate()
+					eJob.Spec.Template = env.ConfigJobTemplate()
 					eJob.Spec.UpdateOnConfigChange = true
 					eJob.Spec.Trigger.Strategy = ejv1.TriggerOnce
 					client = fakes.FakeClient{}

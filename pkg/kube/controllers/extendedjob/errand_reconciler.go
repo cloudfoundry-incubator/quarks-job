@@ -99,7 +99,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	r.injectContainerEnv(&eJob.Spec.Template.Spec)
+	r.injectContainerEnv(&eJob.Spec.Template.Spec.Template.Spec)
 	if retry, err := r.jobCreator.Create(ctx, *eJob, request.Namespace); err != nil {
 		return reconcile.Result{}, ctxlog.WithEvent(eJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", eJob.Name, err)
 	} else if retry {

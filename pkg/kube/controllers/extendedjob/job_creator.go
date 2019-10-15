@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
@@ -106,22 +105,16 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		}
 	}
 
-	image := config.GetOperatorDockerImage()
-	image = strings.Replace(image, "quarks-job", "cf-operator", 1)
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
 		Name:            "output-persist",
-		Image:           image,
+		Image:           config.GetOperatorDockerImage(),
 		ImagePullPolicy: config.GetOperatorImagePullPolicy(),
-		Command:         []string{"/usr/bin/dumb-init", "--"},
-		Args: []string{
-			"/bin/sh",
-			"-xc",
-			"cf-operator util persist-output",
-		},
+		Command:         []string{"/usr/local/bin/quarks-job"},
+		Args:            []string{"persist-output"},
 		Env: []corev1.EnvVar{
 			{
-				Name:  EnvCFONamespace,
+				Name:  EnvNamespace,
 				Value: namespace,
 			},
 		},

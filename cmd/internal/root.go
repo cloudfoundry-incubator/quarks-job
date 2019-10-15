@@ -23,6 +23,8 @@ import (
 
 var log *zap.SugaredLogger
 
+const namespaceArg = "operator-namespace"
+
 func wrapError(err error, msg string) error {
 	return errors.Wrap(err, "quarks-job command failed. "+msg)
 }
@@ -41,7 +43,7 @@ var rootCmd = &cobra.Command{
 
 		cfg := config.NewDefaultConfig(afero.NewOsFs())
 
-		watchNamespace := cmd.Namespaces(cfg, log)
+		watchNamespace := cmd.Namespaces(cfg, log, namespaceArg)
 		log.Infof("Starting quarks-job %s with namespace %s", version.Version, watchNamespace)
 
 		err = cmd.DockerImage()
@@ -102,7 +104,7 @@ func init() {
 	cmd.CtxTimeOutFlags(pf, argToEnv)
 	cmd.KubeConfigFlags(pf, argToEnv)
 	cmd.LoggerFlags(pf, argToEnv)
-	cmd.NamespacesFlags(pf, argToEnv)
+	cmd.NamespacesFlags(pf, argToEnv, namespaceArg)
 	cmd.DockerImageFlags(pf, argToEnv)
 	cmd.ApplyCRDsFlags(pf, argToEnv)
 

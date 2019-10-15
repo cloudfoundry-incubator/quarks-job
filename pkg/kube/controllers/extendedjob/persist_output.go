@@ -227,7 +227,11 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 		// Use secretName as versioned secret name prefix: <secretName>-v<version>
 		err = po.CreateVersionSecret(exjob, outputContainer, secretName, data, "created by extendedjob")
 		if err != nil {
-			return errors.Wrapf(err, "could not persist ejob's %s output to a secret", exjob.GetName())
+			if versionedsecretstore.IsSecretIdenticalError(err) {
+				// No-op. the latest version is identical to the one we have
+			} else {
+				return errors.Wrapf(err, "could not persist ejob's %s output to a secret", exjob.GetName())
+			}
 		}
 	} else {
 		secretLabels := exjob.Spec.Output.SecretLabels

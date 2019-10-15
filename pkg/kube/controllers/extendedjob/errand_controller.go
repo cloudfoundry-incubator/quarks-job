@@ -178,8 +178,8 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 
 // hasConfigsChanged return true if object's config references changed
 func hasConfigsChanged(oldEJob, newEJob *ejv1.ExtendedJob) bool {
-	oldConfigMaps, oldSecrets := vss.GetConfigNamesFromSpec(oldEJob.Spec.Template.Spec)
-	newConfigMaps, newSecrets := vss.GetConfigNamesFromSpec(newEJob.Spec.Template.Spec)
+	oldConfigMaps, oldSecrets := vss.GetConfigNamesFromSpec(oldEJob.Spec.Template.Spec.Template.Spec)
+	newConfigMaps, newSecrets := vss.GetConfigNamesFromSpec(newEJob.Spec.Template.Spec.Template.Spec)
 
 	if reflect.DeepEqual(oldConfigMaps, newConfigMaps) && reflect.DeepEqual(oldSecrets, newSecrets) {
 		return false

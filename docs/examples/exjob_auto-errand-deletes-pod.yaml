@@ -4,17 +4,20 @@ metadata:
   name: deletes-pod-1
 spec:
   template:
-    metadata:
-      labels:
-        delete: pod
+    backoffLimit: 2
     spec:
-      containers:
-      - command:
-        - sleep
-        - "5"
-        image: busybox
-        name: busybox
-      restartPolicy: Never
-      terminationGracePeriodSeconds: 1
+      template:
+        metadata:
+          labels:
+            delete: pod
+        spec:
+          containers:
+          - command:
+            - sleep
+            - "5"
+            image: busybox
+            name: busybox
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 1
   trigger:
     strategy: once

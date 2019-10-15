@@ -1,6 +1,7 @@
 package extendedjob
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,7 +9,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"gopkg.in/fsnotify.v1"
@@ -22,7 +22,6 @@ import (
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
 	podutil "code.cloudfoundry.org/quarks-utils/pkg/pod"
-	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
@@ -266,12 +265,6 @@ func (po *PersistOutputInterface) CreateVersionSecret(exjob *ejv1.ExtendedJob, o
 	ownerName := exjob.GetName()
 	ownerID := exjob.GetUID()
 
-	currentVersion, err := getGreatestVersion(po.clientSet, po.namespace, secretName)
-	if err != nil {
-		return err
-	}
-
-	version := currentVersion + 1
 	secretLabels := exjob.Spec.Output.SecretLabels
 	if secretLabels == nil {
 		secretLabels = map[string]string{}
@@ -280,38 +273,10 @@ func (po *PersistOutputInterface) CreateVersionSecret(exjob *ejv1.ExtendedJob, o
 	if ig, ok := podutil.LookupEnv(outputContainer.Env, EnvInstanceGroupName); ok {
 		secretLabels[ejv1.LabelInstanceGroup] = ig
 	}
-	secretLabels[versionedsecretstore.LabelVersion] = strconv.Itoa(version)
-	secretLabels[versionedsecretstore.LabelSecretKind] = versionedsecretstore.VersionSecretKind
 
-	generatedSecretName, err := versionedsecretstore.GenerateSecretName(secretName, version)
-	if err != nil {
-		return err
-	}
+	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
+	return store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
 
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      generatedSecretName,
-			Namespace: po.namespace,
-			Labels:    secretLabels,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion:         versionedsecretstore.LabelAPIVersion,
-					Kind:               "ExtendedJob",
-					Name:               ownerName,
-					UID:                ownerID,
-					BlockOwnerDeletion: pointers.Bool(false),
-					Controller:         pointers.Bool(true),
-				},
-			},
-			Annotations: map[string]string{
-				versionedsecretstore.AnnotationSourceDescription: sourceDescription,
-			},
-		},
-		StringData: secretData,
-	}
-
-	_, err = po.clientSet.CoreV1().Secrets(po.namespace).Create(secret)
-	return err
 }
 
 func getGreatestVersion(clientSet kubernetes.Interface, namespace string, secretName string) (int, error) {

@@ -4,6 +4,7 @@ set -eu
 GIT_ROOT="${GIT_ROOT:-$(git rev-parse --show-toplevel)}"
 . "${GIT_ROOT}/bin/include/versioning"
 . "${GIT_ROOT}/bin/include/testing"
+. "${GIT_ROOT}/bin/include/docker"
 
 if [ -z ${TEST_NAMESPACE+x} ]; then
   TEST_NAMESPACE="test$(date +%s)"

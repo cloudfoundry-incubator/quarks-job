@@ -28,14 +28,12 @@ const (
 	EnvBoshAz = "BOSH_AZ"
 	// EnvReplicas describes the number of replicas in the ExtendedStatefulSet
 	EnvReplicas = "REPLICAS"
-	// EnvCfOperatorAz is set by available zone name
-	EnvCfOperatorAz = "CF_OPERATOR_AZ"
 	// EnvCFOperatorAZIndex is set by available zone index
 	EnvCFOperatorAZIndex = "AZ_INDEX"
 	// EnvPodOrdinal is the pod's index
 	EnvPodOrdinal = "POD_ORDINAL"
-	// EnvCFONamespace is the namespace in which cf-operator runs
-	EnvCFONamespace = "CF_OPERATOR_NAMESPACE"
+	// EnvNamespace is the namespace in which cf-operator runs
+	EnvNamespace = "OPERATOR_NAMESPACE"
 )
 
 // NewErrandReconciler returns a new reconciler for errand jobs.

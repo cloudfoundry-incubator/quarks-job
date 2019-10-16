@@ -110,8 +110,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		Name:            "output-persist",
 		Image:           config.GetOperatorDockerImage(),
 		ImagePullPolicy: config.GetOperatorImagePullPolicy(),
-		Command:         []string{"/usr/local/bin/quarks-job"},
-		Args:            []string{"persist-output"},
+		Args:            []string{"quarks-job", "persist-output"},
 		Env: []corev1.EnvVar{
 			{
 				Name:  EnvNamespace,

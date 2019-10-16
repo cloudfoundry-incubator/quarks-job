@@ -234,9 +234,9 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 			}
 		}
 	} else {
-		secretLabels := exjob.Spec.Output.SecretLabels
-		if secretLabels == nil {
-			secretLabels = map[string]string{}
+		secretLabels := map[string]string{}
+		for k, v := range exjob.Spec.Output.SecretLabels {
+			secretLabels[k] = v
 		}
 		secretLabels[ejv1.LabelPersistentSecretContainer] = outputContainer.Name
 		if ig, ok := podutil.LookupEnv(outputContainer.Env, EnvInstanceGroupName); ok {
@@ -269,9 +269,9 @@ func (po *PersistOutputInterface) CreateVersionSecret(exjob *ejv1.ExtendedJob, o
 	ownerName := exjob.GetName()
 	ownerID := exjob.GetUID()
 
-	secretLabels := exjob.Spec.Output.SecretLabels
-	if secretLabels == nil {
-		secretLabels = map[string]string{}
+	secretLabels := map[string]string{}
+	for k, v := range exjob.Spec.Output.SecretLabels {
+		secretLabels[k] = v
 	}
 	secretLabels[ejv1.LabelPersistentSecretContainer] = outputContainer.Name
 	if ig, ok := podutil.LookupEnv(outputContainer.Env, EnvInstanceGroupName); ok {
@@ -280,7 +280,6 @@ func (po *PersistOutputInterface) CreateVersionSecret(exjob *ejv1.ExtendedJob, o
 
 	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
 	return store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
-
 }
 
 func getGreatestVersion(clientSet kubernetes.Interface, namespace string, secretName string) (int, error) {

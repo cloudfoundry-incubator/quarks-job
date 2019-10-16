@@ -15,9 +15,10 @@ COPY . .
 RUN bin/build && \
     cp -p binaries/quarks-job /usr/local/bin/quarks-job
 
-FROM opensuse/leap:15.1
+FROM cfcontainerization/cf-operator-base
 RUN groupadd -g 1000 quarks && \
     useradd -r -u 1000 -g quarks quarks
 USER quarks
 COPY --from=build /usr/local/bin/quarks-job /usr/local/bin/quarks-job
-ENTRYPOINT ["/usr/local/bin/quarks-job"]
+ENTRYPOINT ["/tini", "--"]
+CMD ["/usr/local/bin/quarks-job"]

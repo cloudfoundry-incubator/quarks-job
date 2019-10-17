@@ -37,7 +37,7 @@ func (e *Environment) setupOperator() (manager.Manager, error) {
 
 	dockerImageRepo, found := os.LookupEnv("DOCKER_IMAGE_REPOSITORY")
 	if !found {
-		dockerImageRepo = "quarks-job"
+		dockerImageRepo = "cf-operator"
 	}
 
 	dockerImageTag, found := os.LookupEnv("DOCKER_IMAGE_TAG")

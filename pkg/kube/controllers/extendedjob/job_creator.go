@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
@@ -18,6 +17,7 @@ import (
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
@@ -105,21 +105,15 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		}
 	}
 
-	image := GetOperatorDockerImage()
-	image = strings.Replace(image, "quarks-job", "cf-operator", 1)
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
-		Name:    "output-persist",
-		Image:   image,
-		Command: []string{"/usr/bin/dumb-init", "--"},
-		Args: []string{
-			"/bin/sh",
-			"-xc",
-			"cf-operator util persist-output",
-		},
+		Name:            "output-persist",
+		Image:           config.GetOperatorDockerImage(),
+		ImagePullPolicy: config.GetOperatorImagePullPolicy(),
+		Args:            []string{"quarks-job", "persist-output"},
 		Env: []corev1.EnvVar{
 			{
-				Name:  EnvCFONamespace,
+				Name:  EnvNamespace,
 				Value: namespace,
 			},
 		},

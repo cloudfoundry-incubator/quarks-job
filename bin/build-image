@@ -4,16 +4,7 @@ set -o errexit
 
 GIT_ROOT="${GIT_ROOT:-$(git rev-parse --show-toplevel)}"
 . "${GIT_ROOT}/bin/include/versioning"
-
-if [ -z ${DOCKER_IMAGE_ORG+x} ]; then
-  DOCKER_IMAGE_ORG="cfcontainerization"
-  export DOCKER_IMAGE_ORG
-fi
-
-if [ -z ${DOCKER_IMAGE_TAG+x} ]; then
-  DOCKER_IMAGE_TAG=${VERSION_TAG}
-  export DOCKER_IMAGE_TAG
-fi
+. "${GIT_ROOT}/bin/include/docker"
 
 image="${DOCKER_IMAGE_ORG}/quarks-job:${DOCKER_IMAGE_TAG}"
 

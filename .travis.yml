@@ -77,9 +77,25 @@ jobs:
       if: branch = master
       script:
         - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-        - git describe --tags --long || git tag v0.0.0 # Make sure there's always a tag that can be used for building the version
         - . bin/include/versioning
         - DOCKER_IMAGE_TAG="${VERSION_TAG}"
         - image="${DOCKER_IMAGE_ORG}/quarks-job:${DOCKER_IMAGE_TAG}"
         - make build-image
         - docker push "$image"
+
+    - stage: Publishing helm chart
+      if: branch = master
+      script:
+        - . bin/include/versioning
+        - ./bin/build-helm
+        - mkdir helm-charts
+        - cp helm/quarks-job*.tgz helm-charts/
+      deploy:
+        provider: s3
+        access_key_id: "${AWS_ACCESS_KEY}"
+        secret_access_key: "${AWS_SECRET_KEY}"
+        bucket: "${S3_BUCKET}"
+        acl: public_read
+        skip_cleanup: true
+        local_dir: helm-charts
+        upload_dir: helm-charts

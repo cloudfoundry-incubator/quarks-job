@@ -77,13 +77,8 @@ jobs:
       if: branch = master
       deploy:
         provider: script
-        before_deploy:
-          - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-          - . bin/include/versioning
-          - DOCKER_IMAGE_TAG="${VERSION_TAG}"
-          - image="${DOCKER_IMAGE_ORG}/quarks-job:${DOCKER_IMAGE_TAG}"
-          - make build-image
-        script: bash -c 'docker push "$image"'
+        script: bash -c "make publish-image"
+        skip_cleanup: true
         on:
           branch: master
 

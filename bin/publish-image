@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -o errexit
+
+GIT_ROOT="${GIT_ROOT:-$(git rev-parse --show-toplevel)}"
+. "${GIT_ROOT}/bin/include/versioning"
+. "${GIT_ROOT}/bin/include/docker"
+
+image="${DOCKER_IMAGE_ORG}/quarks-job:${DOCKER_IMAGE_TAG}"
+
+echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+docker push "$image"

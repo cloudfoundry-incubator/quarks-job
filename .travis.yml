@@ -72,3 +72,36 @@ jobs:
         - tar xfz staticcheck_linux_amd64.tar.gz --strip-component 1 -C $GOPATH/bin staticcheck/staticcheck
         - go get -u golang.org/x/lint/golint
       script: make lint
+
+    - stage: Publishing image
+      if: branch = master
+      deploy:
+        provider: script
+        before_deploy:
+          - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          - . bin/include/versioning
+          - DOCKER_IMAGE_TAG="${VERSION_TAG}"
+          - image="${DOCKER_IMAGE_ORG}/quarks-job:${DOCKER_IMAGE_TAG}"
+          - make build-image
+        script: bash -c 'docker push "$image"'
+        on:
+          branch: master
+
+    - stage: Publishing helm chart
+      if: branch = master
+      before_deploy:
+        - . bin/include/versioning
+        - ./bin/build-helm
+        - mkdir helm-charts
+        - cp helm/quarks-job*.tgz helm-charts/
+      deploy:
+        provider: s3
+        access_key_id: "${AWS_ACCESS_KEY}"
+        secret_access_key: "${AWS_SECRET_KEY}"
+        bucket: "${S3_BUCKET}"
+        acl: public_read
+        skip_cleanup: true
+        local_dir: helm-charts
+        upload_dir: helm-charts
+        on:
+          branch: master

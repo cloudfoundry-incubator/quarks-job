@@ -11,9 +11,6 @@ test-cluster:
 lint:
 	bin/lint
 
-build-image:
-	bin/build-image
-
 gen-command-docs:
 	rm -f docs/commands/*
 	go run cmd/docs/gen-command-docs.go

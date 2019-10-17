@@ -86,7 +86,7 @@ automatically be restarted if its environment/mounts have changed, due to a
 
 - The only supported output type currently is JSON with a flat structure, i.e. all values being string values.
 
-- The developer should ensure that he/she redirects the JSON output to a file named output.json in /mnt/quarks volume mount at the end of the container script. An example of the command field in the extendedjob spec will look like this 
+- The developer should ensure that he/she redirects the JSON output to a file named output.json in /mnt/quarks volume mount at the end of the container script. An example of the command field in the extendedjob spec will look like this
 
 ```
 command: ["/bin/sh"]
@@ -108,7 +108,7 @@ args: ["-c","json='{\"foo\": \"1\", \"bar\": \"baz\"}' && echo $json >> /mnt/qua
 
 ##### Versioned Secrets
 
-Versioned Secrets are a set of `Secrets`, where each of them is immutable, and contains data for one iteration. Implementation can be found in the [versionedsecretstore](https://github.com/cloudfoundry-incubator/cf-operator/blob/master/pkg/kube/util/versionedsecretstore) package.
+Versioned Secrets are a set of `Secrets`, where each of them is immutable, and contains data for one iteration. Implementation can be found in the [versionedsecretstore](https://github.com/cloudfoundry-incubator/quarks-utils/tree/master/pkg/versionedsecretstore) package.
 
 When an `ExtendedJob` is configured to save to "Versioned Secrets", the controller looks for the `Secret` with the largest ordinal, adds `1` to that value, and _creates a new Secret_.
 
@@ -129,7 +129,7 @@ This is an auxiliary controller that relies on the Errand Controller output. It 
 
 #### Watches in job controller
 
-- `Jobs`: Succeeded 
+- `Jobs`: Succeeded
 
 #### Reconciliation in job controller
 

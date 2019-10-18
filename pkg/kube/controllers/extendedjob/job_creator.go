@@ -244,8 +244,6 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		return false, errors.Wrapf(err, "could not generate job name for eJob '%s'", eJob.Name)
 	}
 
-	backoffLimit := pointers.Int32(2)
-
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -254,7 +252,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 		Spec: batchv1.JobSpec{
 			Template:     *template,
-			BackoffLimit: backoffLimit,
+			BackoffLimit: pointers.Int32(2),
 		},
 	}
 

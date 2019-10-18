@@ -103,31 +103,23 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		}
 	}
 
-	// Fetch all secrets
-	tokenSecret := corev1.Secret{}
-	secretList := &corev1.SecretList{}
-	err = j.client.List(ctx, secretList, client.InNamespace(namespace))
-	if err != nil {
-		return false, errors.Wrapf(err, "could not get secret list related to ejob %s.", eJob.Name)
-	}
-	for _, secret := range secretList.Items {
-		annotations := secret.GetAnnotations()
-		annotation, ok := annotations["kubernetes.io/service-account.name"]
-		if ok {
-			if annotation == serviceAccountName {
-				tokenSecret = secret
-				break
-			}
-		}
+	var createdServiceAccount corev1.ServiceAccount
+	if err := j.client.Get(ctx, crc.ObjectKey{Name: serviceAccountName, Namespace: namespace}, &createdServiceAccount); err != nil {
+		return false, errors.Wrapf(err, "could not get %s", eJob.Name)
 	}
 
+	if len(createdServiceAccount.Secrets) == 0 {
+		return false, fmt.Errorf("missing service account secret for '%s'", serviceAccountName)
+	}
+	tokenSecretName := createdServiceAccount.Secrets[0].Name
+
 	// Mount service account token on container
-	serviceAccountVolumeName := names.Sanitize(fmt.Sprintf("%s-%s", serviceAccount.Name, tokenSecret.Name))
+	serviceAccountVolumeName := names.Sanitize(fmt.Sprintf("%s-%s", serviceAccount.Name, tokenSecretName))
 	serviceAccountVolume := corev1.Volume{
 		Name: serviceAccountVolumeName,
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
-				SecretName:  tokenSecret.Name,
+				SecretName:  tokenSecretName,
 				DefaultMode: pointers.Int32(0644),
 			},
 		},

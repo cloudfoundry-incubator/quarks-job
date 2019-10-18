@@ -103,7 +103,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 			return false, errors.Wrapf(err, "could not create role binding for pod in ejob '%s'", eJob.Name)
 		}
 	}
-	fmt.Println("--------------------------------------------------------------------------")
+	fmt.Println("----------------------------------------------------------------------==========-----")
 
 	// Fetch all secrets
 	tokenSecret := corev1.Secret{}

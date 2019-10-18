@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
@@ -89,9 +90,6 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 	}
 
-	// Set serviceaccount to the pod
-	template.Spec.ServiceAccountName = serviceAccountName
-
 	err = j.client.Create(ctx, serviceAccount)
 	if err != nil {
 		if !apierrors.IsAlreadyExists(err) {
@@ -105,6 +103,43 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 			return false, errors.Wrapf(err, "could not create role binding for pod in ejob '%s'", eJob.Name)
 		}
 	}
+	fmt.Println("--------------------------------------------------------------------------")
+
+	// Fetch all secrets
+	tokenSecret := corev1.Secret{}
+	secretList := &corev1.SecretList{}
+	err = j.client.List(ctx, secretList, client.InNamespace(namespace))
+	if err != nil {
+		return false, errors.Wrapf(err, "could not get secret list related to ejob %s.", eJob.Name)
+	}
+	for _, secret := range secretList.Items {
+		fmt.Println(secret.Name)
+		if secret.Name == serviceAccountName {
+			tokenSecret = secret
+		}
+	}
+	fmt.Println(tokenSecret.Name)
+
+	// Mount service account token on container
+	secretMode := int32(420)
+	serviceAccountVolumeName := names.Sanitize(fmt.Sprintf("%s-%s", serviceAccount.Name, tokenSecret.Name))
+	serviceAccountVolume := corev1.Volume{
+		Name: serviceAccountVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName:  tokenSecret.Name,
+				DefaultMode: &secretMode,
+			},
+		},
+	}
+	serviceAccountVolumeMount := corev1.VolumeMount{
+		Name:      serviceAccountVolumeName,
+		ReadOnly:  true,
+		MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
+	}
+
+	// Set serviceaccount to the container
+	template.Spec.Volumes = append(template.Spec.Volumes, serviceAccountVolume)
 
 	image := config.GetOperatorDockerImage()
 	image = strings.Replace(image, "quarks-job", "cf-operator", 1)
@@ -124,6 +159,9 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 				Name:  EnvNamespace,
 				Value: namespace,
 			},
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			serviceAccountVolumeMount,
 		},
 	}
 

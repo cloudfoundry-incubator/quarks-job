@@ -13,7 +13,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
@@ -199,7 +198,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 
 	configMap := &corev1.ConfigMap{}
 	for configMapName := range configMaps {
-		if err := j.client.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: eJob.Namespace}, configMap); err != nil {
+		if err := j.client.Get(ctx, crc.ObjectKey{Name: configMapName, Namespace: eJob.Namespace}, configMap); err != nil {
 			if apierrors.IsNotFound(err) {
 				ctxlog.Debugf(ctx, "Skip create job '%s' due to configMap '%s' not found", eJob.Name, configMapName)
 				// Requeue the job without error.
@@ -216,7 +215,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 
 	secret := &corev1.Secret{}
 	for secretName := range secrets {
-		if err := j.client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: eJob.Namespace}, secret); err != nil {
+		if err := j.client.Get(ctx, crc.ObjectKey{Name: secretName, Namespace: eJob.Namespace}, secret); err != nil {
 			if apierrors.IsNotFound(err) {
 				ctxlog.Debugf(ctx, "Skip create job '%s' due to secret '%s' not found", eJob.Name, secretName)
 				// Requeue the job without error.

@@ -78,7 +78,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 		Subjects: []v1.Subject{
 			{
-				Kind:      "ServiceAccount",
+				Kind:      v1.ServiceAccountKind,
 				Name:      serviceAccountName,
 				Namespace: namespace,
 			},

@@ -8,14 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"regexp"
 
 	"github.com/pkg/errors"
 	"gopkg.in/fsnotify.v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/apis"
@@ -280,49 +278,4 @@ func (po *PersistOutputInterface) CreateVersionSecret(exjob *ejv1.ExtendedJob, o
 
 	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
 	return store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
-}
-
-func getGreatestVersion(clientSet kubernetes.Interface, namespace string, secretName string) (int, error) {
-	list, err := listSecrets(clientSet, namespace, secretName)
-	if err != nil {
-		return -1, err
-	}
-
-	var greatestVersion int
-	for _, secret := range list {
-		version, err := versionedsecretstore.Version(secret)
-		if err != nil {
-			return 0, err
-		}
-
-		if version > greatestVersion {
-			greatestVersion = version
-		}
-	}
-
-	return greatestVersion, nil
-}
-
-func listSecrets(clientSet kubernetes.Interface, namespace string, secretName string) ([]corev1.Secret, error) {
-	secretLabelsSet := labels.Set{
-		versionedsecretstore.LabelSecretKind: versionedsecretstore.VersionSecretKind,
-	}
-
-	secrets, err := clientSet.CoreV1().Secrets(namespace).List(metav1.ListOptions{
-		LabelSelector: secretLabelsSet.String(),
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to list secrets with labels %s", secretLabelsSet.String())
-	}
-
-	result := []corev1.Secret{}
-
-	nameRegex := regexp.MustCompile(fmt.Sprintf(`^%s-v\d+$`, secretName))
-	for _, secret := range secrets.Items {
-		if nameRegex.MatchString(secret.Name) {
-			result = append(result, secret)
-		}
-	}
-
-	return result, nil
 }

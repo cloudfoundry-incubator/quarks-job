@@ -123,14 +123,13 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	}
 
 	// Mount service account token on container
-	secretMode := int32(420)
 	serviceAccountVolumeName := names.Sanitize(fmt.Sprintf("%s-%s", serviceAccount.Name, tokenSecret.Name))
 	serviceAccountVolume := corev1.Volume{
 		Name: serviceAccountVolumeName,
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
 				SecretName:  tokenSecret.Name,
-				DefaultMode: &secretMode,
+				DefaultMode: pointers.Int32(0644),
 			},
 		},
 	}

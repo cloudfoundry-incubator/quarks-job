@@ -26,10 +26,11 @@ import (
 )
 
 const (
-	outputPersistDirName      = "output-persist-dir"
-	outputPersistDirMountPath = "/mnt/output-persist/"
-	serviceAccountName        = "persist-output-service-account"
-	mountPath                 = "/mnt/quarks/"
+	outputPersistDirName          = "output-persist-dir"
+	outputPersistDirMountPath     = "/mnt/output-persist/"
+	serviceAccountName            = "persist-output-service-account"
+	serviceAccountSecretMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+	mountPath                     = "/mnt/quarks/"
 )
 
 type setOwnerReferenceFunc func(owner, object metav1.Object, scheme *runtime.Scheme) error
@@ -127,7 +128,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	serviceAccountVolumeMount := corev1.VolumeMount{
 		Name:      serviceAccountVolumeName,
 		ReadOnly:  true,
-		MountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
+		MountPath: serviceAccountSecretMountPath,
 	}
 
 	// Set serviceaccount to the container

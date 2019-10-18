@@ -70,7 +70,9 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 	}
 
-	// Bind read only role to the service account
+	// Bind the persist-output service account to the cluster-admin ClusterRole. Notice that the
+	// RoleBinding is namespaced as opposed to ClusterRoleBinding which would give the service account
+	// unrestricted permissions to any namespace.
 	roleBinding := &v1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cluster-admin-role",

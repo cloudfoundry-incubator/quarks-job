@@ -93,13 +93,13 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 
 	if err := j.client.Create(ctx, serviceAccount); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return false, errors.Wrapf(err, "could not create service account for pod in ejob %s.", eJob.Name)
+			return false, errors.Wrapf(err, "could not create service account for pod in eJob %s", eJob.Name)
 		}
 	}
 
 	if err := j.client.Create(ctx, roleBinding); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return false, errors.Wrapf(err, "could not create role binding for pod in ejob '%s'", eJob.Name)
+			return false, errors.Wrapf(err, "could not create role binding for pod in eJob '%s'", eJob.Name)
 		}
 	}
 

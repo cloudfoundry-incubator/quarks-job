@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"fmt"
 
-	bacthv1 "k8s.io/api/batch/v1beta1"
+	batchv1 "k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/apis"
@@ -36,7 +36,7 @@ var (
 type ExtendedJobSpec struct {
 	Output               *Output                 `json:"output,omitempty"`
 	Trigger              Trigger                 `json:"trigger"`
-	Template             bacthv1.JobTemplateSpec `json:"template"`
+	Template             batchv1.JobTemplateSpec `json:"template"`
 	UpdateOnConfigChange bool                    `json:"updateOnConfigChange"`
 }
 

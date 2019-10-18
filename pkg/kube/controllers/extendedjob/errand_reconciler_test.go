@@ -73,7 +73,11 @@ var _ = Describe("ErrandReconciler", func() {
 
 		JustBeforeEach(func() {
 			ctx := ctxlog.NewParentContext(log)
-			config := &config.Config{CtxTimeOut: 10 * time.Second}
+			config := &config.Config{
+				CtxTimeOut:           10 * time.Second,
+				MeltdownDuration:     config.MeltdownDuration,
+				MeltdownRequeueAfter: config.MeltdownRequeueAfter,
+			}
 			reconciler = NewErrandReconciler(
 				ctx,
 				config,
@@ -128,7 +132,7 @@ var _ = Describe("ErrandReconciler", func() {
 				It("should log and return, requeue", func() {
 					_, err := act()
 					Expect(err).To(HaveOccurred())
-					Expect(logs.FilterMessageSnippet("Failed to get the extended job '/fake-ejob': fake-error").Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet("Failed to get extended job '/fake-ejob': fake-error").Len()).To(Equal(1))
 				})
 			})
 
@@ -153,7 +157,7 @@ var _ = Describe("ErrandReconciler", func() {
 				It("should log create error and requeue", func() {
 					_, err := act()
 					Expect(logs.FilterMessageSnippet("Failed to create job 'fake-ejob': could not create service account for " +
-						"pod in ejob fake-ejob.: fake-error").Len()).To(Equal(1))
+						"pod in eJob fake-ejob: fake-error").Len()).To(Equal(1))
 					Expect(err).To(HaveOccurred())
 					Expect(client.CreateCallCount()).To(Equal(1))
 				})
@@ -179,6 +183,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 		Context("when extended job is reconciled", func() {
 			var client fakes.FakeClient
+			var statusWriter fakes.FakeStatusWriter
 
 			Context("and the errand is a manual errand", func() {
 				BeforeEach(func() {
@@ -197,9 +202,9 @@ var _ = Describe("ErrandReconciler", func() {
 
 					callQueue := helper.NewCallQueue(
 						func(context context.Context, object runtime.Object) error {
-							switch ejob := object.(type) {
+							switch eJob := object.(type) {
 							case *ejv1.ExtendedJob:
-								Expect(ejob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerManual))
+								Expect(eJob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerManual))
 							}
 							return nil
 						},
@@ -217,20 +222,20 @@ var _ = Describe("ErrandReconciler", func() {
 					eJob = env.AutoErrandExtendedJob("fake-pod")
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
 					client = fakes.FakeClient{}
+					statusWriter = fakes.FakeStatusWriter{}
 					mgr.GetClientReturns(&client)
 					client.GetCalls(clientGetStub)
-					client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
+					client.StatusCalls(func() crc.StatusWriter { return &statusWriter })
 
 					request = newRequest(eJob)
 				})
 
 				It("should set the trigger strategy to done and immediately trigger the job", func() {
-
 					callQueue := helper.NewCallQueue(
 						func(context context.Context, object runtime.Object) error {
-							switch ejob := object.(type) {
+							switch eJob := object.(type) {
 							case *ejv1.ExtendedJob:
-								Expect(ejob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerDone))
+								Expect(eJob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerDone))
 							}
 							return nil
 						},
@@ -240,6 +245,65 @@ var _ = Describe("ErrandReconciler", func() {
 					result, err := act()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
+				})
+
+				It("should requeue reconcile when extended job is in meltdown", func() {
+					now := metav1.Now()
+					eJob.Status.LastReconcile = &now
+
+					result, err := act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.RequeueAfter).To(Equal(config.MeltdownRequeueAfter))
+				})
+
+				It("handles an error when updating job's strategy failed", func() {
+					callQueue := helper.NewCallQueue(
+						func(context context.Context, object runtime.Object) error {
+							switch eJob := object.(type) {
+							case *ejv1.ExtendedJob:
+								Expect(eJob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerDone))
+								return fmt.Errorf("fake-error")
+							}
+							return nil
+						},
+					)
+					client.UpdateCalls(callQueue.Calls)
+
+					result, err := act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.Requeue).To(BeFalse())
+					Expect(logs.FilterMessageSnippet("Failed to traverse to 'trigger.strategy=done' on job").Len()).To(Equal(1))
+				})
+
+				It("handles an error when updating job's reconcile timestamp failed", func() {
+					callQueue := helper.NewCallQueue(
+						func(context context.Context, object runtime.Object) error {
+							switch eJob := object.(type) {
+							case *ejv1.ExtendedJob:
+								Expect(eJob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerDone))
+							}
+							return nil
+						},
+					)
+					client.UpdateCalls(callQueue.Calls)
+
+					statusCallQueue := helper.NewCallQueue(
+						func(context context.Context, object runtime.Object) error {
+							switch eJob := object.(type) {
+							case *ejv1.ExtendedJob:
+								if eJob.Status.LastReconcile != nil {
+									return fmt.Errorf("fake-error")
+								}
+							}
+							return nil
+						},
+					)
+					statusWriter.UpdateCalls(statusCallQueue.Calls)
+
+					result, err := act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.Requeue).To(BeFalse())
+					Expect(logs.FilterMessageSnippet("Failed to update reconcile timestamp on job").Len()).To(Equal(1))
 				})
 			})
 
@@ -288,9 +352,9 @@ var _ = Describe("ErrandReconciler", func() {
 
 					callQueue := helper.NewCallQueue(
 						func(context context.Context, object runtime.Object) error {
-							switch ejob := object.(type) {
+							switch eJob := object.(type) {
 							case *ejv1.ExtendedJob:
-								Expect(ejob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerDone))
+								Expect(eJob.Spec.Trigger.Strategy).To(Equal(ejv1.TriggerDone))
 							}
 							return nil
 						},

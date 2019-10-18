@@ -14,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
@@ -59,7 +58,7 @@ type jobCreatorImpl struct {
 
 // Create satisfies the JobCreator interface. It creates a Job to complete ExJob. It returns the
 // retry if one of the references are not present.
-func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, namespace string) (retry bool, err error) {
+func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, namespace string) (bool, error) {
 	template := eJob.Spec.Template.DeepCopy()
 
 	// Create a service account for the pod
@@ -92,15 +91,13 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 	}
 
-	err = j.client.Create(ctx, serviceAccount)
-	if err != nil {
+	if err := j.client.Create(ctx, serviceAccount); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return false, errors.Wrapf(err, "could not create service account for pod in ejob %s.", eJob.Name)
 		}
 	}
 
-	err = j.client.Create(ctx, roleBinding)
-	if err != nil {
+	if err := j.client.Create(ctx, roleBinding); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return false, errors.Wrapf(err, "could not create role binding for pod in ejob '%s'", eJob.Name)
 		}
@@ -198,46 +195,41 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	}
 	template.Labels[ejv1.LabelEJobName] = eJob.Name
 
-	err = j.store.SetSecretReferences(ctx, eJob.Namespace, &template.Spec)
-	if err != nil {
-		return
+	if err := j.store.SetSecretReferences(ctx, eJob.Namespace, &template.Spec); err != nil {
+		return false, err
 	}
 
 	configMaps, err := reference.GetConfigMapsReferencedBy(eJob)
 	if err != nil {
-		return
+		return false, err
 	}
 
 	configMap := &corev1.ConfigMap{}
 	for configMapName := range configMaps {
-		err = j.client.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: eJob.Namespace}, configMap)
-		if err != nil {
+		if err := j.client.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: eJob.Namespace}, configMap); err != nil {
 			if apierrors.IsNotFound(err) {
 				ctxlog.Debugf(ctx, "Skip create job '%s' due to configMap '%s' not found", eJob.Name, configMapName)
-				// we want to requeue the job without error
-				retry = true
-				err = nil
+				// Requeue the job without error.
+				return true, nil
 			}
-			return
+			return false, err
 		}
 	}
 
 	secrets, err := reference.GetSecretsReferencedBy(ctx, j.client, eJob)
 	if err != nil {
-		return
+		return false, err
 	}
 
 	secret := &corev1.Secret{}
 	for secretName := range secrets {
-		err = j.client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: eJob.Namespace}, secret)
-		if err != nil {
+		if err := j.client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: eJob.Namespace}, secret); err != nil {
 			if apierrors.IsNotFound(err) {
 				ctxlog.Debugf(ctx, "Skip create job '%s' due to secret '%s' not found", eJob.Name, secretName)
-				// we want to requeue the job without error
-				retry = true
-				err = nil
+				// Requeue the job without error.
+				return true, nil
 			}
-			return
+			return false, err
 		}
 	}
 
@@ -258,20 +250,18 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 	}
 
-	err = j.setOwnerReference(&eJob, job, j.scheme)
-	if err != nil {
+	if err := j.setOwnerReference(&eJob, job, j.scheme); err != nil {
 		return false, ctxlog.WithEvent(&eJob, "SetOwnerReferenceError").Errorf(ctx, "failed to set owner reference on job for '%s': %s", eJob.Name, err)
 	}
 
-	err = j.client.Create(ctx, job)
-	if err != nil {
+	if err := j.client.Create(ctx, job); err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			ctxlog.WithEvent(&eJob, "AlreadyRunning").Infof(ctx, "Skip '%s': already running", eJob.Name)
-			// we don't want to requeue the job
-			return retry, nil
+			// Don't requeue the job.
+			return false, nil
 		}
-		retry = true
+		return true, err
 	}
 
-	return
+	return false, nil
 }

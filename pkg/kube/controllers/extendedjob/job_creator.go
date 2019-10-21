@@ -13,7 +13,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
@@ -26,10 +25,11 @@ import (
 )
 
 const (
-	outputPersistDirName      = "output-persist-dir"
-	outputPersistDirMountPath = "/mnt/output-persist/"
-	serviceAccountName        = "persist-output-service-account"
-	mountPath                 = "/mnt/quarks/"
+	outputPersistDirName          = "output-persist-dir"
+	outputPersistDirMountPath     = "/mnt/output-persist/"
+	serviceAccountName            = "persist-output-service-account"
+	serviceAccountSecretMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
+	mountPath                     = "/mnt/quarks/"
 )
 
 type setOwnerReferenceFunc func(owner, object metav1.Object, scheme *runtime.Scheme) error
@@ -58,7 +58,7 @@ type jobCreatorImpl struct {
 
 // Create satisfies the JobCreator interface. It creates a Job to complete ExJob. It returns the
 // retry if one of the references are not present.
-func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, namespace string) (retry bool, err error) {
+func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, namespace string) (bool, error) {
 	template := eJob.Spec.Template.DeepCopy()
 
 	// Create a service account for the pod
@@ -69,7 +69,9 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 	}
 
-	// Bind read only role to the service account
+	// Bind the persist-output service account to the cluster-admin ClusterRole. Notice that the
+	// RoleBinding is namespaced as opposed to ClusterRoleBinding which would give the service account
+	// unrestricted permissions to any namespace.
 	roleBinding := &v1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "cluster-admin-role",
@@ -77,7 +79,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 		Subjects: []v1.Subject{
 			{
-				Kind:      "ServiceAccount",
+				Kind:      v1.ServiceAccountKind,
 				Name:      serviceAccountName,
 				Namespace: namespace,
 			},
@@ -89,22 +91,47 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 	}
 
-	// Set serviceaccount to the pod
-	template.Spec.ServiceAccountName = serviceAccountName
-
-	err = j.client.Create(ctx, serviceAccount)
-	if err != nil {
+	if err := j.client.Create(ctx, serviceAccount); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return false, errors.Wrapf(err, "could not create service account for pod in ejob %s.", eJob.Name)
 		}
 	}
 
-	err = j.client.Create(ctx, roleBinding)
-	if err != nil {
+	if err := j.client.Create(ctx, roleBinding); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return false, errors.Wrapf(err, "could not create role binding for pod in ejob '%s'", eJob.Name)
 		}
 	}
+
+	var createdServiceAccount corev1.ServiceAccount
+	if err := j.client.Get(ctx, crc.ObjectKey{Name: serviceAccountName, Namespace: namespace}, &createdServiceAccount); err != nil {
+		return false, errors.Wrapf(err, "could not get %s", eJob.Name)
+	}
+
+	if len(createdServiceAccount.Secrets) == 0 {
+		return false, fmt.Errorf("missing service account secret for '%s'", serviceAccountName)
+	}
+	tokenSecretName := createdServiceAccount.Secrets[0].Name
+
+	// Mount service account token on container
+	serviceAccountVolumeName := names.Sanitize(fmt.Sprintf("%s-%s", serviceAccount.Name, tokenSecretName))
+	serviceAccountVolume := corev1.Volume{
+		Name: serviceAccountVolumeName,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName:  tokenSecretName,
+				DefaultMode: pointers.Int32(0644),
+			},
+		},
+	}
+	serviceAccountVolumeMount := corev1.VolumeMount{
+		Name:      serviceAccountVolumeName,
+		ReadOnly:  true,
+		MountPath: serviceAccountSecretMountPath,
+	}
+
+	// Set serviceaccount to the container
+	template.Spec.Volumes = append(template.Spec.Volumes, serviceAccountVolume)
 
 	image := config.GetOperatorDockerImage()
 	image = strings.Replace(image, "quarks-job", "cf-operator", 1)
@@ -124,6 +151,9 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 				Name:  EnvNamespace,
 				Value: namespace,
 			},
+		},
+		VolumeMounts: []corev1.VolumeMount{
+			serviceAccountVolumeMount,
 		},
 	}
 
@@ -157,46 +187,41 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	}
 	template.Labels[ejv1.LabelEJobName] = eJob.Name
 
-	err = j.store.SetSecretReferences(ctx, eJob.Namespace, &template.Spec)
-	if err != nil {
-		return
+	if err := j.store.SetSecretReferences(ctx, eJob.Namespace, &template.Spec); err != nil {
+		return false, err
 	}
 
 	configMaps, err := reference.GetConfigMapsReferencedBy(eJob)
 	if err != nil {
-		return
+		return false, err
 	}
 
 	configMap := &corev1.ConfigMap{}
 	for configMapName := range configMaps {
-		err = j.client.Get(ctx, types.NamespacedName{Name: configMapName, Namespace: eJob.Namespace}, configMap)
-		if err != nil {
+		if err := j.client.Get(ctx, crc.ObjectKey{Name: configMapName, Namespace: eJob.Namespace}, configMap); err != nil {
 			if apierrors.IsNotFound(err) {
 				ctxlog.Debugf(ctx, "Skip create job '%s' due to configMap '%s' not found", eJob.Name, configMapName)
-				// we want to requeue the job without error
-				retry = true
-				err = nil
+				// Requeue the job without error.
+				return true, nil
 			}
-			return
+			return false, err
 		}
 	}
 
 	secrets, err := reference.GetSecretsReferencedBy(ctx, j.client, eJob)
 	if err != nil {
-		return
+		return false, err
 	}
 
 	secret := &corev1.Secret{}
 	for secretName := range secrets {
-		err = j.client.Get(ctx, types.NamespacedName{Name: secretName, Namespace: eJob.Namespace}, secret)
-		if err != nil {
+		if err := j.client.Get(ctx, crc.ObjectKey{Name: secretName, Namespace: eJob.Namespace}, secret); err != nil {
 			if apierrors.IsNotFound(err) {
 				ctxlog.Debugf(ctx, "Skip create job '%s' due to secret '%s' not found", eJob.Name, secretName)
-				// we want to requeue the job without error
-				retry = true
-				err = nil
+				// Requeue the job without error.
+				return true, nil
 			}
-			return
+			return false, err
 		}
 	}
 
@@ -204,8 +229,6 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	if err != nil {
 		return false, errors.Wrapf(err, "could not generate job name for eJob '%s'", eJob.Name)
 	}
-
-	backoffLimit := pointers.Int32(2)
 
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -215,24 +238,22 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		},
 		Spec: batchv1.JobSpec{
 			Template:     *template,
-			BackoffLimit: backoffLimit,
+			BackoffLimit: pointers.Int32(2),
 		},
 	}
 
-	err = j.setOwnerReference(&eJob, job, j.scheme)
-	if err != nil {
+	if err := j.setOwnerReference(&eJob, job, j.scheme); err != nil {
 		return false, ctxlog.WithEvent(&eJob, "SetOwnerReferenceError").Errorf(ctx, "failed to set owner reference on job for '%s': %s", eJob.Name, err)
 	}
 
-	err = j.client.Create(ctx, job)
-	if err != nil {
+	if err := j.client.Create(ctx, job); err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			ctxlog.WithEvent(&eJob, "AlreadyRunning").Infof(ctx, "Skip '%s': already running", eJob.Name)
-			// we don't want to requeue the job
-			return retry, nil
+			// Don't requeue the job.
+			return false, nil
 		}
-		retry = true
+		return true, err
 	}
 
-	return
+	return false, nil
 }

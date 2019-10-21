@@ -34,14 +34,14 @@ import (
 var _ = Describe("ErrandReconciler", func() {
 	Describe("Reconcile", func() {
 		var (
-			env        testing.Catalog
-			logs       *observer.ObservedLogs
-			log        *zap.SugaredLogger
-			mgr        *fakes.FakeManager
-			request    reconcile.Request
-			reconciler reconcile.Reconciler
-
+			env                        testing.Catalog
+			logs                       *observer.ObservedLogs
+			log                        *zap.SugaredLogger
+			mgr                        *fakes.FakeManager
+			request                    reconcile.Request
+			reconciler                 reconcile.Reconciler
 			eJob                       ejv1.ExtendedJob
+			serviceAccount             corev1.ServiceAccount
 			setOwnerReferenceCallCount int
 		)
 
@@ -54,10 +54,13 @@ var _ = Describe("ErrandReconciler", func() {
 			}
 		}
 
-		ejobGetStub := func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
+		clientGetStub := func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 			switch obj := obj.(type) {
 			case *ejv1.ExtendedJob:
 				eJob.DeepCopyInto(obj)
+				return nil
+			case *corev1.ServiceAccount:
+				serviceAccount.DeepCopyInto(obj)
 				return nil
 			}
 			return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
@@ -99,7 +102,8 @@ var _ = Describe("ErrandReconciler", func() {
 				mgr.GetClientReturns(&client)
 
 				eJob = env.ErrandExtendedJob("fake-ejob")
-				client.GetCalls(ejobGetStub)
+				serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
+				client.GetCalls(clientGetStub)
 				request = newRequest(eJob)
 			})
 
@@ -166,7 +170,6 @@ var _ = Describe("ErrandReconciler", func() {
 					result, err := act()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
-
 					Expect(logs.FilterMessageSnippet("Skip 'fake-ejob': already running").Len()).To(Equal(1))
 					Expect(client.CreateCallCount()).To(Equal(3))
 				})
@@ -180,9 +183,10 @@ var _ = Describe("ErrandReconciler", func() {
 			Context("and the errand is a manual errand", func() {
 				BeforeEach(func() {
 					eJob = env.ErrandExtendedJob("fake-pod")
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
 					client = fakes.FakeClient{}
 					mgr.GetClientReturns(&client)
-					client.GetCalls(ejobGetStub)
+					client.GetCalls(clientGetStub)
 					client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
 
 					request = newRequest(eJob)
@@ -211,9 +215,10 @@ var _ = Describe("ErrandReconciler", func() {
 			Context("and the errand is an auto-errand", func() {
 				BeforeEach(func() {
 					eJob = env.AutoErrandExtendedJob("fake-pod")
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
 					client = fakes.FakeClient{}
 					mgr.GetClientReturns(&client)
-					client.GetCalls(ejobGetStub)
+					client.GetCalls(clientGetStub)
 					client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
 
 					request = newRequest(eJob)
@@ -250,6 +255,7 @@ var _ = Describe("ErrandReconciler", func() {
 					s1 := env.DefaultSecret("secret1")
 					secret = &s1
 
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
 					eJob = env.AutoErrandExtendedJob("fake-pod")
 					eJob.Spec.Template = env.ConfigPodTemplate()
 					eJob.Spec.UpdateOnConfigChange = true
@@ -272,6 +278,9 @@ var _ = Describe("ErrandReconciler", func() {
 							return nil
 						case *corev1.Secret:
 							secret.DeepCopyInto(obj)
+							return nil
+						case *corev1.ServiceAccount:
+							serviceAccount.DeepCopyInto(obj)
 							return nil
 						}
 						return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
@@ -299,6 +308,9 @@ var _ = Describe("ErrandReconciler", func() {
 						case *ejv1.ExtendedJob:
 							eJob.DeepCopyInto(obj)
 							return nil
+						case *corev1.ServiceAccount:
+							serviceAccount.DeepCopyInto(obj)
+							return nil
 						}
 						return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
 					})
@@ -315,6 +327,9 @@ var _ = Describe("ErrandReconciler", func() {
 							return nil
 						case *corev1.ConfigMap:
 							configMap.DeepCopyInto(obj)
+							return nil
+						case *corev1.ServiceAccount:
+							serviceAccount.DeepCopyInto(obj)
 							return nil
 						}
 						return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)

@@ -25,6 +25,18 @@ func (c *Catalog) DefaultConfigMap(name string) corev1.ConfigMap {
 	}
 }
 
+// DefaultServiceAccount for tests
+func (c *Catalog) DefaultServiceAccount(name string) corev1.ServiceAccount {
+	return corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Secrets: []corev1.ObjectReference{
+			{
+				Name: name,
+			},
+		},
+	}
+}
+
 // DefaultSecret for tests
 func (c *Catalog) DefaultSecret(name string) corev1.Secret {
 	return corev1.Secret{

@@ -20,7 +20,7 @@ func GetConfigMapsReferencedBy(object interface{}) (map[string]bool, error) {
 }
 
 func getConfMapRefFromEJob(object ejv1.ExtendedJob) map[string]bool {
-	return getConfMapRefFromPod(object.Spec.Template.Spec)
+	return getConfMapRefFromPod(object.Spec.Template.Spec.Template.Spec)
 }
 
 func getConfMapRefFromPod(object corev1.PodSpec) map[string]bool {

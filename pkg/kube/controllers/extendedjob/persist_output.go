@@ -27,11 +27,11 @@ import (
 )
 
 var (
-	// LabelEJobPod is the label present on every job pod of eJob.
-	LabelEJobPod = fmt.Sprintf("%s/ejob-name", apis.GroupName)
+	// LabelEjobPod is the label present on every jobpod of exjob.
+	LabelEjobPod = fmt.Sprintf("%s/ejob-name", apis.GroupName)
 )
 
-// PersistOutputInterface creates a kubernetes secret for each container in the in the eJob pod.
+// PersistOutputInterface creates a kubernetes secret for each container in the in the extendedjob pod.
 type PersistOutputInterface struct {
 	namespace            string
 	podName              string
@@ -40,7 +40,7 @@ type PersistOutputInterface struct {
 	outputFilePathPrefix string
 }
 
-// NewPersistOutputInterface returns a persist output interface which can create kubernetes secrets.
+// NewPersistOutputInterface returns a persistoutput interface which can create kubernetes secrets.
 func NewPersistOutputInterface(namespace string, podName string, clientSet kubernetes.Interface, versionedClientSet versioned.Interface, outputFilePathPrefix string) *PersistOutputInterface {
 	return &PersistOutputInterface{
 		namespace:            namespace,
@@ -52,7 +52,7 @@ func NewPersistOutputInterface(namespace string, podName string, clientSet kuber
 }
 
 // PersistOutput converts the output files of each container
-// in the pod related to an eJob into a kubernetes secret.
+// in the pod related to an ejob into a kubernetes secret.
 func (po *PersistOutputInterface) PersistOutput() error {
 	// Fetch the pod
 	pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(po.podName, metav1.GetOptions{})
@@ -60,18 +60,18 @@ func (po *PersistOutputInterface) PersistOutput() error {
 		return errors.Wrapf(err, "failed to fetch pod %s", po.podName)
 	}
 
-	// Fetch the eJob
-	eJobName := pod.GetLabels()[LabelEJobPod]
+	// Fetch the exjob
+	exjobName := pod.GetLabels()[LabelEjobPod]
 
-	eJobClient := po.versionedClientSet.ExtendedjobV1alpha1().ExtendedJobs(po.namespace)
-	eJob, err := eJobClient.Get(eJobName, metav1.GetOptions{})
+	exjobClient := po.versionedClientSet.ExtendedjobV1alpha1().ExtendedJobs(po.namespace)
+	exjob, err := exjobClient.Get(exjobName, metav1.GetOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "failed to fetch eJob")
+		return errors.Wrapf(err, "failed to fetch exjob")
 	}
 
 	// Persist output if needed
-	if !reflect.DeepEqual(ejv1.Output{}, eJob.Spec.Output) && eJob.Spec.Output != nil {
-		err = po.ConvertOutputToSecretPod(pod, eJob)
+	if !reflect.DeepEqual(ejv1.Output{}, exjob.Spec.Output) && exjob.Spec.Output != nil {
+		err = po.ConvertOutputToSecretPod(pod, exjob)
 		if err != nil {
 			return err
 		}
@@ -81,7 +81,7 @@ func (po *PersistOutputInterface) PersistOutput() error {
 
 // ConvertOutputToSecretPod starts goroutine for converting each container
 // output into a secret.
-func (po *PersistOutputInterface) ConvertOutputToSecretPod(pod *corev1.Pod, eJob *ejv1.ExtendedJob) error {
+func (po *PersistOutputInterface) ConvertOutputToSecretPod(pod *corev1.Pod, exjob *ejv1.ExtendedJob) error {
 	errorContainerChannel := make(chan error)
 
 	// Loop over containers and create go routine
@@ -89,7 +89,7 @@ func (po *PersistOutputInterface) ConvertOutputToSecretPod(pod *corev1.Pod, eJob
 		if container.Name == "output-persist" {
 			continue
 		}
-		go po.ConvertOutputToSecretContainer(containerIndex, container, eJob, errorContainerChannel)
+		go po.ConvertOutputToSecretContainer(containerIndex, container, exjob, errorContainerChannel)
 	}
 
 	// wait for all container go routines
@@ -104,7 +104,7 @@ func (po *PersistOutputInterface) ConvertOutputToSecretPod(pod *corev1.Pod, eJob
 
 // ConvertOutputToSecretContainer converts json output file
 // of the specified container into a secret
-func (po *PersistOutputInterface) ConvertOutputToSecretContainer(containerIndex int, container corev1.Container, eJob *ejv1.ExtendedJob, errorContainerChannel chan<- error) {
+func (po *PersistOutputInterface) ConvertOutputToSecretContainer(containerIndex int, container corev1.Container, exjob *ejv1.ExtendedJob, errorContainerChannel chan<- error) {
 	filePath := filepath.Join(po.outputFilePathPrefix, container.Name, "output.json")
 	containerIndex, err := po.CheckForOutputFile(filePath, containerIndex, container.Name)
 	if err != nil {
@@ -115,8 +115,8 @@ func (po *PersistOutputInterface) ConvertOutputToSecretContainer(containerIndex 
 		if err != nil {
 			errorContainerChannel <- err
 		}
-		if exitCode == 0 || (exitCode == 1 && eJob.Spec.Output.WriteOnFailure) {
-			err := po.CreateSecret(container, eJob)
+		if exitCode == 0 || (exitCode == 1 && exjob.Spec.Output.WriteOnFailure) {
+			err := po.CreateSecret(container, exjob)
 			if err != nil {
 				errorContainerChannel <- err
 			}
@@ -199,8 +199,8 @@ func fileExists(filename string) bool {
 }
 
 // CreateSecret converts the output file into json and creates a secret for a given container
-func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container, eJob *ejv1.ExtendedJob) error {
-	namePrefix := eJob.Spec.Output.NamePrefix
+func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container, exjob *ejv1.ExtendedJob) error {
+	namePrefix := exjob.Spec.Output.NamePrefix
 	secretName := namePrefix + outputContainer.Name
 
 	// Fetch json from file
@@ -216,7 +216,7 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 			filePath, secretName, po.podName)
 	}
 
-	// Create secret for the output file to persist
+	// Create secret for the outputfile to persist
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secretName,
@@ -224,15 +224,15 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 		},
 	}
 
-	if eJob.Spec.Output.Versioned {
+	if exjob.Spec.Output.Versioned {
 		// Use secretName as versioned secret name prefix: <secretName>-v<version>
-		err = po.CreateVersionSecret(eJob, outputContainer, secretName, data, "created by extendedjob")
+		err = po.CreateVersionSecret(exjob, outputContainer, secretName, data, "created by extendedjob")
 		if err != nil {
-			return errors.Wrapf(err, "could not persist ejob's %s output to a secret", eJob.GetName())
+			return errors.Wrapf(err, "could not persist ejob's %s output to a secret", exjob.GetName())
 		}
 	} else {
 		secretLabels := map[string]string{}
-		for k, v := range eJob.Spec.Output.SecretLabels {
+		for k, v := range exjob.Spec.Output.SecretLabels {
 			secretLabels[k] = v
 		}
 		secretLabels[ejv1.LabelPersistentSecretContainer] = outputContainer.Name
@@ -262,9 +262,9 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 }
 
 // CreateVersionSecret create a versioned kubernetes secret given the data.
-func (po *PersistOutputInterface) CreateVersionSecret(eJob *ejv1.ExtendedJob, outputContainer corev1.Container, secretName string, secretData map[string]string, sourceDescription string) error {
-	ownerName := eJob.GetName()
-	ownerID := eJob.GetUID()
+func (po *PersistOutputInterface) CreateVersionSecret(exjob *ejv1.ExtendedJob, outputContainer corev1.Container, secretName string, secretData map[string]string, sourceDescription string) error {
+	ownerName := exjob.GetName()
+	ownerID := exjob.GetUID()
 
 	currentVersion, err := getGreatestVersion(po.clientSet, po.namespace, secretName)
 	if err != nil {
@@ -273,7 +273,7 @@ func (po *PersistOutputInterface) CreateVersionSecret(eJob *ejv1.ExtendedJob, ou
 
 	version := currentVersion + 1
 	secretLabels := map[string]string{}
-	for k, v := range eJob.Spec.Output.SecretLabels {
+	for k, v := range exjob.Spec.Output.SecretLabels {
 		secretLabels[k] = v
 	}
 	secretLabels[ejv1.LabelPersistentSecretContainer] = outputContainer.Name

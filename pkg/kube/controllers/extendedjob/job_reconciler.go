@@ -61,12 +61,14 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 	err := r.client.Get(ctx, request.NamespacedName, instance)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			// Do not requeue, job is probably deleted.
-			ctxlog.Infof(ctx, "Failed to find job '%s', not retrying: %s", request.NamespacedName, err)
+			// Request object not found, could have been deleted after reconcile request.
+			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+			// Return and don't requeue
+			ctxlog.Info(ctx, "Skip reconcile: Job not found")
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		ctxlog.Errorf(ctx, "Failed to get job '%s': %s", request.NamespacedName, err)
+		ctxlog.Info(ctx, "Error reading the object")
 		return reconcile.Result{}, err
 	}
 
@@ -78,7 +80,7 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 		}
 	}
 	if parentName == "" {
-		err = ctxlog.WithEvent(instance, "NotFoundError").Errorf(ctx, "could not find parent ExtendedJob reference for Job '%s'", request.NamespacedName)
+		err = ctxlog.WithEvent(instance, "NotFoundError").Errorf(ctx, "Could not find parent ExtendedJob for Job '%s'", request.NamespacedName)
 		return reconcile.Result{}, err
 	}
 
@@ -131,12 +133,13 @@ func (r *ReconcileJob) jobPod(ctx context.Context, name string, namespace string
 		return nil, errors.Errorf("Job %s does not own any pods?", name)
 	}
 
-	// If there is only one job pod, then return index 0 pod.
+	// If there is only one jobpod, then return index 0 pod
 	latestPod := list.Items[0]
 	if len(list.Items) > 1 {
-		// If there are more than one job pods, then return the latest
-		// created job pod. There will be multiple job pods when job pods
-		// fail.
+		// If there are more than one jobpods, then return the latest
+		// created jobpod. There will be multiple jobpods when jobpods
+		// fail. Kubernetes job creates new jobpods if the jobpod
+		// created previously fails
 		latestTimeStamp := list.Items[0].GetCreationTimestamp().UTC()
 		for podIndex, pod := range list.Items {
 			if latestTimeStamp.Before(pod.GetCreationTimestamp().UTC()) {

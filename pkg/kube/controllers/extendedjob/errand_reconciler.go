@@ -82,7 +82,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		ctxlog.Errorf(ctx, "Failed to get extended job '%s': %s", request.NamespacedName, err)
+		ctxlog.Errorf(ctx, "Failed to get the extended job '%s': %s", request.NamespacedName, err)
 		return reconcile.Result{}, err
 	}
 
@@ -99,7 +99,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
-	r.injectContainerEnv(&eJob.Spec.Template.Spec.Template.Spec)
+	r.injectContainerEnv(&eJob.Spec.Template.Spec)
 	if retry, err := r.jobCreator.Create(ctx, *eJob, request.Namespace); err != nil {
 		return reconcile.Result{}, ctxlog.WithEvent(eJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", eJob.Name, err)
 	} else if retry {

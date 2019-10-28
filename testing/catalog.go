@@ -5,7 +5,6 @@ package testing
 
 import (
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1b1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -72,49 +71,45 @@ func (c *Catalog) DefaultPod(name string) corev1.Pod {
 	}
 }
 
-// ConfigJobTemplate returns the spec with a given command for busybox
-func (c *Catalog) ConfigJobTemplate() batchv1b1.JobTemplateSpec {
+// ConfigPodTemplate returns the spec with a given command for busybox
+func (c *Catalog) ConfigPodTemplate() corev1.PodTemplateSpec {
 	one := int64(1)
-	return batchv1b1.JobTemplateSpec{
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"delete": "pod"},
-				},
-				Spec: corev1.PodSpec{
-					RestartPolicy:                 corev1.RestartPolicyNever,
-					TerminationGracePeriodSeconds: &one,
-					Volumes: []corev1.Volume{
-						{
-							Name: "secret1",
-							VolumeSource: corev1.VolumeSource{
-								Secret: &corev1.SecretVolumeSource{
-									SecretName: "secret1",
-								},
-							},
+	return corev1.PodTemplateSpec{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels: map[string]string{"delete": "pod"},
+		},
+		Spec: corev1.PodSpec{
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: &one,
+			Volumes: []corev1.Volume{
+				{
+					Name: "secret1",
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: "secret1",
 						},
-						{
-							Name: "configmap1",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: "config1",
-									},
-								},
+					},
+				},
+				{
+					Name: "configmap1",
+					VolumeSource: corev1.VolumeSource{
+						ConfigMap: &corev1.ConfigMapVolumeSource{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: "config1",
 							},
 						},
 					},
-					Containers: []corev1.Container{
-						{
-							Name:    "busybox",
-							Image:   "busybox",
-							Command: []string{"sleep", "1"},
-							Env: []corev1.EnvVar{
-								{Name: "REPLICAS", Value: "1"},
-								{Name: "AZ_INDEX", Value: "1"},
-								{Name: "POD_ORDINAL", Value: "0"},
-							},
-						},
+				},
+			},
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: []string{"sleep", "1"},
+					Env: []corev1.EnvVar{
+						{Name: "REPLICAS", Value: "1"},
+						{Name: "AZ_INDEX", Value: "1"},
+						{Name: "POD_ORDINAL", Value: "0"},
 					},
 				},
 			},
@@ -123,76 +118,64 @@ func (c *Catalog) ConfigJobTemplate() batchv1b1.JobTemplateSpec {
 }
 
 // ExJobPodTemplate returns the spec with a given output-persist container
-func (c *Catalog) ExJobPodTemplate(cmd []string) batchv1b1.JobTemplateSpec {
-	return batchv1b1.JobTemplateSpec{
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy:                 corev1.RestartPolicyNever,
-					TerminationGracePeriodSeconds: pointers.Int64(1),
-					Containers: []corev1.Container{
-						{
-							Name:    "busybox",
-							Image:   "busybox",
-							Command: cmd,
-						},
-						{
-							Name:    "output-persist",
-							Image:   "busybox",
-							Command: cmd,
-						},
-					},
+func (c *Catalog) ExJobPodTemplate(cmd []string) corev1.PodTemplateSpec {
+	return corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: pointers.Int64(1),
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: cmd,
+				},
+				{
+					Name:    "output-persist",
+					Image:   "busybox",
+					Command: cmd,
 				},
 			},
 		},
 	}
 }
 
-// FailingMultiContainerJobTemplate returns a spec with a given command for busybox and a second container which fails
-func (c *Catalog) FailingMultiContainerJobTemplate(cmd []string) batchv1b1.JobTemplateSpec {
-	return batchv1b1.JobTemplateSpec{
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy:                 corev1.RestartPolicyNever,
-					TerminationGracePeriodSeconds: pointers.Int64(1),
-					Containers: []corev1.Container{
-						{
-							Name:    "busybox",
-							Image:   "busybox",
-							Command: cmd,
-						},
-						{
-							Name:    "failing",
-							Image:   "busybox",
-							Command: []string{"exit", "1"},
-						},
-					},
+// FailingMultiContainerPodTemplate returns a spec with a given command for busybox and a second container which fails
+func (c *Catalog) FailingMultiContainerPodTemplate(cmd []string) corev1.PodTemplateSpec {
+	return corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: pointers.Int64(1),
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: cmd,
+				},
+				{
+					Name:    "failing",
+					Image:   "busybox",
+					Command: []string{"exit", "1"},
 				},
 			},
 		},
 	}
 }
 
-// CmdJobTemplate returns the spec with a given command for busybox
-func (c *Catalog) CmdJobTemplate(cmd []string) batchv1b1.JobTemplateSpec {
-	return batchv1b1.JobTemplateSpec{
-		Spec: batchv1.JobSpec{
-			Template: corev1.PodTemplateSpec{
-				Spec: corev1.PodSpec{
-					RestartPolicy:                 corev1.RestartPolicyNever,
-					TerminationGracePeriodSeconds: pointers.Int64(1),
-					Containers: []corev1.Container{
-						{
-							Name:    "busybox",
-							Image:   "busybox",
-							Command: cmd,
-							Env: []corev1.EnvVar{
-								{Name: "REPLICAS", Value: "1"},
-								{Name: "AZ_INDEX", Value: "1"},
-								{Name: "POD_ORDINAL", Value: "0"},
-							},
-						},
+// CmdPodTemplate returns the spec with a given command for busybox
+func (c *Catalog) CmdPodTemplate(cmd []string) corev1.PodTemplateSpec {
+	return corev1.PodTemplateSpec{
+		Spec: corev1.PodSpec{
+			RestartPolicy:                 corev1.RestartPolicyNever,
+			TerminationGracePeriodSeconds: pointers.Int64(1),
+			Containers: []corev1.Container{
+				{
+					Name:    "busybox",
+					Image:   "busybox",
+					Command: cmd,
+					Env: []corev1.EnvVar{
+						{Name: "REPLICAS", Value: "1"},
+						{Name: "AZ_INDEX", Value: "1"},
+						{Name: "POD_ORDINAL", Value: "0"},
 					},
 				},
 			},
@@ -277,7 +260,7 @@ func (c *Catalog) ErrandExtendedJob(name string) ejv1.ExtendedJob {
 			Trigger: ejv1.Trigger{
 				Strategy: ejv1.TriggerNow,
 			},
-			Template: c.CmdJobTemplate(cmd),
+			Template: c.CmdPodTemplate(cmd),
 		},
 	}
 }
@@ -291,7 +274,7 @@ func (c *Catalog) AutoErrandExtendedJob(name string) ejv1.ExtendedJob {
 			Trigger: ejv1.Trigger{
 				Strategy: ejv1.TriggerOnce,
 			},
-			Template: c.CmdJobTemplate(cmd),
+			Template: c.CmdPodTemplate(cmd),
 		},
 	}
 }

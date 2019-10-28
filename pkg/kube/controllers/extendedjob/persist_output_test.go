@@ -22,7 +22,7 @@ import (
 var _ = Describe("PersistOutputInterface", func() {
 	var (
 		namespace          string
-		eJob               *ejapi.ExtendedJob
+		ejob               *ejapi.ExtendedJob
 		pod                *corev1.Pod
 		env                testing.Catalog
 		clientSet          *testclient.Clientset
@@ -32,7 +32,7 @@ var _ = Describe("PersistOutputInterface", func() {
 
 	BeforeEach(func() {
 		namespace = "test"
-		eJob, _, pod = env.DefaultExtendedJobWithSucceededJob("foo")
+		ejob, _, pod = env.DefaultExtendedJobWithSucceededJob("foo")
 		clientSet = testclient.NewSimpleClientset()
 		versionedClientSet = testversionedclient.NewSimpleClientset()
 		po = extendedjob.NewPersistOutputInterface(namespace, pod.Name, clientSet, versionedClientSet, "/tmp/")
@@ -40,7 +40,7 @@ var _ = Describe("PersistOutputInterface", func() {
 
 	JustBeforeEach(func() {
 		// Create necessary kube resources
-		_, err := versionedClientSet.ExtendedjobV1alpha1().ExtendedJobs(namespace).Create(eJob)
+		_, err := versionedClientSet.ExtendedjobV1alpha1().ExtendedJobs(namespace).Create(ejob)
 		Expect(err).NotTo(HaveOccurred())
 		_, err = clientSet.CoreV1().Pods(namespace).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
@@ -72,7 +72,7 @@ var _ = Describe("PersistOutputInterface", func() {
 
 		Context("when output persistence is not configured", func() {
 			BeforeEach(func() {
-				eJob.Spec.Output = nil
+				ejob.Spec.Output = nil
 			})
 
 			It("does not persist output", func() {
@@ -85,7 +85,7 @@ var _ = Describe("PersistOutputInterface", func() {
 
 		Context("when output persistence is configured", func() {
 			BeforeEach(func() {
-				eJob.Spec.Output = &ejapi.Output{
+				ejob.Spec.Output = &ejapi.Output{
 					NamePrefix: "foo-",
 					SecretLabels: map[string]string{
 						"key": "value",
@@ -106,7 +106,7 @@ var _ = Describe("PersistOutputInterface", func() {
 
 		Context("when versioned output is enabled", func() {
 			BeforeEach(func() {
-				eJob.Spec.Output = &ejapi.Output{
+				ejob.Spec.Output = &ejapi.Output{
 					NamePrefix: "foo-",
 					SecretLabels: map[string]string{
 						"key":        "value",
@@ -147,7 +147,7 @@ var _ = Describe("PersistOutputInterface", func() {
 
 		Context("when WriteOnFailure is set", func() {
 			BeforeEach(func() {
-				eJob.Spec.Output = &ejapi.Output{
+				ejob.Spec.Output = &ejapi.Output{
 					NamePrefix:     "foo-",
 					WriteOnFailure: true,
 				}

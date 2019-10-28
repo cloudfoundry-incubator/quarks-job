@@ -138,7 +138,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
 		Name:            "output-persist",
-		Image:           image,
+		Image:           config.GetOperatorDockerImage(),
 		ImagePullPolicy: config.GetOperatorImagePullPolicy(),
 		Command:         []string{"/usr/bin/dumb-init", "--"},
 		Args: []string{

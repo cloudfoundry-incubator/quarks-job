@@ -1,25 +1,28 @@
 package extendedjob
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"gopkg.in/fsnotify.v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/apis"
 	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
 	podutil "code.cloudfoundry.org/quarks-utils/pkg/pod"
+	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
@@ -225,11 +228,7 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 		// Use secretName as versioned secret name prefix: <secretName>-v<version>
 		err = po.CreateVersionSecret(eJob, outputContainer, secretName, data, "created by extendedjob")
 		if err != nil {
-			if versionedsecretstore.IsSecretIdenticalError(err) {
-				// No-op. the latest version is identical to the one we have
-			} else {
-				return errors.Wrapf(err, "could not persist ejob's %s output to a secret", eJob.GetName())
-			}
+			return errors.Wrapf(err, "could not persist ejob's %s output to a secret", eJob.GetName())
 		}
 	} else {
 		secretLabels := map[string]string{}
@@ -267,6 +266,12 @@ func (po *PersistOutputInterface) CreateVersionSecret(eJob *ejv1.ExtendedJob, ou
 	ownerName := eJob.GetName()
 	ownerID := eJob.GetUID()
 
+	currentVersion, err := getGreatestVersion(po.clientSet, po.namespace, secretName)
+	if err != nil {
+		return err
+	}
+
+	version := currentVersion + 1
 	secretLabels := map[string]string{}
 	for k, v := range eJob.Spec.Output.SecretLabels {
 		secretLabels[k] = v
@@ -275,7 +280,81 @@ func (po *PersistOutputInterface) CreateVersionSecret(eJob *ejv1.ExtendedJob, ou
 	if ig, ok := podutil.LookupEnv(outputContainer.Env, EnvInstanceGroupName); ok {
 		secretLabels[ejv1.LabelInstanceGroup] = ig
 	}
+	secretLabels[versionedsecretstore.LabelVersion] = strconv.Itoa(version)
+	secretLabels[versionedsecretstore.LabelSecretKind] = versionedsecretstore.VersionSecretKind
 
-	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
-	return store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
+	generatedSecretName, err := versionedsecretstore.GenerateSecretName(secretName, version)
+	if err != nil {
+		return err
+	}
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      generatedSecretName,
+			Namespace: po.namespace,
+			Labels:    secretLabels,
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion:         versionedsecretstore.LabelAPIVersion,
+					Kind:               "ExtendedJob",
+					Name:               ownerName,
+					UID:                ownerID,
+					BlockOwnerDeletion: pointers.Bool(false),
+					Controller:         pointers.Bool(true),
+				},
+			},
+			Annotations: map[string]string{
+				versionedsecretstore.AnnotationSourceDescription: sourceDescription,
+			},
+		},
+		StringData: secretData,
+	}
+
+	_, err = po.clientSet.CoreV1().Secrets(po.namespace).Create(secret)
+	return err
+}
+
+func getGreatestVersion(clientSet kubernetes.Interface, namespace string, secretName string) (int, error) {
+	list, err := listSecrets(clientSet, namespace, secretName)
+	if err != nil {
+		return -1, err
+	}
+
+	var greatestVersion int
+	for _, secret := range list {
+		version, err := versionedsecretstore.Version(secret)
+		if err != nil {
+			return 0, err
+		}
+
+		if version > greatestVersion {
+			greatestVersion = version
+		}
+	}
+
+	return greatestVersion, nil
+}
+
+func listSecrets(clientSet kubernetes.Interface, namespace string, secretName string) ([]corev1.Secret, error) {
+	secretLabelsSet := labels.Set{
+		versionedsecretstore.LabelSecretKind: versionedsecretstore.VersionSecretKind,
+	}
+
+	secrets, err := clientSet.CoreV1().Secrets(namespace).List(metav1.ListOptions{
+		LabelSelector: secretLabelsSet.String(),
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to list secrets with labels %s", secretLabelsSet.String())
+	}
+
+	result := []corev1.Secret{}
+
+	nameRegex := regexp.MustCompile(fmt.Sprintf(`^%s-v\d+$`, secretName))
+	for _, secret := range secrets.Items {
+		if nameRegex.MatchString(secret.Name) {
+			result = append(result, secret)
+		}
+	}
+
+	return result, nil
 }

@@ -66,7 +66,7 @@ func GetReconciles(ctx context.Context, client crc.Client, reconcileType Reconci
 				keys[i] = k
 				i++
 			}
-			ok := vss.ContainsOutdatedSecretName(keys, name)
+			ok := vss.ContainsSecretName(keys, name)
 			return ok, nil
 		}
 

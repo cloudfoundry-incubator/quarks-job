@@ -20,5 +20,4 @@ RUN groupadd -g 1000 quarks && \
     useradd -r -u 1000 -g quarks quarks
 USER quarks
 COPY --from=build /usr/local/bin/quarks-job /usr/local/bin/quarks-job
-ENTRYPOINT ["/tini", "--"]
-CMD ["/usr/local/bin/quarks-job"]
+ENTRYPOINT ["/tini", "--", "/usr/local/bin/quarks-job"]

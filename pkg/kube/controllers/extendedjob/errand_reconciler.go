@@ -33,7 +33,7 @@ const (
 	// EnvPodOrdinal is the pod's index
 	EnvPodOrdinal = "POD_ORDINAL"
 	// EnvNamespace is the namespace in which cf-operator runs
-	EnvNamespace = "OPERATOR_NAMESPACE"
+	EnvNamespace = "CF_OPERATOR_NAMESPACE"
 )
 
 // NewErrandReconciler returns a new reconciler for errand jobs.

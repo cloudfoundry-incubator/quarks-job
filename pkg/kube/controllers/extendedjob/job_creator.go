@@ -106,6 +106,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 	if err := j.client.Get(ctx, crc.ObjectKey{Name: serviceAccountName, Namespace: namespace}, &createdServiceAccount); err != nil {
 		return false, errors.Wrapf(err, "could not get %s", eJob.Name)
 	}
+	fmt.Printf("%v\n", createdServiceAccount)
 
 	if len(createdServiceAccount.Secrets) == 0 {
 		return false, fmt.Errorf("missing service account secret for '%s'", serviceAccountName)

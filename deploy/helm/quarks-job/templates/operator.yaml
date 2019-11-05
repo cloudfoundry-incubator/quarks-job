@@ -45,3 +45,5 @@ spec:
               value: "{{ .Values.image.repository }}"
             - name: DOCKER_IMAGE_TAG
               value: "{{ .Values.image.tag }}"
+            - name: DOCKER_IMAGE_PULL_POLICY
+              value: "{{ .Values.image.pullPolicy }}"

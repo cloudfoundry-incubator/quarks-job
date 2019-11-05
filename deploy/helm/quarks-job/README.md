@@ -54,14 +54,15 @@ $ helm delete quarks-job --purge
 
 | Parameter                                         | Description                                                                       | Default                                        |
 | ------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `image.repository`                                | docker hub repository for the quarks-job image                                   | `quarks-job`                                  |
-| `image.org`                                       | docker hub organization for the quarks-job image                                 | `cfcontainerization`                           |
-| `image.tag`                                       | docker image tag                                                                  | `foobar`                                       |
-| `image.pullPolicy`                                | Kubernetes image pullPolicy                                                       | `IfNotPresent`                                 |
-| `rbacEnable`                                      | install required RBAC service account, roles and rolebindings                     | `true`                                         |
-| `serviceAccount.quarksJobServiceAccount.create`  | Will set the value of `quarks-job.serviceAccountName` to the current chart name  | `true`                                         |
-| `serviceAccount.quarksJobServiceAccount.name`    | If the above is not set, it will set the `quarks-job.serviceAccountName`         |                                                |
-
+| `image.repository`                                | Docker hub repository for the quarks-job image                                    | `quarks-job`                                   |
+| `image.org`                                       | Docker hub organization for the quarks-job image                                  | `cfcontainerization`                           |
+| `image.tag`                                       | Docker image tag                                                                  | `foobar`                                       |
+| `global.contextTimeout`                           | Will set the context timeout in seconds, for future K8S API requests              | `30`                                           |
+| `global.image.pullPolicy`                         | Kubernetes image pullPolicy                                                       | `IfNotPresent`                                 |
+| `global.operator.watchNamespace`                  | Namespace the operator will watch for BOSH deployments                            | the release namespace                          |
+| `global.rbacEnable`                               | Install required RBAC service account, roles and rolebindings                     | `true`                                         |
+| `serviceAccount.quarksJobServiceAccount.create`   | Will set the value of `quarks-job.serviceAccountName` to the current chart name   | `true`                                         |
+| `serviceAccount.quarksJobServiceAccount.name`     | If the above is not set, it will set the `quarks-job.serviceAccountName`          |                                                |
 
 ## RBAC
 
@@ -70,7 +71,7 @@ By default, the helm chart will install RBAC ClusterRole and ClusterRoleBinding 
 The RBAC resources are enable by default. To disable:
 
 ```bash
-$ helm install --namespace quarks --name quarks-job https://s3.amazonaws.com/cf-operators/helm-charts/quarks-job-v0.2.2%2B47.g24492ea.tgz --set rbacEnable=false
+$ helm install --namespace quarks --name quarks-job https://s3.amazonaws.com/cf-operators/helm-charts/quarks-job-v0.2.2%2B47.g24492ea.tgz --set global.rbacEnable=false
 ```
 
 ## Custom Resources

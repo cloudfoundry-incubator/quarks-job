@@ -7,14 +7,10 @@ image:
 
 operator:
   watchNamespace: ""
+
 nameOverride: ""
+
 fullnameOverride: ""
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}
 
 rbacEnable: true
 

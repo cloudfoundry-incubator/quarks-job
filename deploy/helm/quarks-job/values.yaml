@@ -3,18 +3,20 @@ image:
   repository: quarks-job
   org: cfcontainerization
   tag: foobar
-  pullPolicy: IfNotPresent
-
-operator:
-  watchNamespace: ""
 
 nameOverride: ""
 
 fullnameOverride: ""
 
-rbacEnable: true
-
 serviceAccount:
   quarksJobServiceAccount:
     create: true
     name:
+
+global:
+  contextTimeout: 30
+  rbacEnable: true
+  image:
+    pullPolicy: IfNotPresent
+  operator:
+    watchNamespace: ""

@@ -1,6 +1,6 @@
 Running the operator will install the following CRD:
 
-- extendedjobs.fissile.cloudfoundry.org
+- extendedjobs.quarks.cloudfoundry.org
 
 You can always verify if the CRD´s are installed, by running:
  $ kubectl get crds

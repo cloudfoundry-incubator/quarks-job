@@ -8,7 +8,7 @@ Don't alter this file, it was generated.
 package versioned
 
 import (
-	extendedjobv1alpha1 "code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned/typed/extendedjob/v1alpha1"
+	quarksjobv1alpha1 "code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned/typed/quarksjob/v1alpha1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -16,19 +16,19 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	ExtendedjobV1alpha1() extendedjobv1alpha1.ExtendedjobV1alpha1Interface
+	QuarksjobV1alpha1() quarksjobv1alpha1.QuarksjobV1alpha1Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	extendedjobV1alpha1 *extendedjobv1alpha1.ExtendedjobV1alpha1Client
+	quarksjobV1alpha1 *quarksjobv1alpha1.QuarksjobV1alpha1Client
 }
 
-// ExtendedjobV1alpha1 retrieves the ExtendedjobV1alpha1Client
-func (c *Clientset) ExtendedjobV1alpha1() extendedjobv1alpha1.ExtendedjobV1alpha1Interface {
-	return c.extendedjobV1alpha1
+// QuarksjobV1alpha1 retrieves the QuarksjobV1alpha1Client
+func (c *Clientset) QuarksjobV1alpha1() quarksjobv1alpha1.QuarksjobV1alpha1Interface {
+	return c.quarksjobV1alpha1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -47,7 +47,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 	var cs Clientset
 	var err error
-	cs.extendedjobV1alpha1, err = extendedjobv1alpha1.NewForConfig(&configShallowCopy)
+	cs.quarksjobV1alpha1, err = quarksjobv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +63,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.extendedjobV1alpha1 = extendedjobv1alpha1.NewForConfigOrDie(c)
+	cs.quarksjobV1alpha1 = quarksjobv1alpha1.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -72,7 +72,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.extendedjobV1alpha1 = extendedjobv1alpha1.New(c)
+	cs.quarksjobV1alpha1 = quarksjobv1alpha1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

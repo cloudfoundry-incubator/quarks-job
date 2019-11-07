@@ -5,14 +5,13 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-
 	batchv1 "k8s.io/api/batch/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
 	"code.cloudfoundry.org/quarks-utils/testing/machine"
 )
@@ -24,21 +23,21 @@ type Machine struct {
 	VersionedClientset *versioned.Clientset
 }
 
-// GetExtendedJob gets an ExtendedJob custom resource
-func (m *Machine) GetExtendedJob(namespace string, name string) (*ejv1.ExtendedJob, error) {
-	client := m.VersionedClientset.ExtendedjobV1alpha1().ExtendedJobs(namespace)
+// GetQuarksJob gets an QuarksJob custom resource
+func (m *Machine) GetQuarksJob(namespace string, name string) (*qjv1a1.QuarksJob, error) {
+	client := m.VersionedClientset.QuarksjobV1alpha1().QuarksJobs(namespace)
 	d, err := client.Get(name, metav1.GetOptions{})
 	return d, err
 }
 
-// CreateExtendedJob creates an ExtendedJob
-func (m *Machine) CreateExtendedJob(namespace string, job ejv1.ExtendedJob) (*ejv1.ExtendedJob, machine.TearDownFunc, error) {
-	client := m.VersionedClientset.ExtendedjobV1alpha1().ExtendedJobs(namespace)
+// CreateQuarksJob creates an QuarksJob
+func (m *Machine) CreateQuarksJob(namespace string, job qjv1a1.QuarksJob) (*qjv1a1.QuarksJob, machine.TearDownFunc, error) {
+	client := m.VersionedClientset.QuarksjobV1alpha1().QuarksJobs(namespace)
 	d, err := client.Create(&job)
 	return d, func() error {
 		pods, err := m.Clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
 			LabelSelector: labels.Set(map[string]string{
-				ejv1.LabelEJobName: job.Name,
+				qjv1a1.LabelQJobName: job.Name,
 			}).String(),
 		})
 		if err != nil {
@@ -61,29 +60,29 @@ func (m *Machine) CreateExtendedJob(namespace string, job ejv1.ExtendedJob) (*ej
 	}, err
 }
 
-// UpdateExtendedJob updates an extended job
-func (m *Machine) UpdateExtendedJob(namespace string, eJob ejv1.ExtendedJob) error {
-	client := m.VersionedClientset.ExtendedjobV1alpha1().ExtendedJobs(namespace)
-	_, err := client.Update(&eJob)
+// UpdateQuarksJob updates an quarks job
+func (m *Machine) UpdateQuarksJob(namespace string, qJob qjv1a1.QuarksJob) error {
+	client := m.VersionedClientset.QuarksjobV1alpha1().QuarksJobs(namespace)
+	_, err := client.Update(&qJob)
 	return err
 }
 
-// WaitForExtendedJobDeletion blocks until the CR job is deleted
-func (m *Machine) WaitForExtendedJobDeletion(namespace string, name string) error {
+// WaitForQuarksJobDeletion blocks until the quarks job is deleted
+func (m *Machine) WaitForQuarksJobDeletion(namespace string, name string) error {
 	return wait.PollImmediate(m.PollInterval, m.PollTimeout, func() (bool, error) {
-		found, err := m.ExtendedJobExists(namespace, name)
+		found, err := m.QuarksJobExists(namespace, name)
 		return !found, err
 	})
 }
 
-// ExtendedJobExists returns true if extended job with that name exists
-func (m *Machine) ExtendedJobExists(namespace string, name string) (bool, error) {
-	_, err := m.GetExtendedJob(namespace, name)
+// QuarksJobExists returns true if quarks job with that name exists
+func (m *Machine) QuarksJobExists(namespace string, name string) (bool, error) {
+	_, err := m.GetQuarksJob(namespace, name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return false, nil
 		}
-		return false, errors.Wrapf(err, "failed to query for extended job by name: %s", name)
+		return false, errors.Wrapf(err, "failed to query for quarks job by name: %s", name)
 	}
 
 	return true, nil

@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/apis"
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	log "code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
@@ -21,20 +21,20 @@ import (
 type ReconcileType int
 
 const (
-	// ReconcileForExtendedJob represents the ExtendedJob CRD
-	ReconcileForExtendedJob = iota
+	// ReconcileForQuarksJob represents the QuarksJob CRD
+	ReconcileForQuarksJob = iota
 )
 
 func (r ReconcileType) String() string {
 	return [...]string{
-		"ExtendedJob",
+		"QuarksJob",
 	}[r]
 }
 
-// GetReconciles returns reconciliation requests for the BOSHDeployments, ExtendedJobs or ExtendedStatefulSets
+// GetReconciles returns reconciliation requests for the QuarksJobs
 // that reference an object. The object can be a ConfigMap or a Secret
 func GetReconciles(ctx context.Context, client crc.Client, reconcileType ReconcileType, object apis.Object) ([]reconcile.Request, error) {
-	objReferencedBy := func(parent interface{}) (bool, error) {
+	objReferencedBy := func(parent qjv1a1.QuarksJob) (bool, error) {
 		var (
 			objectReferences map[string]bool
 			err              error
@@ -44,13 +44,12 @@ func GetReconciles(ctx context.Context, client crc.Client, reconcileType Reconci
 
 		switch object := object.(type) {
 		case *corev1.ConfigMap:
-			objectReferences, err = GetConfigMapsReferencedBy(parent)
+			objectReferences = GetConfigMapsReferencedByFromEJob(parent)
 			name = object.Name
 		case *corev1.Secret:
-			objectReferences, err = GetSecretsReferencedBy(ctx, client, parent)
+			objectReferences = GetSecretsReferencesFromQuarksJob(parent)
 			name = object.Name
 			versionedSecret = vss.IsVersionedSecret(*object)
-
 		default:
 			return false, errors.New("can't get reconciles for unknown object type; supported types are ConfigMap and Secret")
 		}
@@ -78,17 +77,17 @@ func GetReconciles(ctx context.Context, client crc.Client, reconcileType Reconci
 	result := []reconcile.Request{}
 
 	switch reconcileType {
-	case ReconcileForExtendedJob:
-		extendedJobs, err := listExtendedJobs(ctx, client, namespace)
+	case ReconcileForQuarksJob:
+		quarksJobs, err := listQuarksJobs(ctx, client, namespace)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to list ExtendedJobs for ConfigMap reconciles")
+			return nil, errors.Wrap(err, "failed to list QuarksJobs for ConfigMap reconciles")
 		}
 
-		for _, eJob := range extendedJobs.Items {
-			if !(eJob.Spec.UpdateOnConfigChange && eJob.IsAutoErrand()) {
+		for _, qJob := range quarksJobs.Items {
+			if !(qJob.Spec.UpdateOnConfigChange && qJob.IsAutoErrand()) {
 				continue
 			}
-			isRef, err := objReferencedBy(eJob)
+			isRef, err := objReferencedBy(qJob)
 			if err != nil {
 				return nil, err
 			}
@@ -96,8 +95,8 @@ func GetReconciles(ctx context.Context, client crc.Client, reconcileType Reconci
 			if isRef {
 				result = append(result, reconcile.Request{
 					NamespacedName: types.NamespacedName{
-						Name:      eJob.Name,
-						Namespace: eJob.Namespace,
+						Name:      qJob.Name,
+						Namespace: qJob.Namespace,
 					}})
 			}
 		}
@@ -143,12 +142,12 @@ func SkipReconciles(ctx context.Context, client crc.Client, object apis.Object) 
 	return false
 }
 
-func listExtendedJobs(ctx context.Context, client crc.Client, namespace string) (*ejv1.ExtendedJobList, error) {
-	log.Debugf(ctx, "Listing ExtendedJobs in namespace '%s'", namespace)
-	result := &ejv1.ExtendedJobList{}
+func listQuarksJobs(ctx context.Context, client crc.Client, namespace string) (*qjv1a1.QuarksJobList, error) {
+	log.Debugf(ctx, "Listing QuarksJobs in namespace '%s'", namespace)
+	result := &qjv1a1.QuarksJobList{}
 	err := client.List(ctx, result)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to list ExtendedJobs")
+		return nil, errors.Wrap(err, "failed to list QuarksJobs")
 	}
 
 	return result, nil

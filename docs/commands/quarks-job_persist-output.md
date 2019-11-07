@@ -4,9 +4,9 @@ Persist a file into a kube secret
 
 ### Synopsis
 
-Persists a log file created by containers in a pod of extendedjob
+Persists a log file created by containers in a pod of quarksJob
 	
-into a versionsed secret or kube native secret using flags specified to this command.
+into a versioned secret or kube native secret using flags specified to this command.
 
 
 ```

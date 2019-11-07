@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"path"
 
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-utils/testing"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
+	"code.cloudfoundry.org/quarks-utils/testing"
 )
 
 var _ = Describe("Examples Directory", func() {
@@ -26,96 +26,96 @@ var _ = Describe("Examples Directory", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Context("extended-job auto errand delete example", func() {
+	Context("quarks job auto errand delete example", func() {
 		BeforeEach(func() {
-			example = "exjob_auto-errand-deletes-pod.yaml"
+			example = "qjob_auto-errand-deletes-pod.yaml"
 		})
 
 		It("deletes pod after job is done", func() {
 			By("Checking for pods")
-			err := kubectl.WaitForPod(namespace, fmt.Sprintf("%s=deletes-pod-1", ejv1.LabelEJobName), "deletes-pod-1")
+			err := kubectl.WaitForPod(namespace, fmt.Sprintf("%s=deletes-pod-1", qjv1a1.LabelQJobName), "deletes-pod-1")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = kubectl.WaitLabelFilter(namespace, "terminate", "pod", fmt.Sprintf("%s=deletes-pod-1", ejv1.LabelEJobName))
+			err = kubectl.WaitLabelFilter(namespace, "terminate", "pod", fmt.Sprintf("%s=deletes-pod-1", qjv1a1.LabelQJobName))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
-	Context("extended-job auto errand example", func() {
+	Context("quarks job auto errand example", func() {
 		BeforeEach(func() {
-			example = "exjob_auto-errand.yaml"
+			example = "qjob_auto-errand.yaml"
 		})
 
 		It("runs the errand automatically", func() {
 			By("Checking for pods")
-			err := kubectl.WaitForPod(namespace, fmt.Sprintf("%s=one-time-sleep", ejv1.LabelEJobName), "one-time-sleep")
+			err := kubectl.WaitForPod(namespace, fmt.Sprintf("%s=one-time-sleep", qjv1a1.LabelQJobName), "one-time-sleep")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=one-time-sleep", ejv1.LabelEJobName))
+			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=one-time-sleep", qjv1a1.LabelQJobName))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
-	Context("extended-job auto errand update example", func() {
+	Context("quarks job auto errand update example", func() {
 		BeforeEach(func() {
-			example = "exjob_auto-errand-updating.yaml"
+			example = "qjob_auto-errand-updating.yaml"
 		})
 
 		It("triggers job again when config is updated", func() {
 			By("Checking for pods")
 
-			err := kubectl.WaitForPod(namespace, fmt.Sprintf("%s=auto-errand-sleep-again", ejv1.LabelEJobName), "auto-errand-sleep-again")
+			err := kubectl.WaitForPod(namespace, fmt.Sprintf("%s=auto-errand-sleep-again", qjv1a1.LabelQJobName), "auto-errand-sleep-again")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=auto-errand-sleep-again", ejv1.LabelEJobName))
+			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=auto-errand-sleep-again", qjv1a1.LabelQJobName))
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Delete the pod")
-			err = testing.DeleteLabelFilter(namespace, "pod", fmt.Sprintf("%s=auto-errand-sleep-again", ejv1.LabelEJobName))
+			err = testing.DeleteLabelFilter(namespace, "pod", fmt.Sprintf("%s=auto-errand-sleep-again", qjv1a1.LabelQJobName))
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Update the config change")
-			yamlFilePath = examplesDir + "exjob_auto-errand-updating_updated.yaml"
+			yamlFilePath = examplesDir + "qjob_auto-errand-updating_updated.yaml"
 
 			err = testing.Apply(namespace, yamlFilePath)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = kubectl.WaitForPod(namespace, fmt.Sprintf("%s=auto-errand-sleep-again", ejv1.LabelEJobName), "auto-errand-sleep-again")
+			err = kubectl.WaitForPod(namespace, fmt.Sprintf("%s=auto-errand-sleep-again", qjv1a1.LabelQJobName), "auto-errand-sleep-again")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=auto-errand-sleep-again", ejv1.LabelEJobName))
+			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=auto-errand-sleep-again", qjv1a1.LabelQJobName))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
-	Context("extended-job errand example", func() {
+	Context("quarks job errand example", func() {
 		BeforeEach(func() {
-			example = "exjob_errand.yaml"
+			example = "qjob_errand.yaml"
 		})
 
 		It("starts job if trigger is changed manually", func() {
-			By("Updating exjob to trigger now")
-			yamlFilePath = examplesDir + "exjob_errand_updated.yaml"
+			By("Updating qjob to trigger now")
+			yamlFilePath = examplesDir + "qjob_errand_updated.yaml"
 			err := testing.Apply(namespace, yamlFilePath)
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking for pods")
-			err = kubectl.WaitForPod(namespace, fmt.Sprintf("%s=manual-sleep", ejv1.LabelEJobName), "manual-sleep")
+			err = kubectl.WaitForPod(namespace, fmt.Sprintf("%s=manual-sleep", qjv1a1.LabelQJobName), "manual-sleep")
 			Expect(err).ToNot(HaveOccurred())
 
-			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=manual-sleep", ejv1.LabelEJobName))
+			err = kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=manual-sleep", qjv1a1.LabelQJobName))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
-	Context("extended-job output example", func() {
+	Context("quarks job output example", func() {
 		BeforeEach(func() {
-			example = "exjob_output.yaml"
+			example = "qjob_output.yaml"
 		})
 
 		It("creates a secret from job output", func() {
 			By("Checking for pods")
-			err := kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=myfoo", ejv1.LabelEJobName))
+			err := kubectl.WaitLabelFilter(namespace, "complete", "pod", fmt.Sprintf("%s=myfoo", qjv1a1.LabelQJobName))
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Checking for secret")

@@ -1,27 +1,13 @@
 package reference
 
 import (
-	"context"
-
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
-	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 )
 
-// GetSecretsReferencedBy returns a list of all names for Secrets referenced by the object
-// The object can be an ExtendedStatefulSet, an ExtendedJob or a BOSHDeployment
-func GetSecretsReferencedBy(ctx context.Context, client crc.Client, object interface{}) (map[string]bool, error) {
-	switch object := object.(type) {
-	case ejv1.ExtendedJob:
-		return getSecretRefFromEJob(object), nil
-	default:
-		return nil, errors.New("can't get secret references for unknown type; supported types are BOSHDeployment, ExtendedJob and ExtendedStatefulSet")
-	}
-}
-
-func getSecretRefFromEJob(object ejv1.ExtendedJob) map[string]bool {
+// GetSecretsReferencesFromQuarksJob returns a list of all names for Secrets referenced by the QuarksJob
+func GetSecretsReferencesFromQuarksJob(object qjv1a1.QuarksJob) map[string]bool {
 	return getSecretRefFromPod(object.Spec.Template.Spec.Template.Spec)
 }
 

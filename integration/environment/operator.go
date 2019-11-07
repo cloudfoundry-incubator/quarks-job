@@ -11,7 +11,7 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/config"
 )
 
-// StartOperator starts the extended job operator
+// StartOperator starts the quarks job operator
 func (e *Environment) StartOperator() (chan struct{}, error) {
 	mgr, err := e.setupOperator()
 	if err != nil {

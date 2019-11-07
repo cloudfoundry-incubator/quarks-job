@@ -24,18 +24,18 @@ To install the helm chart directly from the [quarks-job repository](https://gith
 | `image.tag`                                       | docker image tag                                                     | `foobar`                                       |
 
 
-### For a local development with minikube, you can generate the image first and then use the `$VERSION_TAG` environment variable into the `image.tag`:
+### For a local development with minikube, you can generate the image first and then use the `$ARTIFACT_VERSION` environment variable into the `image.tag`:
 ```bash
 $ eval `minikube docker-env`
 $ . bin/include/versioning
-$ echo "Tag for docker image is $VERSION_TAG"
+$ echo "Tag for docker image is $ARTIFACT_VERSION"
 $ bin/build-image
 ```
 
 Either set the `image.tag` in the `values.yaml`, or pass it to `helm install`:
 
 ```bash
-$ helm install deploy/helm/quarks-job/ --namespace quarks --name quarks-job --set image.tag=$VERSION_TAG
+$ helm install deploy/helm/quarks-job/ --namespace quarks --name quarks-job --set image.tag=$ARTIFACT_VERSION
 ```
 
 

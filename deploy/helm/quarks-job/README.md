@@ -85,5 +85,5 @@ To verify if the CRD is installed:
 ```bash
 $ kubectl get crds
 NAME                                            CREATED AT
-extendedjobs.fissile.cloudfoundry.org           2019-06-25T07:08:37Z
+extendedjobs.quarks.cloudfoundry.org           2019-06-25T07:08:37Z
 ```

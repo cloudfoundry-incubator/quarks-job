@@ -99,7 +99,7 @@ var _ = Describe("PersistOutputInterface", func() {
 				secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
 				Expect(secret).ShouldNot(BeNil())
 				Expect(secret.Labels).Should(Equal(map[string]string{
-					"fissile.cloudfoundry.org/container-name": "busybox",
+					"quarks.cloudfoundry.org/container-name": "busybox",
 					"key": "value"}))
 			})
 		})
@@ -122,7 +122,7 @@ var _ = Describe("PersistOutputInterface", func() {
 				secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox-v1", metav1.GetOptions{})
 				Expect(secret).ShouldNot(BeNil())
 				Expect(secret.Labels).Should(Equal(map[string]string{
-					"fissile.cloudfoundry.org/container-name": "busybox",
+					"quarks.cloudfoundry.org/container-name": "busybox",
 					"fake-label":                         "fake-deployment",
 					versionedsecretstore.LabelSecretKind: "versionedSecret",
 					versionedsecretstore.LabelVersion:    "1",

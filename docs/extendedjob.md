@@ -116,9 +116,9 @@ Each versioned secret has the following characteristics:
 
 - its name is calculated like this: `<name>-v<ORDINAL>` e.g. `mysecret-v2`
 - it has the following labels:
-  - `fissile.cloudfoundry.org/secret-kind` with a value of `versionedSecret`
-  - `fissile.cloudfoundry.org/secret-version` with a value set to the `ordinal` of the secret
-- an annotation of `fissile.cloudfoundry.org/source-description` that contains arbitrary information about the creator of the secret
+  - `quarks.cloudfoundry.org/secret-kind` with a value of `versionedSecret`
+  - `quarks.cloudfoundry.org/secret-version` with a value set to the `ordinal` of the secret
+- an annotation of `quarks.cloudfoundry.org/source-description` that contains arbitrary information about the creator of the secret
 
 ### **_Job Controller_**
 

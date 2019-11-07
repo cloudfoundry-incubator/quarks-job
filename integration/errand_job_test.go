@@ -16,7 +16,7 @@ import (
 var _ = Describe("ErrandJob", func() {
 	jobOwnerRef := func(eJob ejv1.ExtendedJob) metav1.OwnerReference {
 		return metav1.OwnerReference{
-			APIVersion:         "fissile.cloudfoundry.org/v1alpha1",
+			APIVersion:         "quarks.cloudfoundry.org/v1alpha1",
 			Kind:               "ExtendedJob",
 			Name:               eJob.Name,
 			UID:                eJob.UID,

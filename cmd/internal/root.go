@@ -52,7 +52,7 @@ var rootCmd = &cobra.Command{
 		}
 		log.Infof("quarks-job docker image: %s", config.GetOperatorDockerImage())
 
-		cfg.MaxExtendedJobWorkers = viper.GetInt("max-workers")
+		cfg.MaxQuarksJobWorkers = viper.GetInt("max-workers")
 
 		cmd.CtxTimeOut(cfg)
 

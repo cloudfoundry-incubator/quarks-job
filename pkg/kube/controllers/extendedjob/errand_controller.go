@@ -34,7 +34,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 	r := NewErrandReconciler(ctx, config, mgr, f, store)
 	c, err := controller.New("ext-job-errand-controller", mgr, controller.Options{
 		Reconciler:              r,
-		MaxConcurrentReconciles: config.MaxExtendedJobWorkers,
+		MaxConcurrentReconciles: config.MaxQuarksJobWorkers,
 	})
 	if err != nil {
 		return errors.Wrap(err, "Adding Errand controller to manager failed.")

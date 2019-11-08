@@ -71,9 +71,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	eJob := &ejv1.ExtendedJob{}
 
 	// Set the ctx to be Background, as the top-level context for incoming requests.
-
 	ctx, cancel := context.WithTimeout(r.ctx, r.config.CtxTimeOut)
-	ctxlog.Debug(ctx, "DEBUG CONTEXT %#v", r.config)
 	defer cancel()
 
 	ctxlog.Info(ctx, "Reconciling errand job ", request.NamespacedName)

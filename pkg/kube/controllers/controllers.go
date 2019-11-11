@@ -17,6 +17,7 @@ import (
 var addToManagerFuncs = []func(context.Context, *config.Config, manager.Manager) error{
 	extendedjob.AddErrand,
 	extendedjob.AddJob,
+	extendedjob.AddTrigger,
 }
 
 var addToSchemes = runtime.SchemeBuilder{

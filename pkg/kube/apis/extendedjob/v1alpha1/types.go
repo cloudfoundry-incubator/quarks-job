@@ -57,7 +57,48 @@ const (
 
 // Trigger decides how to trigger the ExtendedJob
 type Trigger struct {
-	Strategy Strategy `json:"strategy"`
+	Strategy Strategy         `json:"strategy"`
+	PodState *PodStateTrigger `json:"podstate,omitempty"`
+}
+
+// PodState is our abstraction of the pods state with regards to triggered
+// extended jobs
+type PodState string
+
+const (
+	// PodStateUnknown means we could not identify the state
+	PodStateUnknown PodState = ""
+
+	// PodStateReady means the pod is in phase=running with condition=ready
+	PodStateReady PodState = "ready"
+
+	// PodStateCreated means the pod did not exist before and is ready
+	PodStateCreated PodState = "created"
+
+	// PodStateNotReady means the pod is in phase pending
+	PodStateNotReady PodState = "notready"
+
+	// PodStateDeleted means the pod is in phase=succeeded or disappeared or phase=''
+	PodStateDeleted PodState = "deleted"
+)
+
+// PodStateTrigger specifies how to trigger depending on a Job
+type PodStateTrigger struct {
+	When     PodState  `json:"when"`
+	Selector *Selector `json:"selector,omitempty"`
+}
+
+// Selector filter objects
+type Selector struct {
+	MatchLabels      *labels.Set    `json:"matchLabels,omitempty"`
+	MatchExpressions []*Requirement `json:"matchExpressions,omitempty"`
+}
+
+// Requirement describes a label requirement
+type Requirement struct {
+	Key      string             `json:"key"`
+	Operator selection.Operator `json:"operator"`
+	Values   []string           `json:"values"`
 }
 
 // Output contains options to persist job output

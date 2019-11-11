@@ -217,7 +217,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, eJob ejv1.ExtendedJob, names
 		}
 	}
 
-	name, err := names.JobName(eJob.Name)
+	name, err := names.JobName(eJob.Name, podName)
 	if err != nil {
 		return false, errors.Wrapf(err, "could not generate job name for eJob '%s'", eJob.Name)
 	}

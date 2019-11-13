@@ -6,8 +6,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
 	"code.cloudfoundry.org/quarks-utils/pkg/config"
 )
 
@@ -15,12 +15,12 @@ import (
 // manager. The manager will set fields on the controllers and start them, when
 // itself is started.
 var addToManagerFuncs = []func(context.Context, *config.Config, manager.Manager) error{
-	extendedjob.AddErrand,
-	extendedjob.AddJob,
+	quarksjob.AddErrand,
+	quarksjob.AddJob,
 }
 
 var addToSchemes = runtime.SchemeBuilder{
-	ejv1.AddToScheme,
+	qjv1a1.AddToScheme,
 }
 
 // AddToManager adds all Controllers to the Manager

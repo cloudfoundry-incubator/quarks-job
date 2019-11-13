@@ -9,8 +9,8 @@ package fake
 
 import (
 	clientset "code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
-	extendedjobv1alpha1 "code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned/typed/extendedjob/v1alpha1"
-	fakeextendedjobv1alpha1 "code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned/typed/extendedjob/v1alpha1/fake"
+	quarksjobv1alpha1 "code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned/typed/quarksjob/v1alpha1"
+	fakequarksjobv1alpha1 "code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned/typed/quarksjob/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -30,7 +30,7 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 		}
 	}
 
-	cs := &Clientset{}
+	cs := &Clientset{tracker: o}
 	cs.discovery = &fakediscovery.FakeDiscovery{Fake: &cs.Fake}
 	cs.AddReactor("*", "*", testing.ObjectReaction(o))
 	cs.AddWatchReactor("*", func(action testing.Action) (handled bool, ret watch.Interface, err error) {
@@ -52,15 +52,20 @@ func NewSimpleClientset(objects ...runtime.Object) *Clientset {
 type Clientset struct {
 	testing.Fake
 	discovery *fakediscovery.FakeDiscovery
+	tracker   testing.ObjectTracker
 }
 
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	return c.discovery
 }
 
+func (c *Clientset) Tracker() testing.ObjectTracker {
+	return c.tracker
+}
+
 var _ clientset.Interface = &Clientset{}
 
-// ExtendedjobV1alpha1 retrieves the ExtendedjobV1alpha1Client
-func (c *Clientset) ExtendedjobV1alpha1() extendedjobv1alpha1.ExtendedjobV1alpha1Interface {
-	return &fakeextendedjobv1alpha1.FakeExtendedjobV1alpha1{Fake: &c.Fake}
+// QuarksjobV1alpha1 retrieves the QuarksjobV1alpha1Client
+func (c *Clientset) QuarksjobV1alpha1() quarksjobv1alpha1.QuarksjobV1alpha1Interface {
+	return &fakequarksjobv1alpha1.FakeQuarksjobV1alpha1{Fake: &c.Fake}
 }

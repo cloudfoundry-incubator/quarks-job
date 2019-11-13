@@ -1,25 +1,13 @@
 package reference
 
 import (
-	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 )
 
-// GetConfigMapsReferencedBy returns a list of all names for ConfigMaps referenced by the object
-// The object can be an ExtendedStatefulSet, an ExtendedeJob or a BOSHDeployment
-func GetConfigMapsReferencedBy(object interface{}) (map[string]bool, error) {
-	// Figure out the type of object
-	switch object := object.(type) {
-	case ejv1.ExtendedJob:
-		return getConfMapRefFromEJob(object), nil
-	default:
-		return nil, errors.New("can't get config map references for unkown type; supported types are BOSHDeployment, ExtendedJob and ExtendedStatefulSet")
-	}
-}
-
-func getConfMapRefFromEJob(object ejv1.ExtendedJob) map[string]bool {
+// GetConfigMapsReferencedByFromEJob returns a list of all names for ConfigMaps referenced by the QuarksJob
+func GetConfigMapsReferencedByFromEJob(object qjv1a1.QuarksJob) map[string]bool {
 	return getConfMapRefFromPod(object.Spec.Template.Spec.Template.Spec)
 }
 

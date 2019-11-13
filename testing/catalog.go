@@ -9,7 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
 )
 
@@ -122,8 +122,8 @@ func (c *Catalog) ConfigJobTemplate() batchv1b1.JobTemplateSpec {
 	}
 }
 
-// ExJobPodTemplate returns the spec with a given output-persist container
-func (c *Catalog) ExJobPodTemplate(cmd []string) batchv1b1.JobTemplateSpec {
+// QuarksJobPodTemplate returns the spec with a given output-persist container
+func (c *Catalog) QuarksJobPodTemplate(cmd []string) batchv1b1.JobTemplateSpec {
 	return batchv1b1.JobTemplateSpec{
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
@@ -200,32 +200,32 @@ func (c *Catalog) CmdJobTemplate(cmd []string) batchv1b1.JobTemplateSpec {
 	}
 }
 
-// DefaultExtendedJob default values
-func (c *Catalog) DefaultExtendedJob(name string) *ejv1.ExtendedJob {
+// DefaultQuarksJob default values
+func (c *Catalog) DefaultQuarksJob(name string) *qjv1a1.QuarksJob {
 	cmd := []string{"sleep", "1"}
-	return &ejv1.ExtendedJob{
+	return &qjv1a1.QuarksJob{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec: ejv1.ExtendedJobSpec{
-			Trigger: ejv1.Trigger{
-				Strategy: ejv1.TriggerNow,
+		Spec: qjv1a1.QuarksJobSpec{
+			Trigger: qjv1a1.Trigger{
+				Strategy: qjv1a1.TriggerNow,
 			},
-			Template: c.ExJobPodTemplate(cmd),
+			Template: c.QuarksJobPodTemplate(cmd),
 		},
 	}
 }
 
-// DefaultExJobPod defines a pod with a simple web server and with a output-persist container
-func (c *Catalog) DefaultExJobPod(name string) corev1.Pod {
+// DefaultQuarksJobPod defines a pod with a simple web server and with a output-persist container
+func (c *Catalog) DefaultQuarksJobPod(name string) corev1.Pod {
 	return corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},
-		Spec: c.Sleep1hExJobPodSpec(),
+		Spec: c.Sleep1hQuarksJobPodSpec(),
 	}
 }
 
-// Sleep1hExJobPodSpec defines a simple pod that sleeps 60*60s for testing with a output-persist container
-func (c *Catalog) Sleep1hExJobPodSpec() corev1.PodSpec {
+// Sleep1hQuarksJobPodSpec defines a simple pod that sleeps 60*60s for testing with a output-persist container
+func (c *Catalog) Sleep1hQuarksJobPodSpec() corev1.PodSpec {
 	return corev1.PodSpec{
 		TerminationGracePeriodSeconds: pointers.Int64(1),
 		Containers: []corev1.Container{
@@ -243,9 +243,9 @@ func (c *Catalog) Sleep1hExJobPodSpec() corev1.PodSpec {
 	}
 }
 
-// DefaultExtendedJobWithSucceededJob returns an ExtendedJob and a Job owned by it
-func (c *Catalog) DefaultExtendedJobWithSucceededJob(name string) (*ejv1.ExtendedJob, *batchv1.Job, *corev1.Pod) {
-	ejob := c.DefaultExtendedJob(name)
+// DefaultQuarksJobWithSucceededJob returns an QuarksJob and a Job owned by it
+func (c *Catalog) DefaultQuarksJobWithSucceededJob(name string) (*qjv1a1.QuarksJob, *batchv1.Job, *corev1.Pod) {
+	qJob := c.DefaultQuarksJob(name)
 	backoffLimit := pointers.Int32(2)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -261,35 +261,35 @@ func (c *Catalog) DefaultExtendedJobWithSucceededJob(name string) (*ejv1.Extende
 		Spec:   batchv1.JobSpec{BackoffLimit: backoffLimit},
 		Status: batchv1.JobStatus{Succeeded: 1},
 	}
-	pod := c.DefaultExJobPod(name + "-pod")
+	pod := c.DefaultQuarksJobPod(name + "-pod")
 	pod.Labels = map[string]string{
 		"job-name": job.GetName(),
 	}
-	return ejob, job, &pod
+	return qJob, job, &pod
 }
 
-// ErrandExtendedJob default values
-func (c *Catalog) ErrandExtendedJob(name string) ejv1.ExtendedJob {
+// ErrandQuarksJob default values
+func (c *Catalog) ErrandQuarksJob(name string) qjv1a1.QuarksJob {
 	cmd := []string{"sleep", "1"}
-	return ejv1.ExtendedJob{
+	return qjv1a1.QuarksJob{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec: ejv1.ExtendedJobSpec{
-			Trigger: ejv1.Trigger{
-				Strategy: ejv1.TriggerNow,
+		Spec: qjv1a1.QuarksJobSpec{
+			Trigger: qjv1a1.Trigger{
+				Strategy: qjv1a1.TriggerNow,
 			},
 			Template: c.CmdJobTemplate(cmd),
 		},
 	}
 }
 
-// AutoErrandExtendedJob default values
-func (c *Catalog) AutoErrandExtendedJob(name string) ejv1.ExtendedJob {
+// AutoErrandQuarksJob default values
+func (c *Catalog) AutoErrandQuarksJob(name string) qjv1a1.QuarksJob {
 	cmd := []string{"sleep", "1"}
-	return ejv1.ExtendedJob{
+	return qjv1a1.QuarksJob{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
-		Spec: ejv1.ExtendedJobSpec{
-			Trigger: ejv1.Trigger{
-				Strategy: ejv1.TriggerOnce,
+		Spec: qjv1a1.QuarksJobSpec{
+			Trigger: qjv1a1.Trigger{
+				Strategy: qjv1a1.TriggerOnce,
 			},
 			Template: c.CmdJobTemplate(cmd),
 		},

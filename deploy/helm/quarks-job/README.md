@@ -76,7 +76,7 @@ $ helm install --namespace quarks --name quarks-job https://s3.amazonaws.com/cf-
 
 ## Custom Resources
 
-The `quarks-job` watches for the `ExtendedJob` custom resource.
+The `quarks-job` watches for the `QuarksJob` custom resource.
 
 The `quarks-job` requires this CRD to be installed in the cluster, in order to work as expected. By default, the `quarks-job` applies the CRD in your cluster automatically.
 
@@ -85,5 +85,5 @@ To verify if the CRD is installed:
 ```bash
 $ kubectl get crds
 NAME                                            CREATED AT
-extendedjobs.quarks.cloudfoundry.org           2019-06-25T07:08:37Z
+quarksjobs.quarks.cloudfoundry.org           2019-06-25T07:08:37Z
 ```

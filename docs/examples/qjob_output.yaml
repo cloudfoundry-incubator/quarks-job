@@ -1,0 +1,23 @@
+apiVersion: quarks.cloudfoundry.org/v1alpha1
+kind: QuarksJob
+metadata:
+  name: myfoo
+spec:
+  template:
+    backoffLimit: 2
+    spec:
+      template:
+        spec:
+          containers:
+            - name: json
+              image: busybox
+              command: ["/bin/sh"]
+              args: ["-c","json='{\"foo\": \"1\", \"bar\": \"baz\"}' && sleep 5 && echo $json >> /mnt/quarks/output.json"]
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 1
+  trigger:
+    strategy: once
+  output:
+    namePrefix: foo-
+    secretLabels:
+      key: value

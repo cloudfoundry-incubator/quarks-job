@@ -13,7 +13,7 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/crd"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 
-	ejv1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/extendedjob/v1alpha1"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 )
 
@@ -53,19 +53,19 @@ func ApplyCRDs(config *rest.Config) error {
 
 	err = crd.ApplyCRD(
 		exClient,
-		ejv1.ExtendedJobResourceName,
-		ejv1.ExtendedJobResourceKind,
-		ejv1.ExtendedJobResourcePlural,
-		ejv1.ExtendedJobResourceShortNames,
-		ejv1.SchemeGroupVersion,
-		&ejv1.ExtendedJobValidation,
+		qjv1a1.QuarksJobResourceName,
+		qjv1a1.QuarksJobResourceKind,
+		qjv1a1.QuarksJobResourcePlural,
+		qjv1a1.QuarksJobResourceShortNames,
+		qjv1a1.SchemeGroupVersion,
+		&qjv1a1.QuarksJobValidation,
 	)
 	if err != nil {
-		return errors.Wrapf(err, "failed to apply CRD '%s'", ejv1.ExtendedJobResourceName)
+		return errors.Wrapf(err, "failed to apply CRD '%s'", qjv1a1.QuarksJobResourceName)
 	}
-	err = crd.WaitForCRDReady(exClient, ejv1.ExtendedJobResourceName)
+	err = crd.WaitForCRDReady(exClient, qjv1a1.QuarksJobResourceName)
 	if err != nil {
-		return errors.Wrapf(err, "failed to wait for CRD '%s' ready", ejv1.ExtendedJobResourceName)
+		return errors.Wrapf(err, "failed to wait for CRD '%s' ready", qjv1a1.QuarksJobResourceName)
 	}
 
 	return nil

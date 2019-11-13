@@ -10,7 +10,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/extendedjob"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
 	"code.cloudfoundry.org/quarks-utils/pkg/cmd"
 	"code.cloudfoundry.org/quarks-utils/pkg/kubeconfig"
 )
@@ -19,9 +19,9 @@ import (
 var persistOutputCmd = &cobra.Command{
 	Use:   "persist-output [flags]",
 	Short: "Persist a file into a kube secret",
-	Long: `Persists a log file created by containers in a pod of extendedjob
+	Long: `Persists a log file created by containers in a pod of quarksJob
 	
-into a versionsed secret or kube native secret using flags specified to this command.
+into a versioned secret or kube native secret using flags specified to this command.
 `,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 
@@ -45,7 +45,7 @@ into a versionsed secret or kube native secret using flags specified to this com
 			return err
 		}
 
-		po := extendedjob.NewPersistOutputInterface(namespace, podName, clientSet, versionedClientSet, "/mnt/quarks")
+		po := quarksjob.NewPersistOutputInterface(namespace, podName, clientSet, versionedClientSet, "/mnt/quarks")
 
 		return po.PersistOutput()
 	},

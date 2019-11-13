@@ -1,7 +1,7 @@
 module code.cloudfoundry.org/quarks-job
 
 require (
-	code.cloudfoundry.org/quarks-utils v0.0.0-20191111125453-5256021b0fc8
+	code.cloudfoundry.org/quarks-utils v0.0.0-20191112142553-a2225c40261f
 	github.com/google/gofuzz v1.0.0 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/hashicorp/golang-lru v0.5.0 // indirect

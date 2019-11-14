@@ -20,12 +20,12 @@ import (
 // AddJob creates a new Job controller to collect the output from jobs, persist
 // that output as a secret and delete the k8s job afterwards.
 func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) error {
-	ctx = ctxlog.NewContextWithRecorder(ctx, "ext-job-job-reconciler", mgr.GetEventRecorderFor("ext-job-job-recorder"))
+	ctx = ctxlog.NewContextWithRecorder(ctx, "job-reconciler", mgr.GetEventRecorderFor("job-recorder"))
 	jobReconciler, err := NewJobReconciler(ctx, config, mgr)
 	if err != nil {
 		return err
 	}
-	jobController, err := controller.New("ext-job-job-controller", mgr, controller.Options{
+	jobController, err := controller.New("job-controller", mgr, controller.Options{
 		Reconciler:              jobReconciler,
 		MaxConcurrentReconciles: config.MaxQuarksJobWorkers,
 	})

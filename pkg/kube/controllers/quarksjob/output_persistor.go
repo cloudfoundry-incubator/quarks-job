@@ -21,8 +21,8 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
-// PersistOutputInterface creates a kubernetes secret for each container in the in the qJob pod.
-type PersistOutputInterface struct {
+// OutputPersistor creates a kubernetes secret for each container in the in the qJob pod.
+type OutputPersistor struct {
 	namespace            string
 	podName              string
 	clientSet            kubernetes.Interface
@@ -30,9 +30,9 @@ type PersistOutputInterface struct {
 	outputFilePathPrefix string
 }
 
-// NewPersistOutputInterface returns a persist output interface which can create kubernetes secrets.
-func NewPersistOutputInterface(namespace string, podName string, clientSet kubernetes.Interface, versionedClientSet versioned.Interface, outputFilePathPrefix string) *PersistOutputInterface {
-	return &PersistOutputInterface{
+// NewOutputPersistor returns a persist output interface which can create kubernetes secrets.
+func NewOutputPersistor(namespace string, podName string, clientSet kubernetes.Interface, versionedClientSet versioned.Interface, outputFilePathPrefix string) *OutputPersistor {
+	return &OutputPersistor{
 		namespace:            namespace,
 		podName:              podName,
 		clientSet:            clientSet,
@@ -43,7 +43,7 @@ func NewPersistOutputInterface(namespace string, podName string, clientSet kuber
 
 // PersistOutput converts the output files of each container
 // in the pod related to an qJob into a kubernetes secret.
-func (po *PersistOutputInterface) PersistOutput() error {
+func (po *OutputPersistor) Persist() error {
 	// Fetch the pod
 	pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(po.podName, metav1.GetOptions{})
 	if err != nil {
@@ -61,7 +61,7 @@ func (po *PersistOutputInterface) PersistOutput() error {
 
 	// Persist output if needed
 	if !reflect.DeepEqual(qjv1a1.Output{}, qJob.Spec.Output) && qJob.Spec.Output != nil {
-		err = po.ConvertOutputToSecretPod(pod, qJob)
+		err = po.convertOutputToSecretPod(pod, qJob)
 		if err != nil {
 			return err
 		}
@@ -69,9 +69,9 @@ func (po *PersistOutputInterface) PersistOutput() error {
 	return nil
 }
 
-// ConvertOutputToSecretPod starts goroutine for converting each container
+// convertOutputToSecretPod starts goroutine for converting each container
 // output into a secret.
-func (po *PersistOutputInterface) ConvertOutputToSecretPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) error {
+func (po *OutputPersistor) convertOutputToSecretPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) error {
 	errorContainerChannel := make(chan error)
 
 	// Loop over containers and create go routine
@@ -79,7 +79,7 @@ func (po *PersistOutputInterface) ConvertOutputToSecretPod(pod *corev1.Pod, qJob
 		if container.Name == "output-persist" {
 			continue
 		}
-		go po.ConvertOutputToSecretContainer(containerIndex, container, qJob, errorContainerChannel)
+		go po.convertOutputToSecretContainer(containerIndex, container, qJob, errorContainerChannel)
 	}
 
 	// wait for all container go routines
@@ -92,11 +92,11 @@ func (po *PersistOutputInterface) ConvertOutputToSecretPod(pod *corev1.Pod, qJob
 	return nil
 }
 
-// ConvertOutputToSecretContainer converts json output file
+// convertOutputToSecretContainer converts json output file
 // of the specified container into a secret
-func (po *PersistOutputInterface) ConvertOutputToSecretContainer(containerIndex int, container corev1.Container, qJob *qjv1a1.QuarksJob, errorContainerChannel chan<- error) {
+func (po *OutputPersistor) convertOutputToSecretContainer(containerIndex int, container corev1.Container, qJob *qjv1a1.QuarksJob, errorContainerChannel chan<- error) {
 	filePath := filepath.Join(po.outputFilePathPrefix, container.Name, "output.json")
-	containerIndex, err := po.CheckForOutputFile(filePath, containerIndex, container.Name)
+	containerIndex, err := po.checkForOutputFile(filePath, containerIndex, container.Name)
 	if err != nil {
 		errorContainerChannel <- err
 	}
@@ -106,7 +106,7 @@ func (po *PersistOutputInterface) ConvertOutputToSecretContainer(containerIndex 
 			errorContainerChannel <- err
 		}
 		if exitCode == 0 || (exitCode == 1 && qJob.Spec.Output.WriteOnFailure) {
-			err := po.CreateSecret(container, qJob)
+			err := po.createSecret(container, qJob)
 			if err != nil {
 				errorContainerChannel <- err
 			}
@@ -116,7 +116,7 @@ func (po *PersistOutputInterface) ConvertOutputToSecretContainer(containerIndex 
 }
 
 // GetContainerExitCode returns the exit code of the container
-func (po *PersistOutputInterface) GetContainerExitCode(containerIndex int) (int, error) {
+func (po *OutputPersistor) GetContainerExitCode(containerIndex int) (int, error) {
 	// Wait until the container gets into terminated state
 	for {
 		pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(po.podName, metav1.GetOptions{})
@@ -131,9 +131,9 @@ func (po *PersistOutputInterface) GetContainerExitCode(containerIndex int) (int,
 	}
 }
 
-// CheckForOutputFile waits for the output json file to be created
+// checkForOutputFile waits for the output json file to be created
 // in the container
-func (po *PersistOutputInterface) CheckForOutputFile(filePath string, containerIndex int, containerName string) (int, error) {
+func (po *OutputPersistor) checkForOutputFile(filePath string, containerIndex int, containerName string) (int, error) {
 	if fileExists(filePath) {
 		return containerIndex, nil
 	}
@@ -188,8 +188,8 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-// CreateSecret converts the output file into json and creates a secret for a given container
-func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container, qJob *qjv1a1.QuarksJob) error {
+// createSecret converts the output file into json and creates a secret for a given container
+func (po *OutputPersistor) createSecret(outputContainer corev1.Container, qJob *qjv1a1.QuarksJob) error {
 	namePrefix := qJob.Spec.Output.NamePrefix
 	secretName := namePrefix + outputContainer.Name
 
@@ -216,7 +216,7 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 
 	if qJob.Spec.Output.Versioned {
 		// Use secretName as versioned secret name prefix: <secretName>-v<version>
-		err = po.CreateVersionSecret(qJob, outputContainer, secretName, data, "created by quarksJob")
+		err = po.createVersionSecret(qJob, outputContainer, secretName, data, "created by quarksJob")
 		if err != nil {
 			if versionedsecretstore.IsSecretIdenticalError(err) {
 				// No-op. the latest version is identical to the one we have
@@ -255,8 +255,8 @@ func (po *PersistOutputInterface) CreateSecret(outputContainer corev1.Container,
 	return nil
 }
 
-// CreateVersionSecret create a versioned kubernetes secret given the data.
-func (po *PersistOutputInterface) CreateVersionSecret(qJob *qjv1a1.QuarksJob, outputContainer corev1.Container, secretName string, secretData map[string]string, sourceDescription string) error {
+// createVersionSecret create a versioned kubernetes secret given the data.
+func (po *OutputPersistor) createVersionSecret(qJob *qjv1a1.QuarksJob, outputContainer corev1.Container, secretName string, secretData map[string]string, sourceDescription string) error {
 	ownerName := qJob.GetName()
 	ownerID := qJob.GetUID()
 

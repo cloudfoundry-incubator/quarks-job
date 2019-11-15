@@ -19,7 +19,7 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
-var _ = Describe("PersistOutputInterface", func() {
+var _ = Describe("OutputPersistor", func() {
 	var (
 		namespace          string
 		qJob               *qjv1a1.QuarksJob
@@ -27,7 +27,7 @@ var _ = Describe("PersistOutputInterface", func() {
 		env                testing.Catalog
 		clientSet          *clientfake.Clientset
 		versionedClientSet *clientsetfake.Clientset
-		po                 *quarksjob.PersistOutputInterface
+		po                 *quarksjob.OutputPersistor
 	)
 
 	BeforeEach(func() {
@@ -35,7 +35,7 @@ var _ = Describe("PersistOutputInterface", func() {
 		qJob, _, pod = env.DefaultQuarksJobWithSucceededJob("foo")
 		clientSet = clientfake.NewSimpleClientset()
 		versionedClientSet = clientsetfake.NewSimpleClientset()
-		po = quarksjob.NewPersistOutputInterface(namespace, pod.Name, clientSet, versionedClientSet, "/tmp/")
+		po = quarksjob.NewOutputPersistor(namespace, pod.Name, clientSet, versionedClientSet, "/tmp/")
 	})
 
 	JustBeforeEach(func() {
@@ -44,7 +44,6 @@ var _ = Describe("PersistOutputInterface", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = clientSet.CoreV1().Pods(namespace).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
-
 		// Create output file
 		err = os.MkdirAll("/tmp/busybox", os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
@@ -76,7 +75,7 @@ var _ = Describe("PersistOutputInterface", func() {
 			})
 
 			It("does not persist output", func() {
-				err := po.PersistOutput()
+				err := po.Persist()
 				Expect(err).NotTo(HaveOccurred())
 				_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
 				Expect(err).To(HaveOccurred())
@@ -94,7 +93,7 @@ var _ = Describe("PersistOutputInterface", func() {
 			})
 
 			It("creates the secret and persists the output and have the configured labels", func() {
-				err := po.PersistOutput()
+				err := po.Persist()
 				Expect(err).NotTo(HaveOccurred())
 				secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
 				Expect(secret).ShouldNot(BeNil())
@@ -117,7 +116,7 @@ var _ = Describe("PersistOutputInterface", func() {
 			})
 
 			It("creates versioned manifest secret and persists the output", func() {
-				err := po.PersistOutput()
+				err := po.Persist()
 				Expect(err).NotTo(HaveOccurred())
 				secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox-v1", metav1.GetOptions{})
 				Expect(secret).ShouldNot(BeNil())
@@ -154,7 +153,7 @@ var _ = Describe("PersistOutputInterface", func() {
 			})
 
 			It("does persist the output", func() {
-				err := po.PersistOutput()
+				err := po.Persist()
 				Expect(err).NotTo(HaveOccurred())
 				_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
 				Expect(err).NotTo(HaveOccurred())

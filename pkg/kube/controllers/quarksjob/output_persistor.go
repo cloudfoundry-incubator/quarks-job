@@ -230,8 +230,8 @@ func (po *OutputPersistor) createSecret(outputContainer corev1.Container, qJob *
 			secretLabels[k] = v
 		}
 		secretLabels[qjv1a1.LabelPersistentSecretContainer] = outputContainer.Name
-		if ig, ok := podutil.LookupEnv(outputContainer.Env, EnvInstanceGroupName); ok {
-			secretLabels[qjv1a1.LabelInstanceGroup] = ig
+		if id, ok := podutil.LookupEnv(outputContainer.Env, qjv1a1.RemoteIDKey); ok {
+			secretLabels[qjv1a1.LabelRemoteID] = id
 		}
 
 		secret.StringData = data
@@ -265,8 +265,8 @@ func (po *OutputPersistor) createVersionSecret(qJob *qjv1a1.QuarksJob, outputCon
 		secretLabels[k] = v
 	}
 	secretLabels[qjv1a1.LabelPersistentSecretContainer] = outputContainer.Name
-	if ig, ok := podutil.LookupEnv(outputContainer.Env, EnvInstanceGroupName); ok {
-		secretLabels[qjv1a1.LabelInstanceGroup] = ig
+	if id, ok := podutil.LookupEnv(outputContainer.Env, qjv1a1.RemoteIDKey); ok {
+		secretLabels[qjv1a1.LabelRemoteID] = id
 	}
 
 	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)

@@ -20,9 +20,6 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
-// EnvInstanceGroupName is the ENV variable name for the instance group name
-const EnvInstanceGroupName = "INSTANCE_GROUP_NAME"
-
 // NewJobReconciler returns a new Reconciler
 func NewJobReconciler(ctx context.Context, config *config.Config, mgr manager.Manager) (reconcile.Reconciler, error) {
 	versionedSecretStore := versionedsecretstore.NewVersionedSecretStore(mgr.GetClient())

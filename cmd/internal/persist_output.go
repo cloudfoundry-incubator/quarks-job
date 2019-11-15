@@ -45,9 +45,9 @@ into a versioned secret or kube native secret using flags specified to this comm
 			return err
 		}
 
-		po := quarksjob.NewPersistOutputInterface(namespace, podName, clientSet, versionedClientSet, "/mnt/quarks")
+		po := quarksjob.NewOutputPersistor(namespace, podName, clientSet, versionedClientSet, "/mnt/quarks")
 
-		return po.PersistOutput()
+		return po.Persist()
 	},
 }
 

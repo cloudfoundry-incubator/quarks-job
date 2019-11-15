@@ -17,9 +17,10 @@ var (
 	// LabelPersistentSecretContainer is a label used for persisted secrets,
 	// identifying the container that created them
 	LabelPersistentSecretContainer = fmt.Sprintf("%s/container-name", apis.GroupName)
-	// LabelInstanceGroup is a label for persisted secrets, identifying
-	// the instance group they belong to
-	LabelInstanceGroup = fmt.Sprintf("%s/instance-group", apis.GroupName)
+
+	// LabelRemoteID is a label for persisted secrets, identifying
+	// the remote resource they belong to
+	LabelRemoteID = fmt.Sprintf("%s/remote-id", apis.GroupName)
 
 	// LabelQuarksJob key for label used to identify quarksJob.
 	// Value is set to true if the batchv1.Job is from an QuarksJob
@@ -42,6 +43,10 @@ type QuarksJobSpec struct {
 type Strategy string
 
 const (
+	// RemoteIDKey is the key for the ENV variable which is copied to the
+	// output secrets label `LabelReferencedJobName`
+	RemoteIDKey = "REMOTE_ID"
+
 	// TriggerManual is the default for errand jobs, change to TriggerNow to run them
 	TriggerManual Strategy = "manual"
 	// TriggerNow instructs the controller to run the job now,

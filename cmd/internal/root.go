@@ -105,7 +105,7 @@ func init() {
 	cmd.KubeConfigFlags(pf, argToEnv)
 	cmd.LoggerFlags(pf, argToEnv)
 	cmd.NamespacesFlags(pf, argToEnv, namespaceArg)
-	cmd.DockerImageFlags(pf, argToEnv, version.Version)
+	cmd.DockerImageFlags(pf, argToEnv, "quarks-job", version.Version)
 	cmd.ApplyCRDsFlags(pf, argToEnv)
 
 	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")

@@ -6,8 +6,8 @@ import (
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 )
 
-// GetSecretsReferencesFromQuarksJob returns a list of all names for Secrets referenced by the QuarksJob
-func GetSecretsReferencesFromQuarksJob(object qjv1a1.QuarksJob) map[string]bool {
+// ReferencedSecrets returns a list of all names for Secrets referenced by the QuarksJob
+func ReferencedSecrets(object qjv1a1.QuarksJob) map[string]bool {
 	return getSecretRefFromPod(object.Spec.Template.Spec.Template.Spec)
 }
 

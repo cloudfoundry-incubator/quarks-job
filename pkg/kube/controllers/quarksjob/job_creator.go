@@ -159,7 +159,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 		}
 		template.Spec.Template.Spec.Volumes = append(template.Spec.Template.Spec.Volumes, podVolumeSpec)
 
-		// Add container volume specs to continer
+		// Add container volume specs to container
 		containerVolumeMountSpec := corev1.VolumeMount{
 			Name:      names.Sanitize(fmt.Sprintf("%s%s", "output-", container.Name)),
 			MountPath: mountPath,
@@ -183,34 +183,17 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 		return false, err
 	}
 
-	configMaps := reference.GetConfigMapsReferencedByFromEJob(qJob)
-
-	configMap := &corev1.ConfigMap{}
-	for configMapName := range configMaps {
-		if err := j.client.Get(ctx, crc.ObjectKey{Name: configMapName, Namespace: qJob.Namespace}, configMap); err != nil {
-			if apierrors.IsNotFound(err) {
-				ctxlog.Debugf(ctx, "Skip create job '%s' due to configMap '%s' not found", qJob.Name, configMapName)
-				// Requeue the job without error.
-				return true, nil
-			}
-			return false, err
+	// Validate quarks job configmap and secrets references
+	err := j.validateReferences(ctx, qJob)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			// Requeue the job without error.
+			return true, nil
 		}
+		return false, err
 	}
 
-	secrets := reference.GetSecretsReferencesFromQuarksJob(qJob)
-
-	secret := &corev1.Secret{}
-	for secretName := range secrets {
-		if err := j.client.Get(ctx, crc.ObjectKey{Name: secretName, Namespace: qJob.Namespace}, secret); err != nil {
-			if apierrors.IsNotFound(err) {
-				ctxlog.Debugf(ctx, "Skip create job '%s' due to secret '%s' not found", qJob.Name, secretName)
-				// Requeue the job without error.
-				return true, nil
-			}
-			return false, err
-		}
-	}
-
+	// Create k8s job
 	name, err := names.JobName(qJob.Name)
 	if err != nil {
 		return false, errors.Wrapf(err, "could not generate job name for qJob '%s'", qJob.Name)
@@ -239,4 +222,29 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 	}
 
 	return false, nil
+}
+
+func (j jobCreatorImpl) validateReferences(ctx context.Context, qJob qjv1a1.QuarksJob) error {
+	configMaps := reference.ReferencedConfigMaps(qJob)
+	configMap := &corev1.ConfigMap{}
+	for configMapName := range configMaps {
+		if err := j.client.Get(ctx, crc.ObjectKey{Name: configMapName, Namespace: qJob.Namespace}, configMap); err != nil {
+			if apierrors.IsNotFound(err) {
+				ctxlog.Debugf(ctx, "Skip create job '%s' due to configMap '%s' not found", qJob.Name, configMapName)
+			}
+			return err
+		}
+	}
+
+	secrets := reference.ReferencedSecrets(qJob)
+	secret := &corev1.Secret{}
+	for secretName := range secrets {
+		if err := j.client.Get(ctx, crc.ObjectKey{Name: secretName, Namespace: qJob.Namespace}, secret); err != nil {
+			if apierrors.IsNotFound(err) {
+				ctxlog.Debugf(ctx, "Skip create job '%s' due to secret '%s' not found", qJob.Name, secretName)
+			}
+			return err
+		}
+	}
+	return nil
 }

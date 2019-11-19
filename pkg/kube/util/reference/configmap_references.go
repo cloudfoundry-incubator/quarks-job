@@ -6,8 +6,8 @@ import (
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 )
 
-// GetConfigMapsReferencedByFromEJob returns a list of all names for ConfigMaps referenced by the QuarksJob
-func GetConfigMapsReferencedByFromEJob(object qjv1a1.QuarksJob) map[string]bool {
+// ReferencedConfigMaps returns a list of all names for ConfigMaps referenced by the QuarksJob
+func ReferencedConfigMaps(object qjv1a1.QuarksJob) map[string]bool {
 	return getConfMapRefFromPod(object.Spec.Template.Spec.Template.Spec)
 }
 

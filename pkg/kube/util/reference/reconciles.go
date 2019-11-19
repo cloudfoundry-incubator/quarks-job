@@ -44,10 +44,10 @@ func GetReconciles(ctx context.Context, client crc.Client, reconcileType Reconci
 
 		switch object := object.(type) {
 		case *corev1.ConfigMap:
-			objectReferences = GetConfigMapsReferencedByFromEJob(parent)
+			objectReferences = ReferencedConfigMaps(parent)
 			name = object.Name
 		case *corev1.Secret:
-			objectReferences = GetSecretsReferencesFromQuarksJob(parent)
+			objectReferences = ReferencedSecrets(parent)
 			name = object.Name
 			versionedSecret = vss.IsVersionedSecret(*object)
 		default:

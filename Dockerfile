@@ -1,10 +1,11 @@
-FROM golang:1.13 AS build
+FROM golang:1.13.4 AS build
 ARG GOPROXY
 ENV GOPROXY $GOPROXY
 ARG GO111MODULE="on"
 ENV GO111MODULE $GO111MODULE
 
 WORKDIR /go/src/code.cloudfoundry.org/quarks-job
+
 # First, download dependencies so we can cache this layer
 COPY go.mod .
 COPY go.sum .

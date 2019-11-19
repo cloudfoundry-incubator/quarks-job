@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,16 +18,13 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
-	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
 const (
-	outputPersistDirName          = "output-persist-dir"
-	outputPersistDirMountPath     = "/mnt/output-persist/"
-	serviceAccountName            = "persist-output-service-account"
-	serviceAccountSecretMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-	mountPath                     = "/mnt/quarks/"
+	outputPersistDirName      = "output-persist-dir"
+	outputPersistDirMountPath = "/mnt/output-persist/"
+	mountPath                 = "/mnt/quarks/"
 )
 
 type setOwnerReferenceFunc func(owner, object metav1.Object, scheme *runtime.Scheme) error
@@ -60,77 +56,13 @@ type jobCreatorImpl struct {
 func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, namespace string) (bool, error) {
 	template := qJob.Spec.Template.DeepCopy()
 
-	// Create a service account for the pod
-	serviceAccount := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      serviceAccountName,
-			Namespace: namespace,
-		},
-	}
-
-	// Bind the persist-output service account to the cluster-admin ClusterRole. Notice that the
-	// RoleBinding is namespaced as opposed to ClusterRoleBinding which would give the service account
-	// unrestricted permissions to any namespace.
-	roleBinding := &v1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cluster-admin-role",
-			Namespace: namespace,
-		},
-		Subjects: []v1.Subject{
-			{
-				Kind:      v1.ServiceAccountKind,
-				Name:      serviceAccountName,
-				Namespace: namespace,
-			},
-		},
-		RoleRef: v1.RoleRef{
-			Kind:     "ClusterRole",
-			Name:     "cluster-admin",
-			APIGroup: "rbac.authorization.k8s.io",
-		},
-	}
-
-	if err := j.client.Create(ctx, serviceAccount); err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return false, errors.Wrapf(err, "could not create service account for pod in qJob '%s'", qJob.Name)
-		}
-	}
-
-	if err := j.client.Create(ctx, roleBinding); err != nil {
-		if !apierrors.IsAlreadyExists(err) {
-			return false, errors.Wrapf(err, "could not create role binding for pod in qJob '%s'", qJob.Name)
-		}
-	}
-
-	var createdServiceAccount corev1.ServiceAccount
-	if err := j.client.Get(ctx, crc.ObjectKey{Name: serviceAccountName, Namespace: namespace}, &createdServiceAccount); err != nil {
-		return false, errors.Wrapf(err, "could not get %s", qJob.Name)
-	}
-
-	if len(createdServiceAccount.Secrets) == 0 {
-		return false, fmt.Errorf("missing service account secret for '%s'", serviceAccountName)
-	}
-	tokenSecretName := createdServiceAccount.Secrets[0].Name
-
-	// Mount service account token on container
-	serviceAccountVolumeName := names.Sanitize(fmt.Sprintf("%s-%s", serviceAccount.Name, tokenSecretName))
-	serviceAccountVolume := corev1.Volume{
-		Name: serviceAccountVolumeName,
-		VolumeSource: corev1.VolumeSource{
-			Secret: &corev1.SecretVolumeSource{
-				SecretName:  tokenSecretName,
-				DefaultMode: pointers.Int32(0644),
-			},
-		},
-	}
-	serviceAccountVolumeMount := corev1.VolumeMount{
-		Name:      serviceAccountVolumeName,
-		ReadOnly:  true,
-		MountPath: serviceAccountSecretMountPath,
+	serviceAccountVolume, serviceAccountVolumeMount, err := j.createdServiceAccount(ctx, namespace)
+	if err != nil {
+		return false, err
 	}
 
 	// Set serviceaccount to the container
-	template.Spec.Template.Spec.Volumes = append(template.Spec.Template.Spec.Volumes, serviceAccountVolume)
+	template.Spec.Template.Spec.Volumes = append(template.Spec.Template.Spec.Volumes, *serviceAccountVolume)
 
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
@@ -144,9 +76,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 				Value: namespace,
 			},
 		},
-		VolumeMounts: []corev1.VolumeMount{
-			serviceAccountVolumeMount,
-		},
+		VolumeMounts: []corev1.VolumeMount{*serviceAccountVolumeMount},
 	}
 
 	// Loop through containers and add quarks logging volume specs.
@@ -184,7 +114,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 	}
 
 	// Validate quarks job configmap and secrets references
-	err := j.validateReferences(ctx, qJob)
+	err = j.validateReferences(ctx, qJob)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// Requeue the job without error.

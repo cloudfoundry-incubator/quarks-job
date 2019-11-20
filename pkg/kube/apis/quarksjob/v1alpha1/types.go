@@ -45,6 +45,7 @@ type Strategy string
 const (
 	// RemoteIDKey is the key for the ENV variable which is copied to the
 	// output secrets label `LabelReferencedJobName`
+	// This env can be set on each container, which is supposed to generate output.
 	RemoteIDKey = "REMOTE_ID"
 
 	// TriggerManual is the default for errand jobs, change to TriggerNow to run them

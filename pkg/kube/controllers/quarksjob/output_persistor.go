@@ -61,7 +61,7 @@ func (po *OutputPersistor) Persist() error {
 
 	// Persist output if needed
 	if !reflect.DeepEqual(qjv1a1.Output{}, qJob.Spec.Output) && qJob.Spec.Output != nil {
-		err = po.convertOutputToSecretPod(pod, qJob)
+		err = po.persistPod(pod, qJob)
 		if err != nil {
 			return err
 		}
@@ -69,9 +69,8 @@ func (po *OutputPersistor) Persist() error {
 	return nil
 }
 
-// convertOutputToSecretPod starts goroutine for converting each container
-// output into a secret.
-func (po *OutputPersistor) convertOutputToSecretPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) error {
+// persistPod starts goroutine for creating secrets for each output found in our containers
+func (po *OutputPersistor) persistPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) error {
 	errorContainerChannel := make(chan error)
 
 	// Loop over containers and create go routine
@@ -79,7 +78,7 @@ func (po *OutputPersistor) convertOutputToSecretPod(pod *corev1.Pod, qJob *qjv1a
 		if container.Name == "output-persist" {
 			continue
 		}
-		go po.convertOutputToSecretContainer(containerIndex, container, qJob, errorContainerChannel)
+		go po.persistContainer(containerIndex, container, qJob, errorContainerChannel)
 	}
 
 	// wait for all container go routines
@@ -92,16 +91,16 @@ func (po *OutputPersistor) convertOutputToSecretPod(pod *corev1.Pod, qJob *qjv1a
 	return nil
 }
 
-// convertOutputToSecretContainer converts json output file
+// persistContainer converts json output file
 // of the specified container into a secret
-func (po *OutputPersistor) convertOutputToSecretContainer(containerIndex int, container corev1.Container, qJob *qjv1a1.QuarksJob, errorContainerChannel chan<- error) {
+func (po *OutputPersistor) persistContainer(containerIndex int, container corev1.Container, qJob *qjv1a1.QuarksJob, errorContainerChannel chan<- error) {
 	filePath := filepath.Join(po.outputFilePathPrefix, container.Name, "output.json")
 	containerIndex, err := po.checkForOutputFile(filePath, containerIndex, container.Name)
 	if err != nil {
 		errorContainerChannel <- err
 	}
 	if containerIndex != -1 {
-		exitCode, err := po.GetContainerExitCode(containerIndex)
+		exitCode, err := po.getContainerExitCode(containerIndex)
 		if err != nil {
 			errorContainerChannel <- err
 		}
@@ -115,8 +114,8 @@ func (po *OutputPersistor) convertOutputToSecretContainer(containerIndex int, co
 	errorContainerChannel <- err
 }
 
-// GetContainerExitCode returns the exit code of the container
-func (po *OutputPersistor) GetContainerExitCode(containerIndex int) (int, error) {
+// getContainerExitCode returns the exit code of the container
+func (po *OutputPersistor) getContainerExitCode(containerIndex int) (int, error) {
 	// Wait until the container gets into terminated state
 	for {
 		pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(po.podName, metav1.GetOptions{})

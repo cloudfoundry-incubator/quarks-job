@@ -9,7 +9,7 @@ spec:
       template:
         spec:
           containers:
-            - name: json
+            - name: jsonout
               image: busybox
               command: ["/bin/sh"]
               args: ["-c","json='{\"foo\": \"1\", \"bar\": \"baz\"}' && sleep 5 && echo $json >> /mnt/quarks/output.json"]
@@ -18,6 +18,10 @@ spec:
   trigger:
     strategy: once
   output:
-    namePrefix: foo-
+    outputMap:
+      jsonout:
+        output.json:
+          name: foo-json
+          versioned: false
     secretLabels:
       key: value

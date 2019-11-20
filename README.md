@@ -57,24 +57,37 @@ Once `updateOnConfigChange` is enabled, modifying the `data` of any `ConfigMap` 
 
 ### Persisted Output
 
-The developer can specify a `Secret` where the standard output/error output of
-the `QuarksJob` is stored.
+QuarksJob can create secrets from job output, which is written to a JSON file in `/mnt/quarks`.
 
-One secret is created or overwritten per container in the pod. The secrets'
-names are `<namePrefix>-<containerName>`.
+Multiple secrets are created or overwritten per container in the pod. The output file names are mapped to the secrets' names via `OutputMap`. This is done for every container.
 
 The only supported output type currently is json with a flat structure, i.e.
-all values being string values.
+all values being string values, because [Kubernetes secrets store base64 encoded data](https://kubernetes.io/docs/concepts/configuration/secret/#creating-a-secret-manually). The string value can be a marshalled JSON document.
 
 **Note:** Output of previous runs is overwritten.
 
 The behavior of storing the output is controlled by specifying the following parameters:
 
-- `namePrefix` - Prefix for the name of the secret(s) that will hold the output.
+- `outputMap` - Mapping from output file name to the name of the secret(s) that will hold the output.
 - `outputType` - Currently only `json` is supported. (default: `json`)
 - `secretLabels` - An optional map of labels which will be attached to the generated secret(s)
 - `writeOnFailure` - if true, output is written even though the Job failed. (default: `false`)
-- `versioned` - if true, the output is written in a [Versioned Secret](#versioned-secrets)
+
+The developer should ensure that she creates all files defined in `OutputMap` in the /mnt/quarks volume mount at the end of the container script. An example of the command field in the quarks job spec will look like this
+
+```
+command: ["/bin/sh"]
+args: ["-c","json='{\"foo\": \"1\", \"bar\": \"baz\"}' && echo $json >> /mnt/quarks/output.json"]
+```
+
+The secret is created by a side container in quarks job pod which captures the create event of /mnt/quarks/output.json file.
+
+The behavior of storing the output is controlled by specifying the following parameters:
+
+  - `outputType` - Currently only `json` is supported. (default: `json`)
+  - `secretLabels` - An optional map of labels which will be attached to the generated secret(s)
+  - `versioned` - if true, the output is written in a [Versioned Secret](#versioned-secrets)
+  - `writeOnFailure` - if true, output is written even though the Job failed. (default: `false`)
 
 #### Versioned Secrets
 

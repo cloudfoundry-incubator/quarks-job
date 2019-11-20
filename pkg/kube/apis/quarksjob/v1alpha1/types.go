@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"path/filepath"
 
 	batchv1 "k8s.io/api/batch/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,13 +65,30 @@ type Trigger struct {
 	Strategy Strategy `json:"strategy"`
 }
 
-// Output contains options to persist job output
+// SecretOptions specify the name of the output secret and if it's versioned
+type SecretOptions struct {
+	Name      string `json:"name,omitempty"`
+	Versioned bool   `json:"versioned,omitempty"`
+}
+
+// FilesToSecrets maps file names to secret names
+type FilesToSecrets map[string]SecretOptions
+
+// OutputMap has FilesToSecrets mappings for every container
+type OutputMap map[string]FilesToSecrets
+
+// Output contains options to persist job output to secrets
 type Output struct {
-	NamePrefix     string            `json:"namePrefix"`           // the secret name will be <NamePrefix><container name>
-	OutputType     string            `json:"outputType,omitempty"` // only json is supported for now
+	// OutputMap allows for for additional output files per container.
+	// Each filename maps to a set of options.
+	OutputMap OutputMap `json:"outputMap"`
+
+	// OutputType only JSON is supported for now
+	OutputType string `json:"outputType,omitempty"`
+
+	// SecretLabels are copied onto the newly created secrets
 	SecretLabels   map[string]string `json:"secretLabels,omitempty"`
 	WriteOnFailure bool              `json:"writeOnFailure,omitempty"`
-	Versioned      bool              `json:"versioned,omitempty"`
 }
 
 // QuarksJobStatus defines the observed state of QuarksJob
@@ -110,4 +128,23 @@ func (q *QuarksJob) ToBeDeleted() bool {
 // IsAutoErrand returns true if this quarks job is an auto errand
 func (q *QuarksJob) IsAutoErrand() bool {
 	return q.Spec.Trigger.Strategy == TriggerOnce || q.Spec.Trigger.Strategy == TriggerDone
+}
+
+// NewFileToSecret returns a FilesToSecrets with just one mapping
+func NewFileToSecret(fileName string, secretName string, versioned bool) FilesToSecrets {
+	return FilesToSecrets{
+		fileName: SecretOptions{
+			Name:      secretName,
+			Versioned: versioned,
+		},
+	}
+}
+
+// PrefixedPaths retuns all output file names, prefixed with the `prefix`
+func (f FilesToSecrets) PrefixedPaths(prefix string) []string {
+	paths := make([]string, 0, len(f))
+	for fileName := range f {
+		paths = append(paths, filepath.Join(prefix, fileName))
+	}
+	return paths
 }

@@ -189,8 +189,7 @@ func fileExists(filename string) bool {
 
 // createSecret converts the output file into json and creates a secret for a given container
 func (po *OutputPersistor) createSecret(outputContainer corev1.Container, qJob *qjv1a1.QuarksJob) error {
-	namePrefix := qJob.Spec.Output.NamePrefix
-	secretName := namePrefix + outputContainer.Name
+	secretName := qJob.Spec.Output.NamePrefix + outputContainer.Name
 
 	// Fetch json from file
 	filePath := filepath.Join(po.outputFilePathPrefix, outputContainer.Name, "output.json")
@@ -213,29 +212,32 @@ func (po *OutputPersistor) createSecret(outputContainer corev1.Container, qJob *
 		},
 	}
 
+	secretLabels := map[string]string{}
+	for k, v := range qJob.Spec.Output.SecretLabels {
+		secretLabels[k] = v
+	}
+	secretLabels[qjv1a1.LabelPersistentSecretContainer] = outputContainer.Name
+	if id, ok := podutil.LookupEnv(outputContainer.Env, qjv1a1.RemoteIDKey); ok {
+		secretLabels[qjv1a1.LabelRemoteID] = id
+	}
+
 	if qJob.Spec.Output.Versioned {
-		// Use secretName as versioned secret name prefix: <secretName>-v<version>
-		err = po.createVersionSecret(qJob, outputContainer, secretName, data, "created by quarksJob")
+		ownerName := qJob.GetName()
+		ownerID := qJob.GetUID()
+		sourceDescription := "created by quarksJob"
+
+		store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
+		err = store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, data, secretLabels, sourceDescription)
 		if err != nil {
-			if versionedsecretstore.IsSecretIdenticalError(err) {
-				// No-op. the latest version is identical to the one we have
-			} else {
+			if !versionedsecretstore.IsSecretIdenticalError(err) {
 				return errors.Wrapf(err, "could not persist qJob's %s output to a secret", qJob.GetName())
 			}
+			// No-op. the latest version is identical to the one we have
+			return nil
 		}
 	} else {
-		secretLabels := map[string]string{}
-		for k, v := range qJob.Spec.Output.SecretLabels {
-			secretLabels[k] = v
-		}
-		secretLabels[qjv1a1.LabelPersistentSecretContainer] = outputContainer.Name
-		if id, ok := podutil.LookupEnv(outputContainer.Env, qjv1a1.RemoteIDKey); ok {
-			secretLabels[qjv1a1.LabelRemoteID] = id
-		}
-
 		secret.StringData = data
 		secret.Labels = secretLabels
-
 		_, err = po.clientSet.CoreV1().Secrets(po.namespace).Create(secret)
 
 		if err != nil {
@@ -252,22 +254,4 @@ func (po *OutputPersistor) createSecret(outputContainer corev1.Container, qJob *
 
 	}
 	return nil
-}
-
-// createVersionSecret create a versioned kubernetes secret given the data.
-func (po *OutputPersistor) createVersionSecret(qJob *qjv1a1.QuarksJob, outputContainer corev1.Container, secretName string, secretData map[string]string, sourceDescription string) error {
-	ownerName := qJob.GetName()
-	ownerID := qJob.GetUID()
-
-	secretLabels := map[string]string{}
-	for k, v := range qJob.Spec.Output.SecretLabels {
-		secretLabels[k] = v
-	}
-	secretLabels[qjv1a1.LabelPersistentSecretContainer] = outputContainer.Name
-	if id, ok := podutil.LookupEnv(outputContainer.Env, qjv1a1.RemoteIDKey); ok {
-		secretLabels[qjv1a1.LabelRemoteID] = id
-	}
-
-	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
-	return store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
 }

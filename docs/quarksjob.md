@@ -78,34 +78,6 @@ automatically be restarted if its environment/mounts have changed, due to a
 
 - Once `updateOnConfigChange` is enabled, modifying the `data` of any `ConfigMap` or `Secret` referenced by the `template` section of the job will trigger the job again.
 
-##### Persisted Output
-
-- The developer can specify a `Secret` where the standard output/error output of the `QuarksJob` is stored.
-
-- One secret is created or overwritten per container in the pod. The secrets' names are `<namePrefix>-<containerName>`.
-
-- The only supported output type currently is JSON with a flat structure, i.e. all values being string values.
-
-- The developer should ensure that he/she redirects the JSON output to a file named output.json in /mnt/quarks volume mount at the end of the container script. An example of the command field in the quarks job spec will look like this
-
-```
-command: ["/bin/sh"]
-args: ["-c","json='{\"foo\": \"1\", \"bar\": \"baz\"}' && echo $json >> /mnt/quarks/output.json"]
-```
-
-- The secret is created by a side container in quarks job pod which captures the create event of /mnt/quarks/output.json file.
-
-- Secrets are created for each container in the quarks job pod spec.
-
-- **Note:** Output of previous runs is overwritten.
-
-- The behavior of storing the output is controlled by specifying the following parameters:
-  - `namePrefix` - Prefix for the name of the secret(s) that will hold the output.
-  - `outputType` - Currently only `json` is supported. (default: `json`)
-  - `secretLabels` - An optional map of labels which will be attached to the generated secret(s)
-  - `writeOnFailure` - if true, output is written even though the Job failed. (default: `false`)
-  - `versioned` - if true, the output is written in a [Versioned Secret](#versioned-secrets)
-
 ##### Versioned Secrets
 
 Versioned Secrets are a set of `Secrets`, where each of them is immutable, and contains data for one iteration. Implementation can be found in the [versionedsecretstore](https://github.com/cloudfoundry-incubator/quarks-utils/tree/master/pkg/versionedsecretstore) package.

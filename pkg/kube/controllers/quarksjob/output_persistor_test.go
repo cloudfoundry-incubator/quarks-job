@@ -47,112 +47,227 @@ var _ = Describe("OutputPersistor", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = clientSet.CoreV1().Pods(namespace).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
-
-		// Create output file
-		err = os.MkdirAll("/tmp/busybox", os.ModePerm)
-		Expect(err).NotTo(HaveOccurred())
-		err = ioutil.WriteFile("/tmp/busybox/output.json", dataJSON, 0755)
-		Expect(err).NotTo(HaveOccurred())
 	})
 
-	Context("With a succeeded Job", func() {
-		BeforeEach(func() {
-			pod.Status.ContainerStatuses = []corev1.ContainerStatus{
-				{
-					Name: "busybox",
-					State: corev1.ContainerState{
-						Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
-					},
-				},
-			}
+	Context("when persisting one output", func() {
+		JustBeforeEach(func() {
+			// Create output file
+			err := os.MkdirAll("/tmp/busybox", os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+			err = ioutil.WriteFile("/tmp/busybox/output.json", dataJSON, 0755)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("when output persistence is not configured", func() {
+		Context("With a succeeded Job", func() {
 			BeforeEach(func() {
-				qJob.Spec.Output = nil
-			})
-
-			It("does not persist output", func() {
-				err := po.Persist()
-				Expect(err).NotTo(HaveOccurred())
-				_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
-				Expect(err).To(HaveOccurred())
-			})
-		})
-
-		Context("when output persistence is configured", func() {
-			BeforeEach(func() {
-				qJob.Spec.Output = &qjv1a1.Output{
-					NamePrefix: "foo-",
-					SecretLabels: map[string]string{
-						"key": "value",
+				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "busybox",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+						},
 					},
 				}
 			})
 
-			It("creates the secret and persists the output and have the configured labels", func() {
-				err := po.Persist()
-				Expect(err).NotTo(HaveOccurred())
-				secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
-				Expect(secret).ShouldNot(BeNil())
-				Expect(secret.Labels).Should(Equal(map[string]string{
-					"quarks.cloudfoundry.org/container-name": "busybox",
-					"key":                                    "value"}))
+			Context("when output persistence is not configured", func() {
+				BeforeEach(func() {
+					qJob.Spec.Output = nil
+				})
+
+				It("does not persist output", func() {
+					err := po.Persist()
+					Expect(err).NotTo(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("when output persistence is configured", func() {
+				BeforeEach(func() {
+					qJob.Spec.Output = &qjv1a1.Output{
+						SecretLabels: map[string]string{
+							"key": "value",
+						},
+						OutputMap: qjv1a1.OutputMap{
+							"busybox": qjv1a1.NewFileToSecret("output.json", "foo-busybox", false),
+						},
+					}
+				})
+
+				It("creates the secret and persists the output and have the configured labels", func() {
+					err := po.Persist()
+					Expect(err).NotTo(HaveOccurred())
+					secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					Expect(secret).ShouldNot(BeNil())
+					Expect(secret.Labels).Should(Equal(map[string]string{
+						"quarks.cloudfoundry.org/container-name": "busybox",
+						"key":                                    "value"}))
+				})
+			})
+
+			Context("when versioned output is enabled", func() {
+				BeforeEach(func() {
+					qJob.Spec.Output = &qjv1a1.Output{
+						SecretLabels: map[string]string{
+							"key":        "value",
+							"fake-label": "fake-deployment",
+						},
+						OutputMap: qjv1a1.OutputMap{
+							"busybox": qjv1a1.FilesToSecrets{
+								"output.json": qjv1a1.SecretOptions{
+									Name:      "foo-busybox",
+									Versioned: true,
+								},
+							},
+						},
+					}
+				})
+
+				It("creates versioned manifest secret and persists the output", func() {
+					err := po.Persist()
+					Expect(err).NotTo(HaveOccurred())
+					secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox-v1", metav1.GetOptions{})
+					Expect(secret).ShouldNot(BeNil())
+					Expect(secret.Labels).Should(Equal(map[string]string{
+						"quarks.cloudfoundry.org/container-name": "busybox",
+						"fake-label":                             "fake-deployment",
+						versionedsecretstore.LabelSecretKind:     "versionedSecret",
+						versionedsecretstore.LabelVersion:        "1",
+						"key":                                    "value"}))
+				})
 			})
 		})
 
-		Context("when versioned output is enabled", func() {
+		Context("With a failed Job", func() {
 			BeforeEach(func() {
-				qJob.Spec.Output = &qjv1a1.Output{
-					NamePrefix: "foo-",
-					SecretLabels: map[string]string{
-						"key":        "value",
-						"fake-label": "fake-deployment",
+				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "busybox",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 1},
+						},
 					},
-					Versioned: true,
 				}
 			})
 
-			It("creates versioned manifest secret and persists the output", func() {
-				err := po.Persist()
-				Expect(err).NotTo(HaveOccurred())
-				secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox-v1", metav1.GetOptions{})
-				Expect(secret).ShouldNot(BeNil())
-				Expect(secret.Labels).Should(Equal(map[string]string{
-					"quarks.cloudfoundry.org/container-name": "busybox",
-					"fake-label":                             "fake-deployment",
-					versionedsecretstore.LabelSecretKind:     "versionedSecret",
-					versionedsecretstore.LabelVersion:        "1",
-					"key":                                    "value"}))
+			Context("when WriteOnFailure is set", func() {
+				BeforeEach(func() {
+					qJob.Spec.Output = &qjv1a1.Output{
+						WriteOnFailure: true,
+						OutputMap: qjv1a1.OutputMap{
+							"busybox": qjv1a1.FilesToSecrets{
+								"output.json": qjv1a1.SecretOptions{
+									Name: "foo-busybox",
+								},
+							},
+						},
+					}
+				})
+
+				It("does persist the output", func() {
+					err := po.Persist()
+					Expect(err).NotTo(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
 			})
 		})
 	})
 
-	Context("With a failed Job", func() {
-		BeforeEach(func() {
-			pod.Status.ContainerStatuses = []corev1.ContainerStatus{
-				{
-					Name: "busybox",
-					State: corev1.ContainerState{
-						Terminated: &corev1.ContainerStateTerminated{ExitCode: 1},
-					},
-				},
-			}
+	Context("when persisting multiple outputs", func() {
+		JustBeforeEach(func() {
+			// Create output files
+			err := os.MkdirAll("/tmp/busybox", os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ioutil.WriteFile("/tmp/busybox/output.json", dataJSON, 0755)
+			Expect(err).NotTo(HaveOccurred())
+			err = ioutil.WriteFile("/tmp/busybox/output-nats.json", dataJSON, 0755)
+			Expect(err).NotTo(HaveOccurred())
+			err = ioutil.WriteFile("/tmp/busybox/output-nuts.json", dataJSON, 0755)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("when WriteOnFailure is set", func() {
+		Context("With a succeeded Job", func() {
 			BeforeEach(func() {
-				qJob.Spec.Output = &qjv1a1.Output{
-					NamePrefix:     "foo-",
-					WriteOnFailure: true,
+				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "busybox",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
+						},
+					},
 				}
 			})
 
-			It("does persist the output", func() {
-				err := po.Persist()
-				Expect(err).NotTo(HaveOccurred())
-				_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
-				Expect(err).NotTo(HaveOccurred())
+			Context("when output persistence is not configured", func() {
+				BeforeEach(func() {
+					qJob.Spec.Output = nil
+				})
+
+				It("does not persist output", func() {
+					err := po.Persist()
+					Expect(err).NotTo(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					Expect(err).To(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("nats", metav1.GetOptions{})
+					Expect(err).To(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("nuts", metav1.GetOptions{})
+					Expect(err).To(HaveOccurred())
+				})
+			})
+
+			Context("when output persistence is configured", func() {
+				BeforeEach(func() {
+					qJob.Spec.Output = &qjv1a1.Output{
+						OutputMap: env.DefaultOutputMap(),
+					}
+				})
+
+				It("creates the secret and persists the output and have the configured labels", func() {
+					err := po.Persist()
+					Expect(err).NotTo(HaveOccurred())
+					secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					Expect(secret).ShouldNot(BeNil())
+					secret, _ = clientSet.CoreV1().Secrets(namespace).Get("fake-nats", metav1.GetOptions{})
+					Expect(secret).ShouldNot(BeNil())
+					secret, _ = clientSet.CoreV1().Secrets(namespace).Get("bar-nuts-v1", metav1.GetOptions{})
+					Expect(secret).ShouldNot(BeNil())
+				})
+			})
+		})
+
+		Context("With a failed Job", func() {
+			BeforeEach(func() {
+				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
+					{
+						Name: "busybox",
+						State: corev1.ContainerState{
+							Terminated: &corev1.ContainerStateTerminated{ExitCode: 1},
+						},
+					},
+				}
+			})
+
+			Context("when WriteOnFailure is set", func() {
+				BeforeEach(func() {
+					qJob.Spec.Output = &qjv1a1.Output{
+						WriteOnFailure: true,
+						OutputMap:      env.DefaultOutputMap(),
+					}
+				})
+
+				It("does persist the output", func() {
+					err := po.Persist()
+					Expect(err).NotTo(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("fake-nats", metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+					_, err = clientSet.CoreV1().Secrets(namespace).Get("bar-nuts-v1", metav1.GetOptions{})
+					Expect(err).NotTo(HaveOccurred())
+				})
 			})
 		})
 	})

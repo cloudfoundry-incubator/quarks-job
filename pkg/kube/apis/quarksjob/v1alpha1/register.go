@@ -41,8 +41,8 @@ var (
 						"output": {
 							Type: "object",
 							Properties: map[string]extv1.JSONSchemaProps{
-								"namePrefix": {
-									Type: "string",
+								"outputMap": {
+									Type: "object",
 								},
 								"outputType": {
 									Type: "string",
@@ -55,7 +55,7 @@ var (
 								},
 							},
 							Required: []string{
-								"namePrefix",
+								"outputMap",
 							},
 						},
 						"trigger": {

@@ -49,9 +49,11 @@ var _ = Describe("ErrandJob", func() {
 			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarks-job")
 			Expect(jobs).To(HaveLen(1))
 
-			secret, err := env.CollectSecret(env.Namespace, "foo-busybox")
-			Expect(err).NotTo(HaveOccurred())
-			Expect(secret.Data["fake"]).To(Equal([]byte("value")))
+			for _, name := range []string{"foo-busybox", "fake-nats", "bar-nuts-v1"} {
+				secret, err := env.CollectSecret(env.Namespace, name)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(secret.Data["fake"]).To(Equal([]byte("value")))
+			}
 		})
 	})
 

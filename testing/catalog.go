@@ -296,9 +296,27 @@ func (c *Catalog) AutoErrandQuarksJob(name string) qjv1a1.QuarksJob {
 	}
 }
 
+// DefaultOutputMap has default values to persist quarks job output to secrets
+func (c *Catalog) DefaultOutputMap() qjv1a1.OutputMap {
+	return qjv1a1.OutputMap{
+		"busybox": qjv1a1.FilesToSecrets{
+			"output.json": qjv1a1.SecretOptions{
+				Name: "foo-busybox",
+			},
+			"output-nats.json": qjv1a1.SecretOptions{
+				Name: "fake-nats",
+			},
+			"output-nuts.json": qjv1a1.SecretOptions{
+				Name:      "bar-nuts",
+				Versioned: true,
+			},
+		},
+	}
+}
+
 // OutputQuarksJob default values
 func (c *Catalog) OutputQuarksJob(name string) qjv1a1.QuarksJob {
-	cmd := []string{"/bin/sh", "-c", "echo '{\"fake\": \"value\"}' | tee /mnt/quarks/output.json"}
+	cmd := []string{"/bin/sh", "-c", "echo '{\"fake\": \"value\"}' | tee /mnt/quarks/output.json /mnt/quarks/output-nats.json /mnt/quarks/output-nuts.json"}
 	return qjv1a1.QuarksJob{
 		ObjectMeta: metav1.ObjectMeta{Name: name},
 		Spec: qjv1a1.QuarksJobSpec{
@@ -306,8 +324,8 @@ func (c *Catalog) OutputQuarksJob(name string) qjv1a1.QuarksJob {
 				Strategy: qjv1a1.TriggerNow,
 			},
 			Output: &qjv1a1.Output{
-				NamePrefix:     "foo-",
 				WriteOnFailure: true,
+				OutputMap:      c.DefaultOutputMap(),
 			},
 			Template: c.CmdJobTemplate(cmd),
 		},

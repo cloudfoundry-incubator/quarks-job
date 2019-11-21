@@ -93,13 +93,3 @@ Each versioned secret has the following characteristics:
 ## `QuarksJob` Examples
 
 See https://github.com/cloudfoundry-incubator/quarks-job/tree/master/docs/examples
-
-# Notes before running
-
-If you are running quarks-job using helm chart, make sure to change the value of `image.tag` in `deploy/helm/quarks-job/values.yml` to the latest docker tag from [here](https://hub.docker.com/r/cfcontainerization/cf-operator/tags)
-
-If you are running tests on kind in Travis CI, change the cf-operator image tag in the `.travis.yml` file.
-
-For all other methods of running quarks-job, make sure you set env variable `DOCKER_IMAGE_TAG` from [here](https://hub.docker.com/r/cfcontainerization/cf-operator/tags)
-
-* The above setup is temporary and will be removed once required commands are copied from `cf-operator` repo to this repo.

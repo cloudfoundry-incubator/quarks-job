@@ -9,6 +9,7 @@ import (
 	"reflect"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"gopkg.in/fsnotify.v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -23,6 +24,7 @@ import (
 
 // OutputPersistor creates a kubernetes secret for each container in the in the qJob pod.
 type OutputPersistor struct {
+	log                  *zap.SugaredLogger
 	namespace            string
 	podName              string
 	clientSet            kubernetes.Interface
@@ -31,8 +33,9 @@ type OutputPersistor struct {
 }
 
 // NewOutputPersistor returns a persist output interface which can create kubernetes secrets.
-func NewOutputPersistor(namespace string, podName string, clientSet kubernetes.Interface, versionedClientSet versioned.Interface, outputFilePathPrefix string) *OutputPersistor {
+func NewOutputPersistor(log *zap.SugaredLogger, namespace string, podName string, clientSet kubernetes.Interface, versionedClientSet versioned.Interface, outputFilePathPrefix string) *OutputPersistor {
 	return &OutputPersistor{
+		log:                  log,
 		namespace:            namespace,
 		podName:              podName,
 		clientSet:            clientSet,
@@ -41,7 +44,7 @@ func NewOutputPersistor(namespace string, podName string, clientSet kubernetes.I
 	}
 }
 
-// PersistOutput converts the output files of each container
+// Persist converts the output files of each container
 // in the pod related to an qJob into a kubernetes secret.
 func (po *OutputPersistor) Persist() error {
 	// Fetch the pod
@@ -134,6 +137,7 @@ func (po *OutputPersistor) getContainerExitCode(containerIndex int) (int, error)
 // in the container
 func (po *OutputPersistor) checkForOutputFile(filePath string, containerIndex int, containerName string) (int, error) {
 	if fileExists(filePath) {
+		po.log.Debugf("container '%s': exit early, file already existed", containerName)
 		return containerIndex, nil
 	}
 
@@ -154,6 +158,8 @@ func (po *OutputPersistor) checkForOutputFile(filePath string, containerIndex in
 					continue
 				}
 				if event.Op == fsnotify.Create && event.Name == filePath {
+					po.log.Debugf("container '%s': create event for %s", containerName, event.Name)
+
 					createEventFileChannel <- containerIndex
 				}
 			case err, ok := <-watcher.Errors:

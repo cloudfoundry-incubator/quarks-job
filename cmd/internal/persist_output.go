@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
 	"k8s.io/client-go/kubernetes"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
@@ -23,7 +24,7 @@ var persistOutputCmd = &cobra.Command{
 	
 into a versioned secret or kube native secret using flags specified to this command.
 `,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	RunE: func(_ *cobra.Command, args []string) (err error) {
 
 		namespace := viper.GetString("operator-namespace")
 		if len(namespace) == 0 {
@@ -39,13 +40,16 @@ into a versioned secret or kube native secret using flags specified to this comm
 			return errors.Wrapf(err, "pod name is empty.")
 		}
 
+		log := cmd.Logger(zap.AddCallerSkip(1))
+		defer log.Sync()
+
 		// Authenticate with the cluster
-		clientSet, versionedClientSet, err := authenticateInCluster()
+		clientSet, versionedClientSet, err := authenticateInCluster(log)
 		if err != nil {
 			return err
 		}
 
-		po := quarksjob.NewOutputPersistor(namespace, podName, clientSet, versionedClientSet, "/mnt/quarks")
+		po := quarksjob.NewOutputPersistor(log, namespace, podName, clientSet, versionedClientSet, "/mnt/quarks")
 
 		return po.Persist()
 	},
@@ -56,11 +60,7 @@ func init() {
 }
 
 // authenticateInCluster authenticates with the in cluster and returns the client
-func authenticateInCluster() (*kubernetes.Clientset, *versioned.Clientset, error) {
-
-	log = cmd.Logger(zap.AddCallerSkip(1))
-	defer log.Sync()
-
+func authenticateInCluster(log *zap.SugaredLogger) (*kubernetes.Clientset, *versioned.Clientset, error) {
 	config, err := kubeconfig.NewGetter(log).Get("")
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "Couldn't fetch Kubeconfig. Ensure kubeconfig is present to continue.")

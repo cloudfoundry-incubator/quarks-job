@@ -17,6 +17,7 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
 	"code.cloudfoundry.org/quarks-job/testing"
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
+	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
 )
 
 var _ = Describe("OutputPersistor", func() {
@@ -35,7 +36,8 @@ var _ = Describe("OutputPersistor", func() {
 		qJob, _, pod = env.DefaultQuarksJobWithSucceededJob("foo")
 		clientSet = clientfake.NewSimpleClientset()
 		versionedClientSet = clientsetfake.NewSimpleClientset()
-		po = quarksjob.NewOutputPersistor(namespace, pod.Name, clientSet, versionedClientSet, "/tmp/")
+		_, log := helper.NewTestLogger()
+		po = quarksjob.NewOutputPersistor(log, namespace, pod.Name, clientSet, versionedClientSet, "/tmp/")
 	})
 
 	JustBeforeEach(func() {

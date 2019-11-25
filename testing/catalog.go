@@ -174,7 +174,7 @@ func (c *Catalog) FailingMultiContainerJobTemplate(cmd []string) batchv1b1.JobTe
 	}
 }
 
-// CmdJobTemplate returns the spec with a given command for busybox
+// CmdJobTemplate returns the job spec with a given command for busybox
 func (c *Catalog) CmdJobTemplate(cmd []string) batchv1b1.JobTemplateSpec {
 	return batchv1b1.JobTemplateSpec{
 		Spec: batchv1.JobSpec{
@@ -290,6 +290,24 @@ func (c *Catalog) AutoErrandQuarksJob(name string) qjv1a1.QuarksJob {
 		Spec: qjv1a1.QuarksJobSpec{
 			Trigger: qjv1a1.Trigger{
 				Strategy: qjv1a1.TriggerOnce,
+			},
+			Template: c.CmdJobTemplate(cmd),
+		},
+	}
+}
+
+// OutputQuarksJob default values
+func (c *Catalog) OutputQuarksJob(name string) qjv1a1.QuarksJob {
+	cmd := []string{"/bin/sh", "-c", "echo '{\"fake\": \"value\"}' | tee /mnt/quarks/output.json"}
+	return qjv1a1.QuarksJob{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec: qjv1a1.QuarksJobSpec{
+			Trigger: qjv1a1.Trigger{
+				Strategy: qjv1a1.TriggerNow,
+			},
+			Output: &qjv1a1.Output{
+				NamePrefix:     "foo-",
+				WriteOnFailure: true,
 			},
 			Template: c.CmdJobTemplate(cmd),
 		},

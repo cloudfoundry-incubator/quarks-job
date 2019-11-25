@@ -1,8 +1,6 @@
 package integration_test
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -25,19 +23,59 @@ var _ = Describe("ErrandJob", func() {
 		}
 	}
 
+	var (
+		qj        qjv1a1.QuarksJob
+		tearDowns []machine.TearDownFunc
+	)
+
 	AfterEach(func() {
+		Expect(env.TearDownAll(tearDowns)).To(Succeed())
 		env.FlushLog()
 	})
 
-	Context("when using manually triggered ErrandJob", func() {
-		It("does not start a job without Run being set to now", func() {
-			qj := env.ErrandQuarksJob("quarks-job")
-			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
-			_, tearDown, err := env.CreateQuarksJob(env.Namespace, qj)
-			Expect(err).NotTo(HaveOccurred())
-			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
+	JustBeforeEach(func() {
+		_, tearDown, err := env.CreateQuarksJob(env.Namespace, qj)
+		Expect(err).NotTo(HaveOccurred())
+		tearDowns = append(tearDowns, tearDown)
+	})
 
-			exists, err := env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob))
+	Context("when persisting output", func() {
+		BeforeEach(func() {
+			qj = env.OutputQuarksJob("quarks")
+		})
+
+		It("does persist output", func() {
+			jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
+			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarks-job")
+			Expect(jobs).To(HaveLen(1))
+
+			secret, err := env.CollectSecret(env.Namespace, "foo-busybox")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(secret.Data["fake"]).To(Equal([]byte("value")))
+		})
+	})
+
+	Context("when trigger is set to now", func() {
+		BeforeEach(func() {
+			qj = env.ErrandQuarksJob("quarks-job")
+		})
+
+		It("starts a job", func() {
+			jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
+			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarks-job")
+			Expect(jobs).To(HaveLen(1))
+		})
+	})
+
+	Context("when using manually triggered ErrandJob", func() {
+		BeforeEach(func() {
+			qj = env.ErrandQuarksJob("quarks-job")
+			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
+		})
+
+		// this test waits 60s for a job not to appear
+		It("does not start a job without Run being set to now", func() {
+			exists, err := env.WaitForJobExists(env.Namespace, quarksJobLabel)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(exists).To(BeFalse())
 
@@ -48,29 +86,19 @@ var _ = Describe("ErrandJob", func() {
 			err = env.UpdateQuarksJob(env.Namespace, *latest)
 			Expect(err).NotTo(HaveOccurred())
 
-			exists, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob))
+			exists, err = env.WaitForJobExists(env.Namespace, quarksJobLabel)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(exists).To(BeFalse())
 		})
+	})
 
-		It("starts a job when creating quarks job with now", func() {
-			qj := env.ErrandQuarksJob("quarks-job")
-			_, tearDown, err := env.CreateQuarksJob(env.Namespace, qj)
-			Expect(err).NotTo(HaveOccurred())
-			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
-
-			jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
-			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarks-job")
-			Expect(jobs).To(HaveLen(1))
+	Context("when updating trigger to now", func() {
+		BeforeEach(func() {
+			qj = env.ErrandQuarksJob("quarks-job")
+			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
 		})
 
-		It("starts a job when updating quarks job to now", func() {
-			qj := env.ErrandQuarksJob("quarks-job")
-			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
-			_, tearDown, err := env.CreateQuarksJob(env.Namespace, qj)
-			Expect(err).NotTo(HaveOccurred())
-			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
-
+		It("starts a job", func() {
 			latest, err := env.GetQuarksJob(env.Namespace, qj.Name)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(latest.Spec.Trigger.Strategy).To(Equal(qjv1a1.TriggerManual))
@@ -79,10 +107,9 @@ var _ = Describe("ErrandJob", func() {
 			err = env.UpdateQuarksJob(env.Namespace, *latest)
 			Expect(err).NotTo(HaveOccurred())
 
-			jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
+			jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
 			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarksJob")
 			Expect(jobs).To(HaveLen(1))
-
 			Expect(jobs[0].GetOwnerReferences()).Should(ContainElement(jobOwnerRef(*latest)))
 		})
 	})

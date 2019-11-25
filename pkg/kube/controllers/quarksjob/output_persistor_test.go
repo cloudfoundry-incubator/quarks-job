@@ -1,7 +1,6 @@
 package quarksjob_test
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"os"
 
@@ -21,6 +20,8 @@ import (
 )
 
 var _ = Describe("OutputPersistor", func() {
+	var dataJSON = []byte("{\"hello\": \"world\"}")
+
 	var (
 		namespace          string
 		qJob               *qjv1a1.QuarksJob
@@ -46,14 +47,11 @@ var _ = Describe("OutputPersistor", func() {
 		Expect(err).NotTo(HaveOccurred())
 		_, err = clientSet.CoreV1().Pods(namespace).Create(pod)
 		Expect(err).NotTo(HaveOccurred())
+
 		// Create output file
 		err = os.MkdirAll("/tmp/busybox", os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
-		dataJson, err := json.Marshal(map[string]string{
-			"hello": "world",
-		})
-		Expect(err).NotTo(HaveOccurred())
-		err = ioutil.WriteFile("/tmp/busybox/output.json", dataJson, 0755)
+		err = ioutil.WriteFile("/tmp/busybox/output.json", dataJSON, 0755)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -63,9 +61,7 @@ var _ = Describe("OutputPersistor", func() {
 				{
 					Name: "busybox",
 					State: corev1.ContainerState{
-						Terminated: &corev1.ContainerStateTerminated{
-							ExitCode: 0,
-						},
+						Terminated: &corev1.ContainerStateTerminated{ExitCode: 0},
 					},
 				},
 			}
@@ -138,9 +134,7 @@ var _ = Describe("OutputPersistor", func() {
 				{
 					Name: "busybox",
 					State: corev1.ContainerState{
-						Terminated: &corev1.ContainerStateTerminated{
-							ExitCode: 1,
-						},
+						Terminated: &corev1.ContainerStateTerminated{ExitCode: 1},
 					},
 				},
 			}

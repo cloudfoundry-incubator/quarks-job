@@ -11,6 +11,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"code.cloudfoundry.org/quarks-job/integration/environment"
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	cmdHelper "code.cloudfoundry.org/quarks-utils/testing"
 	utils "code.cloudfoundry.org/quarks-utils/testing/integration"
 )
@@ -24,6 +25,7 @@ var (
 	env              *environment.Environment
 	namespacesToNuke []string
 	kubeConfig       *rest.Config
+	quarksJobLabel   = fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob)
 )
 
 var _ = SynchronizedBeforeSuite(func() []byte {

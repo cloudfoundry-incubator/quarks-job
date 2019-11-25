@@ -1,8 +1,6 @@
 package integration_test
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -36,7 +34,7 @@ var _ = Describe("AutoErrandJob", func() {
 			Expect(err).NotTo(HaveOccurred())
 			defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
-			jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
+			jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
 			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarksJob")
 			Expect(jobs).To(HaveLen(1))
 		})
@@ -47,7 +45,7 @@ var _ = Describe("AutoErrandJob", func() {
 				Expect(err).NotTo(HaveOccurred())
 				defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
-				jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
+				jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
 				Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarksJob")
 				Expect(jobs).To(HaveLen(1))
 
@@ -69,7 +67,7 @@ var _ = Describe("AutoErrandJob", func() {
 						Expect(err).NotTo(HaveOccurred())
 						defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
-						jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
+						jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
 						Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarksJob")
 						Expect(jobs).To(HaveLen(1))
 
@@ -90,7 +88,7 @@ var _ = Describe("AutoErrandJob", func() {
 						Expect(err).NotTo(HaveOccurred())
 						defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
-						jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
+						jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
 						Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarksJob")
 						Expect(jobs).To(HaveLen(1))
 
@@ -113,7 +111,7 @@ var _ = Describe("AutoErrandJob", func() {
 				Expect(err).NotTo(HaveOccurred())
 				defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
-				jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
+				jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
 				Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarksJob")
 				Expect(jobs).To(HaveLen(1))
 
@@ -152,7 +150,7 @@ var _ = Describe("AutoErrandJob", func() {
 				Expect(err).NotTo(HaveOccurred())
 				tearDowns = append(tearDowns, tearDownEJ)
 
-				_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob))
+				_, err = env.WaitForJobExists(env.Namespace, quarksJobLabel)
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -171,7 +169,7 @@ var _ = Describe("AutoErrandJob", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					By("checking if job is running")
-					jobs, err := env.CollectJobs(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob), 1)
+					jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(jobs).To(HaveLen(1))
 				})
@@ -204,7 +202,7 @@ var _ = Describe("AutoErrandJob", func() {
 				Expect(err).NotTo(HaveOccurred())
 				tearDowns = append(tearDowns, tearDownEJ)
 
-				_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob))
+				_, err = env.WaitForJobExists(env.Namespace, quarksJobLabel)
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
@@ -246,7 +244,7 @@ var _ = Describe("AutoErrandJob", func() {
 					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 					By("waiting for the job to start")
-					_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob))
+					_, err = env.WaitForJobExists(env.Namespace, quarksJobLabel)
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})
@@ -271,7 +269,7 @@ var _ = Describe("AutoErrandJob", func() {
 					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 					By("waiting for the job to start")
-					_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob))
+					_, err = env.WaitForJobExists(env.Namespace, quarksJobLabel)
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})
@@ -296,7 +294,7 @@ var _ = Describe("AutoErrandJob", func() {
 					defer func(tdf machine.TearDownFunc) { Expect(tdf()).To(Succeed()) }(tearDown)
 
 					By("waiting for the job to start")
-					_, err = env.WaitForJobExists(env.Namespace, fmt.Sprintf("%s=true", qjv1a1.LabelQuarksJob))
+					_, err = env.WaitForJobExists(env.Namespace, quarksJobLabel)
 					Expect(err).ToNot(HaveOccurred())
 				})
 			})

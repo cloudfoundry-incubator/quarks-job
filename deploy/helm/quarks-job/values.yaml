@@ -8,6 +8,8 @@ nameOverride: ""
 
 fullnameOverride: ""
 
+createWatchNamespace: true
+
 serviceAccount:
   quarksJobServiceAccount:
     create: true

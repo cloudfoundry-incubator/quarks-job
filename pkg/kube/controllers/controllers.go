@@ -8,7 +8,7 @@ import (
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 )
 
 // Theses funcs construct controllers and add them to the controller-runtime

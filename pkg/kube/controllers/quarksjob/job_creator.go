@@ -15,7 +15,7 @@ import (
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
@@ -67,8 +67,8 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
 		Name:            "output-persist",
-		Image:           config.GetOperatorDockerImage(),
-		ImagePullPolicy: config.GetOperatorImagePullPolicy(),
+		Image:           sharedcfg.GetOperatorDockerImage(),
+		ImagePullPolicy: sharedcfg.GetOperatorImagePullPolicy(),
 		Args:            []string{"persist-output"},
 		Env: []corev1.EnvVar{
 			{

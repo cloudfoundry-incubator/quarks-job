@@ -19,7 +19,7 @@ import (
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"

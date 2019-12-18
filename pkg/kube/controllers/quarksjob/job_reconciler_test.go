@@ -25,8 +25,8 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	cfakes "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	qj "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
 )
@@ -81,7 +81,7 @@ var _ = Describe("ReconcileJob", func() {
 
 	JustBeforeEach(func() {
 		ctx := ctxlog.NewParentContext(log)
-		config := &config.Config{CtxTimeOut: 10 * time.Second}
+		config := config.NewConfigWithTimeout(10 * time.Second)
 		reconciler, _ = qj.NewJobReconciler(ctx, config, manager)
 		qJob, job, pod1 = env.DefaultQuarksJobWithSucceededJob("foo")
 	})

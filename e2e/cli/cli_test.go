@@ -43,6 +43,7 @@ var _ = Describe("CLI", func() {
   -l, --log-level string                  \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
       --max-workers int                   \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
   -n, --operator-namespace string         \(OPERATOR_NAMESPACE\) The operator namespace \(default "default"\)
+      --service-account string            \(SERVICE_ACCOUNT\) service acount for the persist output container in the created jobs \(default "default"\)
       --watch-namespace string            \(WATCH_NAMESPACE\) Namespace to watch for BOSH deployments
 
 `))

@@ -37,6 +37,8 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
+            - name: SERVICE_ACCOUNT
+              value: {{ template "quarks-job.serviceAccountName" . }}
             - name: OPERATOR_NAME
               value: "quarks-job"
             - name: DOCKER_IMAGE_ORG

@@ -13,8 +13,9 @@ import (
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 	utils "code.cloudfoundry.org/quarks-utils/testing/integration"
 	"code.cloudfoundry.org/quarks-utils/testing/machine"
 )
@@ -24,6 +25,7 @@ type Environment struct {
 	*utils.Environment
 	Machine
 	testing.Catalog
+	Config *config.Config
 }
 
 var (
@@ -34,21 +36,25 @@ var (
 func NewEnvironment(kubeConfig *rest.Config) *Environment {
 	atomic.AddInt32(&namespaceCounter, 1)
 	namespaceID := gomegaConfig.GinkgoConfig.ParallelNode*100 + int(namespaceCounter)
+	shared := &sharedcfg.Config{
+		CtxTimeOut:           10 * time.Second,
+		MeltdownDuration:     1 * time.Second,
+		MeltdownRequeueAfter: 500 * time.Millisecond,
+		Fs:                   afero.NewOsFs(),
+	}
 
 	return &Environment{
 		Environment: &utils.Environment{
 			ID:         namespaceID,
 			Namespace:  utils.GetNamespaceName(namespaceID),
 			KubeConfig: kubeConfig,
-			Config: &config.Config{
-				CtxTimeOut:           10 * time.Second,
-				MeltdownDuration:     1 * time.Second,
-				MeltdownRequeueAfter: 500 * time.Millisecond,
-				Fs:                   afero.NewOsFs(),
-			},
+			Config:     shared,
 		},
 		Machine: Machine{
 			Machine: machine.NewMachine(),
+		},
+		Config: &config.Config{
+			Config: shared,
 		},
 	}
 }

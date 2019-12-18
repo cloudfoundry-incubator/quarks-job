@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 )
 
 // StartOperator starts the quarks job operator
@@ -45,7 +45,7 @@ func (e *Environment) setupOperator() (manager.Manager, error) {
 		return nil, errors.Errorf("required environment variable DOCKER_IMAGE_TAG not set")
 	}
 
-	err := config.SetupOperatorDockerImage(dockerImageOrg, dockerImageRepo, dockerImageTag)
+	err := sharedcfg.SetupOperatorDockerImage(dockerImageOrg, dockerImageRepo, dockerImageTag)
 	if err != nil {
 		return nil, err
 	}

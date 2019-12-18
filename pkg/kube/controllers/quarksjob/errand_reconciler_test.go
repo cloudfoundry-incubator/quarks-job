@@ -24,8 +24,9 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	. "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
+	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
@@ -73,11 +74,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 		JustBeforeEach(func() {
 			ctx := ctxlog.NewParentContext(log)
-			config := &config.Config{
-				CtxTimeOut:           10 * time.Second,
-				MeltdownDuration:     config.MeltdownDuration,
-				MeltdownRequeueAfter: config.MeltdownRequeueAfter,
-			}
+			config := config.NewConfigWithTimeout(10 * time.Second)
 			reconciler = NewErrandReconciler(
 				ctx,
 				config,
@@ -258,7 +255,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 					result, err := act()
 					Expect(err).ToNot(HaveOccurred())
-					Expect(result.RequeueAfter).To(Equal(config.MeltdownRequeueAfter))
+					Expect(result.RequeueAfter).To(Equal(sharedcfg.MeltdownRequeueAfter))
 				})
 
 				It("handles an error when updating job's strategy failed", func() {

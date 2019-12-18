@@ -157,7 +157,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 				It("should log create error and requeue", func() {
 					_, err := act()
-					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Failed to create job '%s': could not create service account: fake-error", qJobName)).Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Failed to create job '%s': fake-error", qJobName)).Len()).To(Equal(1))
 					Expect(err).To(HaveOccurred())
 					Expect(client.CreateCallCount()).To(Equal(1))
 				})
@@ -175,7 +175,7 @@ var _ = Describe("ErrandReconciler", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
 					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip '%s': already running", qJobName)).Len()).To(Equal(1))
-					Expect(client.CreateCallCount()).To(Equal(3))
+					Expect(client.CreateCallCount()).To(Equal(1))
 				})
 			})
 

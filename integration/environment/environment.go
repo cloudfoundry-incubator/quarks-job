@@ -8,6 +8,11 @@ import (
 	"github.com/onsi/gomega"
 	"github.com/pkg/errors"
 	"github.com/spf13/afero"
+
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -54,7 +59,8 @@ func NewEnvironment(kubeConfig *rest.Config) *Environment {
 			Machine: machine.NewMachine(),
 		},
 		Config: &config.Config{
-			Config: shared,
+			Config:         shared,
+			ServiceAccount: serviceAccountName,
 		},
 	}
 }
@@ -97,6 +103,55 @@ func (e *Environment) SetupNamespace() error {
 		}
 	}
 
+	return nil
+}
+
+const serviceAccountName = "persist-output-service-account"
+
+func (e *Environment) SetupServiceAccount() error {
+	// Create a service account for the pod
+	serviceAccount := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      serviceAccountName,
+			Namespace: e.Namespace,
+		},
+	}
+
+	client := e.Clientset.CoreV1().ServiceAccounts(e.Namespace)
+	if _, err := client.Create(serviceAccount); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return errors.Wrapf(err, "could not create service account")
+		}
+	}
+
+	// Bind the persist-output service account to the cluster-admin ClusterRole. Notice that the
+	// RoleBinding is namespaced as opposed to ClusterRoleBinding which would give the service account
+	// unrestricted permissions to any namespace.
+	roleBinding := &v1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "persist-output-role",
+			Namespace: e.Namespace,
+		},
+		Subjects: []v1.Subject{
+			{
+				Kind:      v1.ServiceAccountKind,
+				Name:      serviceAccountName,
+				Namespace: e.Namespace,
+			},
+		},
+		RoleRef: v1.RoleRef{
+			Kind:     "ClusterRole",
+			Name:     "cluster-admin",
+			APIGroup: "rbac.authorization.k8s.io",
+		},
+	}
+
+	rbac := e.Clientset.RbacV1().RoleBindings(e.Namespace)
+	if _, err := rbac.Create(roleBinding); err != nil {
+		if !apierrors.IsAlreadyExists(err) {
+			return errors.Wrapf(err, "could not create role binding")
+		}
+	}
 	return nil
 }
 

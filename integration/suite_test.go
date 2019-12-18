@@ -64,6 +64,11 @@ var _ = BeforeEach(func() {
 	}
 	namespacesToNuke = append(namespacesToNuke, env.Namespace)
 
+	err = env.SetupServiceAccount()
+	if err != nil {
+		fmt.Printf("WARNING: failed to setup service account: %v\n", err)
+	}
+
 	env.Stop, err = env.StartOperator()
 	if err != nil {
 		gomega.Expect(err).NotTo(gomega.HaveOccurred())

@@ -14,6 +14,7 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
 	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
@@ -30,11 +31,12 @@ const (
 type setOwnerReferenceFunc func(owner, object metav1.Object, scheme *runtime.Scheme) error
 
 // NewJobCreator returns a new job creator
-func NewJobCreator(client crc.Client, scheme *runtime.Scheme, f setOwnerReferenceFunc, store vss.VersionedSecretStore) JobCreator {
+func NewJobCreator(client crc.Client, scheme *runtime.Scheme, f setOwnerReferenceFunc, config *config.Config, store vss.VersionedSecretStore) JobCreator {
 	return jobCreatorImpl{
 		client:            client,
 		scheme:            scheme,
 		setOwnerReference: f,
+		config:            config,
 		store:             store,
 	}
 }
@@ -48,6 +50,7 @@ type jobCreatorImpl struct {
 	client            crc.Client
 	scheme            *runtime.Scheme
 	setOwnerReference setOwnerReferenceFunc
+	config            *config.Config
 	store             vss.VersionedSecretStore
 }
 
@@ -56,7 +59,7 @@ type jobCreatorImpl struct {
 func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, namespace string) (bool, error) {
 	template := qJob.Spec.Template.DeepCopy()
 
-	serviceAccountVolume, serviceAccountVolumeMount, err := j.createdServiceAccount(ctx, namespace)
+	serviceAccountVolume, serviceAccountVolumeMount, err := j.serviceAccountMount(ctx, namespace, j.config.ServiceAccount)
 	if err != nil {
 		return false, err
 	}

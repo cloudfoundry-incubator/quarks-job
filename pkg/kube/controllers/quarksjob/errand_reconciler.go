@@ -44,7 +44,7 @@ func NewErrandReconciler(
 	f setOwnerReferenceFunc,
 	store vss.VersionedSecretStore,
 ) reconcile.Reconciler {
-	jc := NewJobCreator(mgr.GetClient(), mgr.GetScheme(), f, store)
+	jc := NewJobCreator(mgr.GetClient(), mgr.GetScheme(), f, config, store)
 
 	return &ErrandReconciler{
 		ctx:               ctx,

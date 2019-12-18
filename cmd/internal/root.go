@@ -55,6 +55,12 @@ var rootCmd = &cobra.Command{
 
 		cfg.MaxQuarksJobWorkers = viper.GetInt("max-workers")
 
+		serviceAccount := viper.GetString("service-account")
+		if serviceAccount == "" {
+			serviceAccount = "default"
+		}
+		cfg.ServiceAccount = serviceAccount
+
 		cmd.CtxTimeOut(cfg.Config)
 
 		ctx := ctxlog.NewParentContext(log)
@@ -112,6 +118,10 @@ func init() {
 	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
 	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))
 	argToEnv["max-workers"] = "MAX_WORKERS"
+
+	pf.String("service-account", "default", "service acount for the persist output container in the created jobs")
+	viper.BindPFlag("service-account", pf.Lookup("service-account"))
+	argToEnv["service-account"] = "SERVICE_ACCOUNT"
 
 	// Add env variables to help
 	cmd.AddEnvToUsage(rootCmd, argToEnv)

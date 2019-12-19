@@ -38,7 +38,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: SERVICE_ACCOUNT
-              value: {{ template "quarks-job.serviceAccountName" . }}
+              value: quarks-job-persist-output
             - name: OPERATOR_NAME
               value: "quarks-job"
             - name: DOCKER_IMAGE_ORG

@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: quarks-job-persist-output
+subjects:
+- kind: ServiceAccount
+  name: quarks-job-persist-output
+roleRef:
+  kind: Role
+  name: quarks-job-persist-output
+  apiGroup: rbac.authorization.k8s.io

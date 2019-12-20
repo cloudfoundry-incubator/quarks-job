@@ -21,8 +21,7 @@ rules:
   resources:
   - secrets
   verbs:
-  - create
-  - update
+  - "*"
 - apiGroups:
   - quarks.cloudfoundry.org
   resources:

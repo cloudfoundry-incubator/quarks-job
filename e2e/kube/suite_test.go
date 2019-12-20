@@ -15,9 +15,10 @@ import (
 const examplesDir = "../../docs/examples/"
 
 var (
-	nsIndex   int
-	teardown  e2ehelper.TearDownFunc
-	namespace string
+	nsIndex           int
+	teardown          e2ehelper.TearDownFunc
+	namespace         string
+	operatorNamespace string
 )
 
 func FailAndCollectDebugInfo(description string, callerSkip ...int) {
@@ -45,7 +46,7 @@ var _ = BeforeEach(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	chartPath := fmt.Sprintf("%s%s", dir, "/../../helm/quarks-job")
-	namespace, teardown, err = e2ehelper.SetUpEnvironment(chartPath)
+	namespace, operatorNamespace, teardown, err = e2ehelper.SetUpEnvironment(chartPath)
 	Expect(err).ToNot(HaveOccurred())
 })
 

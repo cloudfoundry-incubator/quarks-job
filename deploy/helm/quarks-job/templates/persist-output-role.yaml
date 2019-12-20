@@ -23,6 +23,7 @@ rules:
   verbs:
   - create
   - update
+  - list
 - apiGroups:
   - quarks.cloudfoundry.org
   resources:

@@ -3,6 +3,11 @@ kind: Role
 metadata:
   creationTimestamp: null
   name: quarks-job-persist-output
+  {{- if .Values.global.operator.watchNamespace }}
+  namespace: {{ .Values.global.operator.watchNamespace }}
+  {{- else }}
+  namespace: {{ .Release.Namespace }}
+  {{- end }}
 rules:
 - apiGroups:
   - ""

@@ -3,6 +3,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   name: quarks-job
+  namespace: {{ .Release.Namespace }}
 rules:
 - apiGroups:
   - ""

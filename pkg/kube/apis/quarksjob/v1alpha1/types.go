@@ -67,8 +67,9 @@ type Trigger struct {
 
 // SecretOptions specify the name of the output secret and if it's versioned
 type SecretOptions struct {
-	Name      string `json:"name,omitempty"`
-	Versioned bool   `json:"versioned,omitempty"`
+	Name                   string            `json:"name,omitempty"`
+	AdditionalSecretLabels map[string]string `json:"secretLabels,omitempty"`
+	Versioned              bool              `json:"versioned,omitempty"`
 }
 
 // FilesToSecrets maps file names to secret names

@@ -291,6 +291,9 @@ func (po *OutputPersistor) createSecret(
 	for k, v := range qJob.Spec.Output.SecretLabels {
 		secretLabels[k] = v
 	}
+	for k, v := range options.AdditionalSecretLabels {
+		secretLabels[k] = v
+	}
 	secretLabels[qjv1a1.LabelPersistentSecretContainer] = container.Name
 	if id, ok := podutil.LookupEnv(container.Env, qjv1a1.RemoteIDKey); ok {
 		secretLabels[qjv1a1.LabelRemoteID] = id

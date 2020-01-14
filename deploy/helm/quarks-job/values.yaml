@@ -31,21 +31,19 @@ maxWorkers: 1
 nameOverride: ""
 
 serviceAccount:
-  # quarksJobServiceAccount contains the configuration
-  # values of the service account used by quarks-job.
-  quarksJobServiceAccount:
-    # create is a boolean to control the creation of service account name.
-    create: true
-    # name of the service account.
-    name:
+  # create is a boolean to control the creation of service account name.
+  create: true
+  # name of the service account.
+  name:
 
 global:
   # contextTimeout is the timeout value for each K8's API request in seconds.
   contextTimeout: 30
-  # rbacEnable is a boolean to control the installation of quarks job cluster role template.
-  rbacEnable: true
+  rbac:
+    # create is a boolean to control the installation of rbac resources.
+    create: true
   image:
-    # pullPolicy defines the policy used for pulling docker images..
+    # pullPolicy defines the policy used for pulling docker images.
     pullPolicy: IfNotPresent
   operator:
     # watchNamespace is the namespace to watch for BOSH deployments.

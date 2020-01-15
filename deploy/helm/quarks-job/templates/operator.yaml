@@ -24,6 +24,16 @@ spec:
           - quarks-job
           imagePullPolicy: {{ .Values.global.image.pullPolicy | quote }}
           env:
+            - name: APPLY_CRD
+              value: "{{ .Values.applyCRD }}"
+            {{- if .Values.kubeconfig }}
+            - name: KUBECONFIG
+              value: "{{ .Values.kubeConfig }}"
+            {{- end}}
+            - name: LOG_LEVEL
+              value: "{{ .Values.logLevel }}"
+            - name: MAX_WORKERS
+              value: "{{ .Values.maxWorkers }}"
             {{- if .Values.global.operator.watchNamespace }}
             - name: WATCH_NAMESPACE
               value: "{{ .Values.global.operator.watchNamespace }}"

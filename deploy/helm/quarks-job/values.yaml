@@ -1,24 +1,54 @@
-# Default values for quarks-job.
-image:
-  repository: quarks-job
-  org: cfcontainerization
-  tag: foobar
+## Default values for Quarks Job Helm Chart.
+## This is a YAML-formatted file.
+## Declare variables to be passed into your templates.
 
-nameOverride: ""
 
-fullnameOverride: ""
+# Boolean to control the installation of CRD's.
+applyCRD: true
 
+# Boolean to control creation of watchnamespace.
 createWatchNamespace: true
 
+# Override the release name
+fullnameOverride: ""
+
+# Quarks Job docker image.
+image:
+  # Dockerhub repository that provides the operator docker image.
+  repository: quarks-job
+  # Dockerhub organization that provides the operator docker image.
+  org: cfcontainerization
+  # Tag of the operator docker image
+  tag: v0.0.0-0.g4db12e7
+
+# Path to a kubeconfig, not required in-cluster
+kubeConfig: ""
+
+# Operator log level
+logLevel: debug
+
+# Maximum number of workers concurrently running the controller.
+maxWorkers: 1
+
+# Override the chart name part of the release name
+nameOverride: ""
+
+# List of service accounts used in the operator.
 serviceAccount:
+  # Service account used by quarks-job.
   quarksJobServiceAccount:
+    # Boolean to control the creation of service account name.
     create: true
+    # Name of the service account.
     name:
 
 global:
+  # Context Timeout for each K8's API request in seconds.
   contextTimeout: 30
   rbacEnable: true
   image:
+    # Image Pull Policy https://kubernetes.io/docs/concepts/containers/images#updating-images
     pullPolicy: IfNotPresent
   operator:
-    watchNamespace: ""
+    # Namespace to watch for BOSH deployments
+    watchNamespace: default

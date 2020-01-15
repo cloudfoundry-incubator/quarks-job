@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -24,8 +25,9 @@ var _ = Describe("ErrandJob", func() {
 	}
 
 	var (
-		qj        qjv1a1.QuarksJob
-		tearDowns []machine.TearDownFunc
+		quarksJobLabel string
+		qj             qjv1a1.QuarksJob
+		tearDowns      []machine.TearDownFunc
 	)
 
 	AfterEach(func() {
@@ -41,6 +43,7 @@ var _ = Describe("ErrandJob", func() {
 
 	Context("when persisting output", func() {
 		BeforeEach(func() {
+			quarksJobLabel = fmt.Sprintf("%s=quarks", qjv1a1.LabelQJobName)
 			qj = env.OutputQuarksJob("quarks")
 		})
 

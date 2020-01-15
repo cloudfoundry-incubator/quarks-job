@@ -64,7 +64,7 @@ func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) err
 
 // isEJobJob matches our jobs
 func isEJobJob(labels map[string]string) bool {
-	if _, exists := labels[qjv1a1.LabelQuarksJob]; exists {
+	if _, exists := labels[qjv1a1.LabelQJobName]; exists {
 		return true
 	}
 	return false

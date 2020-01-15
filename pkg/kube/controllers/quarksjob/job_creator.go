@@ -136,7 +136,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: qJob.Namespace,
-			Labels:    map[string]string{qjv1a1.LabelQuarksJob: "true"},
+			Labels:    map[string]string{qjv1a1.LabelQJobName: qJob.Name},
 		},
 		Spec: template.Spec,
 	}

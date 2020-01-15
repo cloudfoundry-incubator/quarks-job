@@ -1,6 +1,8 @@
 package integration_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -17,12 +19,15 @@ var _ = Describe("AutoErrandJob", func() {
 
 	Context("when using an AutoErrandJob", func() {
 		var (
+			quarksJobLabel string
+
 			qj        qjv1a1.QuarksJob
 			tearDowns []machine.TearDownFunc
 		)
 
 		BeforeEach(func() {
 			qj = env.AutoErrandQuarksJob("autoerrand-job")
+			quarksJobLabel = fmt.Sprintf("%s=autoerrand-job", qjv1a1.LabelQJobName)
 		})
 
 		AfterEach(func() {

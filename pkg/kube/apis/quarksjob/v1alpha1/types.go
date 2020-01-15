@@ -23,9 +23,6 @@ var (
 	// the remote resource they belong to
 	LabelRemoteID = fmt.Sprintf("%s/remote-id", apis.GroupName)
 
-	// LabelQuarksJob key for label used to identify quarksJob.
-	// Value is set to true if the batchv1.Job is from an QuarksJob
-	LabelQuarksJob = fmt.Sprintf("%s/quarks-job", apis.GroupName)
 	// LabelQJobName key for label on a batchv1.Job's pod, which is set to the QuarksJob's name
 	LabelQJobName = fmt.Sprintf("%s/qjob-name", apis.GroupName)
 	// LabelTriggeringPod key for label, which is set to the UID of the pod that triggered an QuarksJob

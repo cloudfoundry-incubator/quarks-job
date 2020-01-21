@@ -1,6 +1,9 @@
 # QuarksJob
 
+[![godoc](https://godoc.org/code.cloudfoundry.org/quarks-job?status.svg)](https://godoc.org/code.cloudfoundry.org/quarks-job)
 [![Build Status](https://api.travis-ci.org/cloudfoundry-incubator/quarks-job.svg?branch=master)](https://travis-ci.org/cloudfoundry-incubator/quarks-job)
+[![go report card](https://goreportcard.com/badge/code.cloudfoundry.org/quarks-job)](https://goreportcard.com/report/code.cloudfoundry.org/quarks-job)
+[![Coveralls github](https://img.shields.io/coveralls/github/cloudfoundry-incubator/quarks-job.svg?style=flat)](https://coveralls.io/github/cloudfoundry-incubator/quarks-job?branch=HEAD)
 
 - [QuarksJob](#quarksjob)
   - [Description](#description)

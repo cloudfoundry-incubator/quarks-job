@@ -53,16 +53,16 @@ $ helm delete quarks-job --purge
 ## Configuration
 
 | Parameter                                         | Description                                                                       | Default                                        |
-| ------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `image.repository`                                | Docker hub repository for the quarks-job image                                    | `quarks-job`                                   |
-| `image.org`                                       | Docker hub organization for the quarks-job image                                  | `cfcontainerization`                           |
-| `image.tag`                                       | Docker image tag                                                                  | `foobar`                                       |
-| `global.contextTimeout`                           | Will set the context timeout in seconds, for future K8S API requests              | `30`                                           |
-| `global.image.pullPolicy`                         | Kubernetes image pullPolicy                                                       | `IfNotPresent`                                 |
-| `global.operator.watchNamespace`                  | Namespace the operator will watch for BOSH deployments                            | the release namespace                          |
-| `global.rbacEnable`                               | Install required RBAC service account, roles and rolebindings                     | `true`                                         |
-| `serviceAccount.quarksJobServiceAccount.create`   | Will set the value of `quarks-job.serviceAccountName` to the current chart name   | `true`                                         |
-| `serviceAccount.quarksJobServiceAccount.name`     | If the above is not set, it will set the `quarks-job.serviceAccountName`          |                                                |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `image.repository`                                | Docker hub repository for the quarks-job image                                         | `quarks-job`                                   |
+| `image.org`                                       | Docker hub organization for the quarks-job image                                       | `cfcontainerization`                           |
+| `image.tag`                                       | Docker image tag                                                                       | `foobar`                                       |
+| `global.contextTimeout`                           | Will set the context timeout in seconds, for future K8S API requests                   | `30`                                           |
+| `global.image.pullPolicy`                         | Kubernetes image pullPolicy                                                            | `IfNotPresent`                                 |
+| `global.operator.watchNamespace`                  | Namespace the operator will watch for BOSH deployments                                 | the release namespace                          |
+| `global.rbac.create`                              | Install required RBAC service account, roles and rolebindings                          | `true`                                         |
+| `serviceAccount.create`                           | If true, create a service account                                                      |                                                |
+| `serviceAccount.name`                             | If not set and `create` is `true`, a name is generated using the fullname of the chart |                                                |
 
 ## RBAC
 

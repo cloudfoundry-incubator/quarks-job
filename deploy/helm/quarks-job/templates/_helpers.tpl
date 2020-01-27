@@ -35,9 +35,9 @@ Create chart name and version as used by the chart label.
 Create the name of the quarks-job service account to use
 */}}
 {{- define "quarks-job.serviceAccountName" -}}
-{{- if .Values.serviceAccount.quarksJobServiceAccount.create -}}
-    {{ default (include "quarks-job.fullname" .) .Values.serviceAccount.quarksJobServiceAccount.name }}
+{{- if .Values.serviceAccount.create -}}
+    {{ default (include "quarks-job.fullname" .) .Values.serviceAccount.name }}
 {{- else -}}
-    {{ default "default" .Values.serviceAccount.quarksJobServiceAccount.name }}
+    {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}

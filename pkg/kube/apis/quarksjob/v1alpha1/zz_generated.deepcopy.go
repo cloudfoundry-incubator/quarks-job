@@ -139,7 +139,7 @@ func (in *QuarksJob) DeepCopyObject() runtime.Object {
 func (in *QuarksJobList) DeepCopyInto(out *QuarksJobList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]QuarksJob, len(*in))

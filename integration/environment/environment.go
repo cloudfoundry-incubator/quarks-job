@@ -108,8 +108,8 @@ func (e *Environment) SetupNamespace() error {
 
 const serviceAccountName = "persist-output-service-account"
 
+// SetupServiceAccount creates a service account for the pod
 func (e *Environment) SetupServiceAccount() error {
-	// Create a service account for the pod
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      serviceAccountName,

@@ -8,6 +8,7 @@ import (
 	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 )
 
+// Config modified for quarks-job
 type Config struct {
 	*sharedcfg.Config
 	ServiceAccount string
@@ -24,6 +25,7 @@ func NewDefaultConfig(fs afero.Fs) *Config {
 	}
 }
 
+// NewConfigWithTimeout returns a default config, with a context timeout
 func NewConfigWithTimeout(timeout time.Duration) *Config {
 	return &Config{
 		Config: &sharedcfg.Config{

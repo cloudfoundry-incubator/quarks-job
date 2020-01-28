@@ -2,14 +2,14 @@
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: quarks-job
-  namespace: {{ .Release.Namespace }}
+  name: {{ template "quarks-job.fullname" . }}
+  {{- template "quarks-job.roleNamespace" . }}
 subjects:
 - kind: ServiceAccount
-  name: quarks-job
+  name: {{ template "quarks-job.serviceAccountName" . }}
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: Role
-  name: quarks-job
+  name: {{ template "quarks-job.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
 {{- end }}

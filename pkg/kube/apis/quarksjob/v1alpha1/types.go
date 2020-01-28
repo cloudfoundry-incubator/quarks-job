@@ -57,6 +57,19 @@ const (
 	TriggerDone Strategy = "done"
 )
 
+// PersistenceMethod describes the secret persistence implemention style
+type PersistenceMethod string
+
+const (
+	// PersistOneToOne results in one secret per input file using the provided
+	// name as the secret name
+	PersistOneToOne PersistenceMethod = "one-to-one"
+
+	// PersistUsingFanOut results in one secret per key/value pair found in the
+	// provided input file and the name being used as a prefix for the secret
+	PersistUsingFanOut PersistenceMethod = "fan-out"
+)
+
 // Trigger decides how to trigger the QuarksJob
 type Trigger struct {
 	Strategy Strategy `json:"strategy"`
@@ -67,6 +80,7 @@ type SecretOptions struct {
 	Name                   string            `json:"name,omitempty"`
 	AdditionalSecretLabels map[string]string `json:"secretLabels,omitempty"`
 	Versioned              bool              `json:"versioned,omitempty"`
+	PersistenceMethod      PersistenceMethod `json:"persistencemethod,omitempty"`
 }
 
 // FilesToSecrets maps file names to secret names
@@ -132,8 +146,21 @@ func (q *QuarksJob) IsAutoErrand() bool {
 func NewFileToSecret(fileName string, secretName string, versioned bool) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
-			Name:      secretName,
-			Versioned: versioned,
+			Name:              secretName,
+			Versioned:         versioned,
+			PersistenceMethod: PersistOneToOne,
+		},
+	}
+}
+
+// NewFileToSecrets uses a fan out style and creates one secret per key/value
+// pair in the given input file
+func NewFileToSecrets(fileName string, secretName string, versioned bool) FilesToSecrets {
+	return FilesToSecrets{
+		fileName: SecretOptions{
+			Name:              secretName,
+			Versioned:         versioned,
+			PersistenceMethod: PersistUsingFanOut,
 		},
 	}
 }

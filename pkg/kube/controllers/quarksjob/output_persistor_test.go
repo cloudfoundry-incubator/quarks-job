@@ -1,6 +1,7 @@
 package quarksjob_test
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 
@@ -234,6 +235,56 @@ var _ = Describe("OutputPersistor", func() {
 					Expect(secret).ShouldNot(BeNil())
 					secret, _ = clientSet.CoreV1().Secrets(namespace).Get("bar-nuts-v1", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
+				})
+			})
+
+			Context("when output persistence with fan out is configured", func() {
+				provideContent := func(data map[string]map[string]string) []byte {
+					tmp := map[string]string{}
+					for k, v := range data {
+						valueBytes, err := json.Marshal(v)
+						Expect(err).ToNot(HaveOccurred())
+
+						tmp[k] = string(valueBytes)
+					}
+
+					bytes, err := json.Marshal(tmp)
+					Expect(err).ToNot(HaveOccurred())
+
+					return bytes
+				}
+
+				BeforeEach(func() {
+					qJob.Spec.Output = &qjv1a1.Output{
+						OutputMap: qjv1a1.OutputMap{
+							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false),
+						},
+					}
+
+					Expect(ioutil.WriteFile("/tmp/busybox/provides.json", []byte(provideContent(map[string]map[string]string{
+						"nats-nats": map[string]string{
+							"nats.user":     "admin",
+							"nats.password": "changeme",
+							"nats.port":     "1337",
+						},
+						"nats-nuts": map[string]string{
+							"nats.user":     "udmin",
+							"nats.password": "chungeme",
+							"nats.port":     "1337",
+						},
+					})), 0640)).NotTo(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					qJob.Spec.Output = nil
+					Expect(os.Remove("/tmp/busybox/provides.json")).ToNot(HaveOccurred())
+				})
+
+				It("creates a secret per each key/value of the given input file", func() {
+					Expect(po.Persist()).NotTo(HaveOccurred())
+
+					Expect(clientSet.CoreV1().Secrets(namespace).Get("link-nats-deployment-nats-nats", metav1.GetOptions{})).ShouldNot(BeNil())
+					Expect(clientSet.CoreV1().Secrets(namespace).Get("link-nats-deployment-nats-nuts", metav1.GetOptions{})).ShouldNot(BeNil())
 				})
 			})
 		})

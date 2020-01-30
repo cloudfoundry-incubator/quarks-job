@@ -3,6 +3,7 @@ package quarksjob
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -101,7 +102,7 @@ func (po *OutputPersistor) persistPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) e
 }
 
 // persistContainer converts json output file
-// of the specified container into a secret
+// of the specified container into secret(s)
 func (po *OutputPersistor) persistContainer(
 	qJob *qjv1a1.QuarksJob,
 	containerIndex int,
@@ -125,19 +126,44 @@ func (po *OutputPersistor) persistContainer(
 		if exitCode == 0 || (exitCode == 1 && qJob.Spec.Output.WriteOnFailure) {
 			for fileName, options := range filesToSecrets {
 				filePath := filepath.Join(prefix, fileName)
-				po.log.Debugf("container '%s': creating '%s' from '%s'", container.Name, options.Name, filePath)
-				err := po.createSecret(
-					qJob,
-					container,
-					filePath,
-					options,
-				)
+
+				// Fetch json from file
+				file, err := ioutil.ReadFile(filePath)
 				if err != nil {
-					errorContainerChannel <- err
+					errorContainerChannel <- errors.Wrapf(err, "unable to read file %s in container %s in pod %s", filePath, container.Name, po.podName)
+				}
+
+				var data map[string]string
+				if err := json.Unmarshal([]byte(file), &data); err != nil {
+					errorContainerChannel <- errors.Wrapf(err, "failed to convert output file %s into json for creating secret(s) %s in pod %s", filePath, options.Name, po.podName)
+				}
+
+				switch options.PersistenceMethod {
+				case qjv1a1.PersistUsingFanOut:
+					po.log.Debugf("container '%s': creating secrets with prefix '%s' from '%s'", container.Name, options.Name, filePath)
+					for key, value := range data {
+						secretName := fmt.Sprintf("%s-%s", options.Name, key)
+
+						var secretData map[string]string
+						if err := json.Unmarshal([]byte(value), &secretData); err != nil {
+							errorContainerChannel <- err
+						}
+
+						if err := po.createSecret(qJob, container, secretName, secretData, options.AdditionalSecretLabels, options.Versioned); err != nil {
+							errorContainerChannel <- err
+						}
+					}
+
+				default:
+					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
+					if err := po.createSecret(qJob, container, options.Name, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
+						errorContainerChannel <- err
+					}
 				}
 			}
 		}
 	}
+
 	errorContainerChannel <- err
 }
 
@@ -264,34 +290,16 @@ func fileExists(filename string) bool {
 func (po *OutputPersistor) createSecret(
 	qJob *qjv1a1.QuarksJob,
 	container corev1.Container,
-	filePath string,
-	options qjv1a1.SecretOptions,
+	secretName string,
+	secretData map[string]string,
+	additionalSecretLabels map[string]string,
+	versioned bool,
 ) error {
-	// Fetch json from file
-	file, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return errors.Wrapf(err, "unable to read file %s in container %s in pod %s", filePath, container.Name, po.podName)
-	}
-	var data map[string]string
-	err = json.Unmarshal([]byte(file), &data)
-	if err != nil {
-		return errors.Wrapf(err, "failed to convert output file %s into json for creating secret %s in pod %s",
-			filePath, options.Name, po.podName)
-	}
-
-	// Create secret for the output file to persist
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      options.Name,
-			Namespace: po.namespace,
-		},
-	}
-
 	secretLabels := map[string]string{}
 	for k, v := range qJob.Spec.Output.SecretLabels {
 		secretLabels[k] = v
 	}
-	for k, v := range options.AdditionalSecretLabels {
+	for k, v := range additionalSecretLabels {
 		secretLabels[k] = v
 	}
 	secretLabels[qjv1a1.LabelPersistentSecretContainer] = container.Name
@@ -299,13 +307,13 @@ func (po *OutputPersistor) createSecret(
 		secretLabels[qjv1a1.LabelRemoteID] = id
 	}
 
-	if options.Versioned {
+	if versioned {
 		ownerName := qJob.GetName()
 		ownerID := qJob.GetUID()
 		sourceDescription := "created by quarksJob"
 
 		store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
-		err = store.Create(context.Background(), po.namespace, ownerName, ownerID, options.Name, data, secretLabels, sourceDescription)
+		err := store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
 		if err != nil {
 			if !versionedsecretstore.IsSecretIdenticalError(err) {
 				return errors.Wrapf(err, "could not persist qJob's %s output to a secret", qJob.GetName())
@@ -314,19 +322,27 @@ func (po *OutputPersistor) createSecret(
 			return nil
 		}
 	} else {
-		secret.StringData = data
+		secret := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      secretName,
+				Namespace: po.namespace,
+			},
+		}
+
+		secret.StringData = secretData
 		secret.Labels = secretLabels
-		_, err = po.clientSet.CoreV1().Secrets(po.namespace).Create(secret)
+
+		_, err := po.clientSet.CoreV1().Secrets(po.namespace).Create(secret)
 
 		if err != nil {
 			if apierrors.IsAlreadyExists(err) {
 				// If it exists update it
 				_, err = po.clientSet.CoreV1().Secrets(po.namespace).Update(secret)
 				if err != nil {
-					return errors.Wrapf(err, "failed to update secret %s for container %s in pod %s.", options.Name, container.Name, po.podName)
+					return errors.Wrapf(err, "failed to update secret %s for container %s in pod %s.", secretName, container.Name, po.podName)
 				}
 			} else {
-				return errors.Wrapf(err, "failed to create secret %s for container %s in pod %s.", options.Name, container.Name, po.podName)
+				return errors.Wrapf(err, "failed to create secret %s for container %s in pod %s.", secretName, container.Name, po.podName)
 			}
 		}
 

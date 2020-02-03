@@ -7,7 +7,11 @@ GIT_ROOT=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
 . "${GIT_ROOT}/bin/include/docker"
 
 output_dir=${GIT_ROOT}/helm
-version=$(echo "$ARTIFACT_VERSION" | sed 's/^v//')
+
+# https://semver.org/#semantic-versioning-200
+# helm does not accept ^v and considers any version with dash to be a
+# pre-release
+version=$(echo "$ARTIFACT_VERSION" | sed 's/^v//; s/-/+/')
 filename="${output_dir}/${ARTIFACT_NAME}-${version}.tgz"
 
 [ -d "${output_dir}" ] && rm -r "${output_dir}"

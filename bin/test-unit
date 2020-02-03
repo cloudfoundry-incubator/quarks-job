@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
 GOVER_FILE=${GOVER_FILE:-gover-unit.coverprofile}
 

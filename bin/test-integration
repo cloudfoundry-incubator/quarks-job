@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 
 GIT_ROOT="${GIT_ROOT:-$(git rev-parse --show-toplevel)}"
 . "${GIT_ROOT}/bin/include/versioning"
@@ -23,7 +23,8 @@ code.cloudfoundry.org/quarks-job/pkg/kube/operator/...,\
 code.cloudfoundry.org/quarks-job/pkg/kube/controllers/..."
 
 # Run code coverage only in CI
-if [ -n "$COVERAGE" ]; then
+COV_ARG=""
+if [ ${COVERAGE+x} ]; then
   COV_ARG="-cover -outputdir=./code-coverage  -coverprofile=${GOVER_FILE} -coverpkg ${pkgs}"
   mkdir -p code-coverage
 fi

@@ -19,7 +19,7 @@ image:
   # organization that provides the operator docker image.
   org: cfcontainerization
   # tag of the operator docker image
-  tag: v0.0.0-0.g4db12e7
+  tag: foobar
 
 # logLevel defines from which level the logs should be printed.
 logLevel: debug

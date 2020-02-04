@@ -26,6 +26,9 @@ const (
 	outputPersistDirName      = "output-persist-dir"
 	outputPersistDirMountPath = "/mnt/output-persist/"
 	mountPath                 = "/mnt/quarks/"
+	// EnvNamespace is the namespace in which the jobs run, used by
+	// persist-output to create the secrets
+	EnvNamespace = "WATCH_NAMESPACE"
 )
 
 type setOwnerReferenceFunc func(owner, object metav1.Object, scheme *runtime.Scheme) error

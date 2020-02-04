@@ -32,8 +32,6 @@ const (
 	EnvCFOperatorAZIndex = "AZ_INDEX"
 	// EnvPodOrdinal is the pod's index
 	EnvPodOrdinal = "POD_ORDINAL"
-	// EnvNamespace is the namespace in which cf-operator runs
-	EnvNamespace = "OPERATOR_NAMESPACE"
 )
 
 // NewErrandReconciler returns a new reconciler for errand jobs.

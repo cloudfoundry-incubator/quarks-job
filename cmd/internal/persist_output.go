@@ -26,9 +26,9 @@ into a versioned secret or kube native secret using flags specified to this comm
 `,
 	RunE: func(_ *cobra.Command, args []string) (err error) {
 
-		namespace := viper.GetString("operator-namespace")
+		namespace := viper.GetString("watch-namespace")
 		if len(namespace) == 0 {
-			return errors.Errorf("persist-output command failed. operator-namespace flag is empty.")
+			return errors.Errorf("persist-output command failed. watch-namespace flag is empty.")
 		}
 
 		// hostname of the container is the pod name in kubernetes

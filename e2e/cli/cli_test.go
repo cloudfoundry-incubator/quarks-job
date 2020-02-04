@@ -42,9 +42,8 @@ var _ = Describe("CLI", func() {
   -c, --kubeconfig string                 \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
   -l, --log-level string                  \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
       --max-workers int                   \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
-  -n, --operator-namespace string         \(OPERATOR_NAMESPACE\) The operator namespace \(default "default"\)
       --service-account string            \(SERVICE_ACCOUNT\) service acount for the persist output container in the created jobs \(default "default"\)
-      --watch-namespace string            \(WATCH_NAMESPACE\) Namespace to watch for BOSH deployments
+  -a, --watch-namespace string            \(WATCH_NAMESPACE\) Act on this namespace, watch for BOSH deployments and create resources \(default "staging"\)
 
 `))
 		})
@@ -73,11 +72,11 @@ var _ = Describe("CLI", func() {
 		Context("when specifying namespace", func() {
 			Context("via environment variables", func() {
 				BeforeEach(func() {
-					os.Setenv("OPERATOR_NAMESPACE", "env-test")
+					os.Setenv("WATCH_NAMESPACE", "env-test")
 				})
 
 				AfterEach(func() {
-					os.Setenv("OPERATOR_NAMESPACE", "")
+					os.Setenv("WATCH_NAMESPACE", "")
 				})
 
 				It("should start for namespace", func() {
@@ -89,7 +88,7 @@ var _ = Describe("CLI", func() {
 
 			Context("via using switches", func() {
 				It("should start for namespace", func() {
-					session, err := act("--operator-namespace", "switch-test")
+					session, err := act("--watch-namespace", "switch-test")
 					Expect(err).ToNot(HaveOccurred())
 					Eventually(session.Err).Should(Say(`Starting quarks-job \d+\.\d+\.\d+ with namespace switch-test`))
 				})

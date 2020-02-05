@@ -4,7 +4,7 @@ kind: Role
 metadata:
   creationTimestamp: null
   name: {{ template "quarks-job.fullname" . }}
-  {{- template "quarks-job.roleNamespace" . }}
+  namespace: {{ .Values.global.operator.watchNamespace }}
 rules:
 - apiGroups:
   - ""

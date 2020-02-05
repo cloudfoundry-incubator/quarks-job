@@ -41,14 +41,3 @@ Create the name of the quarks-job service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
-
-{{/*
-Namespace of the quarks-job role.
-*/}}
-{{- define "quarks-job.roleNamespace" -}}
-{{- if .Values.global.operator.watchNamespace }}
-  namespace: {{ .Values.global.operator.watchNamespace }}
-{{- else}}
-  namespace: {{ .Release.Namespace }}
-{{- end }}
-{{- end -}}

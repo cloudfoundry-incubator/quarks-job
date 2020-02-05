@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -239,6 +240,8 @@ var _ = Describe("OutputPersistor", func() {
 			})
 
 			Context("when output persistence with fan out is configured", func() {
+				var tmpDir string
+
 				provideContent := func(data map[string]map[string]string) []byte {
 					tmp := map[string]string{}
 					for k, v := range data {
@@ -255,29 +258,40 @@ var _ = Describe("OutputPersistor", func() {
 				}
 
 				BeforeEach(func() {
+					var err error
+
+					tmpDir, err = ioutil.TempDir("/tmp", "testcase")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(os.Mkdir(filepath.Join(tmpDir, "busybox"), 0755)).ToNot(HaveOccurred())
+
+					_, log := helper.NewTestLogger()
+					po = quarksjob.NewOutputPersistor(log, namespace, pod.Name, clientSet, versionedClientSet, tmpDir)
+
 					qJob.Spec.Output = &qjv1a1.Output{
 						OutputMap: qjv1a1.OutputMap{
 							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false),
 						},
 					}
 
-					Expect(ioutil.WriteFile("/tmp/busybox/provides.json", []byte(provideContent(map[string]map[string]string{
-						"nats-nats": map[string]string{
-							"nats.user":     "admin",
-							"nats.password": "changeme",
-							"nats.port":     "1337",
-						},
-						"nats-nuts": map[string]string{
-							"nats.user":     "udmin",
-							"nats.password": "chungeme",
-							"nats.port":     "1337",
-						},
-					})), 0640)).NotTo(HaveOccurred())
+					Expect(ioutil.WriteFile(
+						filepath.Join(tmpDir, "busybox", "provides.json"),
+						[]byte(provideContent(map[string]map[string]string{
+							"nats-nats": {
+								"nats.user":     "admin",
+								"nats.password": "changeme",
+								"nats.port":     "1337",
+							},
+							"nats-nuts": {
+								"nats.user":     "udmin",
+								"nats.password": "chungeme",
+								"nats.port":     "1337",
+							},
+						})), 0640)).NotTo(HaveOccurred())
 				})
 
 				AfterEach(func() {
 					qJob.Spec.Output = nil
-					Expect(os.Remove("/tmp/busybox/provides.json")).ToNot(HaveOccurred())
+					Expect(os.RemoveAll(tmpDir)).ToNot(HaveOccurred())
 				})
 
 				It("creates a secret per each key/value of the given input file", func() {

@@ -43,6 +43,7 @@ jobs:
 
     # Create a new Kubernetes cluster using KinD
     - kind create cluster
+    - kubectl version
 
     # Set USE_KIND so build-image loads image into KinD
     - export USE_KIND="true"

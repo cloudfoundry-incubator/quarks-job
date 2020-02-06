@@ -22,6 +22,7 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
 	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	utils "code.cloudfoundry.org/quarks-utils/testing/integration"
 	"code.cloudfoundry.org/quarks-utils/testing/machine"
 )
@@ -49,10 +50,11 @@ func NewEnvironment(kubeConfig *rest.Config) *Environment {
 		Fs:                   afero.NewOsFs(),
 	}
 
+	ns, _ := names.JobName(utils.GetNamespaceName(namespaceID))
 	return &Environment{
 		Environment: &utils.Environment{
 			ID:         namespaceID,
-			Namespace:  utils.GetNamespaceName(namespaceID),
+			Namespace:  ns,
 			KubeConfig: kubeConfig,
 			Config:     shared,
 		},

@@ -32,6 +32,7 @@ var _ = Describe("OutputPersistor", func() {
 		clientSet          *clientfake.Clientset
 		versionedClientSet *clientsetfake.Clientset
 		po                 *quarksjob.OutputPersistor
+		tmpDir             string
 	)
 
 	BeforeEach(func() {
@@ -40,7 +41,13 @@ var _ = Describe("OutputPersistor", func() {
 		clientSet = clientfake.NewSimpleClientset()
 		versionedClientSet = clientsetfake.NewSimpleClientset()
 		_, log := helper.NewTestLogger()
-		po = quarksjob.NewOutputPersistor(log, namespace, pod.Name, clientSet, versionedClientSet, "/tmp/")
+
+		var err error
+		tmpDir, err = ioutil.TempDir("/tmp", "quarks-job-unit")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(os.Mkdir(filepath.Join(tmpDir, "busybox"), 0755)).ToNot(HaveOccurred())
+
+		po = quarksjob.NewOutputPersistor(log, namespace, pod.Name, clientSet, versionedClientSet, tmpDir)
 	})
 
 	JustBeforeEach(func() {
@@ -54,9 +61,7 @@ var _ = Describe("OutputPersistor", func() {
 	Context("when persisting one output", func() {
 		JustBeforeEach(func() {
 			// Create output file
-			err := os.MkdirAll("/tmp/busybox", os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-			err = ioutil.WriteFile("/tmp/busybox/output.json", dataJSON, 0755)
+			err := ioutil.WriteFile(filepath.Join(tmpDir, "busybox", "output.json"), dataJSON, 0755)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -179,15 +184,11 @@ var _ = Describe("OutputPersistor", func() {
 
 	Context("when persisting multiple outputs", func() {
 		JustBeforeEach(func() {
-			// Create output files
-			err := os.MkdirAll("/tmp/busybox", os.ModePerm)
+			err := ioutil.WriteFile(filepath.Join(tmpDir, "busybox", "output.json"), dataJSON, 0755)
 			Expect(err).NotTo(HaveOccurred())
-
-			err = ioutil.WriteFile("/tmp/busybox/output.json", dataJSON, 0755)
+			err = ioutil.WriteFile(filepath.Join(tmpDir, "busybox", "output-nats.json"), dataJSON, 0755)
 			Expect(err).NotTo(HaveOccurred())
-			err = ioutil.WriteFile("/tmp/busybox/output-nats.json", dataJSON, 0755)
-			Expect(err).NotTo(HaveOccurred())
-			err = ioutil.WriteFile("/tmp/busybox/output-nuts.json", dataJSON, 0755)
+			err = ioutil.WriteFile(filepath.Join(tmpDir, "busybox", "output-nuts.json"), dataJSON, 0755)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -240,8 +241,6 @@ var _ = Describe("OutputPersistor", func() {
 			})
 
 			Context("when output persistence with fan out is configured", func() {
-				var tmpDir string
-
 				provideContent := func(data map[string]map[string]string) []byte {
 					tmp := map[string]string{}
 					for k, v := range data {
@@ -258,15 +257,6 @@ var _ = Describe("OutputPersistor", func() {
 				}
 
 				BeforeEach(func() {
-					var err error
-
-					tmpDir, err = ioutil.TempDir("/tmp", "testcase")
-					Expect(err).ToNot(HaveOccurred())
-					Expect(os.Mkdir(filepath.Join(tmpDir, "busybox"), 0755)).ToNot(HaveOccurred())
-
-					_, log := helper.NewTestLogger()
-					po = quarksjob.NewOutputPersistor(log, namespace, pod.Name, clientSet, versionedClientSet, tmpDir)
-
 					qJob.Spec.Output = &qjv1a1.Output{
 						OutputMap: qjv1a1.OutputMap{
 							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false),

@@ -39,7 +39,8 @@ var (
 					Type: "object",
 					Properties: map[string]extv1.JSONSchemaProps{
 						"output": {
-							Type: "object",
+							Type:                   "object",
+							XPreserveUnknownFields: pointers.Bool(true),
 							Properties: map[string]extv1.JSONSchemaProps{
 								"outputMap": {
 									Type: "object",
@@ -77,26 +78,6 @@ var (
 											Raw: []byte(`"done"`),
 										},
 									},
-								},
-								"when": {
-									Type: "string",
-									Enum: []extv1.JSON{
-										{
-											Raw: []byte(`"ready"`),
-										},
-										{
-											Raw: []byte(`"notready"`),
-										},
-										{
-											Raw: []byte(`"created"`),
-										},
-										{
-											Raw: []byte(`"deleted"`),
-										},
-									},
-								},
-								"selector": {
-									Type: "object",
 								},
 							},
 							Required: []string{

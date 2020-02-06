@@ -70,6 +70,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 	// Set serviceaccount to the container
 	template.Spec.Template.Spec.Volumes = append(template.Spec.Template.Spec.Volumes, *serviceAccountVolume)
 
+	ctxlog.Debugf(ctx, "Add persist output container, using DOCKER_IMAGE_TAG=%s", sharedcfg.GetOperatorDockerImage())
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
 		Name:            "output-persist",

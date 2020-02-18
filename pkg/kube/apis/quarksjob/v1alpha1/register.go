@@ -95,6 +95,14 @@ var (
 						},
 					},
 				},
+				"status": {
+					Type: "object",
+					Properties: map[string]extv1.JSONSchemaProps{
+						"lastReconcile": {
+							Type: "string",
+						},
+					},
+				},
 			},
 		},
 	}

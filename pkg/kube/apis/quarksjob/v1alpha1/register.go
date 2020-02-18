@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	apis "code.cloudfoundry.org/quarks-job/pkg/kube/apis"
+	"code.cloudfoundry.org/quarks-utils/pkg/pointers"
 )
 
 // This file looks almost the same for all controllers
@@ -42,13 +43,15 @@ var (
 							Type: "object",
 							Properties: map[string]extv1.JSONSchemaProps{
 								"outputMap": {
-									Type: "object",
+									Type:                   "object",
+									XPreserveUnknownFields: pointers.Bool(true),
 								},
 								"outputType": {
 									Type: "string",
 								},
 								"secretLabels": {
-									Type: "object",
+									Type:                   "object",
+									XPreserveUnknownFields: pointers.Bool(true),
 								},
 								"writeOnFailure": {
 									Type: "boolean",
@@ -78,33 +81,14 @@ var (
 										},
 									},
 								},
-								"when": {
-									Type: "string",
-									Enum: []extv1.JSON{
-										{
-											Raw: []byte(`"ready"`),
-										},
-										{
-											Raw: []byte(`"notready"`),
-										},
-										{
-											Raw: []byte(`"created"`),
-										},
-										{
-											Raw: []byte(`"deleted"`),
-										},
-									},
-								},
-								"selector": {
-									Type: "object",
-								},
 							},
 							Required: []string{
 								"strategy",
 							},
 						},
 						"template": {
-							Type: "object",
+							Type:                   "object",
+							XPreserveUnknownFields: pointers.Bool(true),
 						},
 						"updateOnConfigChange": {
 							Type: "boolean",

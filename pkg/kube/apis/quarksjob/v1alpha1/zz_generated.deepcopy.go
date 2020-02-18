@@ -198,11 +198,6 @@ func (in *QuarksJobStatus) DeepCopyInto(out *QuarksJobStatus) {
 		in, out := &in.LastReconcile, &out.LastReconcile
 		*out = (*in).DeepCopy()
 	}
-	if in.Nodes != nil {
-		in, out := &in.Nodes, &out.Nodes
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 

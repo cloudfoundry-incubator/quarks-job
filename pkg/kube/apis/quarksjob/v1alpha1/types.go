@@ -106,7 +106,6 @@ type Output struct {
 // QuarksJobStatus defines the observed state of QuarksJob
 type QuarksJobStatus struct {
 	LastReconcile *metav1.Time `json:"lastReconcile"`
-	Nodes         []string     `json:"nodes"`
 }
 
 // +genclient

@@ -14,5 +14,5 @@ docker build "${GIT_ROOT}" \
   --tag "${image}"
 
 if [ -n "$USE_KIND" ]; then
-	kind load docker-image "$image"
+  kind load docker-image "$image"
 fi

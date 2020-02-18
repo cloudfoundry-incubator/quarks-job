@@ -37,6 +37,7 @@ var _ = Describe("ErrandJob", func() {
 	})
 
 	JustBeforeEach(func() {
+		quarksJobLabel = fmt.Sprintf("%s=%s", qjv1a1.LabelQJobName, qj.Name)
 		_, tearDown, err := env.CreateQuarksJob(env.Namespace, qj)
 		Expect(err).NotTo(HaveOccurred())
 		tearDowns = append(tearDowns, tearDown)
@@ -44,8 +45,7 @@ var _ = Describe("ErrandJob", func() {
 
 	Context("when persisting output", func() {
 		BeforeEach(func() {
-			quarksJobLabel = fmt.Sprintf("%s=quarks", qjv1a1.LabelQJobName)
-			qj = env.OutputQuarksJob("quarks")
+			qj = env.OutputQuarksJob("qj-persist")
 		})
 
 		It("does persist output", func() {
@@ -63,19 +63,23 @@ var _ = Describe("ErrandJob", func() {
 
 	Context("when trigger is set to now", func() {
 		BeforeEach(func() {
-			qj = env.ErrandQuarksJob("quarks-job")
+			qj = env.ErrandQuarksJob("qj-now")
+			// a short running job might disappear to fast
+			cmd := []string{"sleep", "30"}
+			qj.Spec.Template = env.CmdJobTemplate(cmd)
 		})
 
+		// finishes too fast?
 		It("starts a job", func() {
-			jobs, err := env.CollectJobs(env.Namespace, quarksJobLabel, 1)
-			Expect(err).NotTo(HaveOccurred(), "error waiting for jobs from quarks-job")
-			Expect(jobs).To(HaveLen(1))
+			exists, err := env.WaitForJobExists(env.Namespace, quarksJobLabel)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(exists).To(BeTrue())
 		})
 	})
 
 	Context("when using manually triggered ErrandJob", func() {
 		BeforeEach(func() {
-			qj = env.ErrandQuarksJob("quarks-job")
+			qj = env.ErrandQuarksJob("qj-noop")
 			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
 		})
 
@@ -100,7 +104,7 @@ var _ = Describe("ErrandJob", func() {
 
 	Context("when updating trigger to now", func() {
 		BeforeEach(func() {
-			qj = env.ErrandQuarksJob("quarks-job")
+			qj = env.ErrandQuarksJob("qj-manual")
 			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
 		})
 

@@ -76,23 +76,16 @@ script:
 
 jobs:
   include:
-    - stage: lint
+    - stage: unit
       services: []
       before_script:
         - curl -LO https://github.com/dominikh/go-tools/releases/download/2019.2.3/staticcheck_linux_amd64.tar.gz
         - tar xfz staticcheck_linux_amd64.tar.gz --strip-component 1 -C $GOPATH/bin staticcheck/staticcheck
         - go get -u golang.org/x/lint/golint
-      script:
-        - make lint
-      env: KUBE=none
-
-    - stage: unit
-      # don't inherit
-      services: []
-      before_script: []
-      script:
-        - make test-unit
-        - make coverage
+      script: make lint
+      name: lint
+    - script: make test-unit coverage
+      name: unit
       env: KUBE=none
 
     - stage: Publishing image

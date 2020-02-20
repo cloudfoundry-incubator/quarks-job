@@ -3,110 +3,117 @@ language: go
 go:
 - '1.13.4'
 
+cache:
+  directories:
+    - $GOPATH/pkg/mod
+
 services:
 - docker
 
 env:
   global:
+    - GOPROXY="https://proxy.golang.org"
     - COVERAGE=true
+    # Set USE_KIND so build-image loads image into KinD
+    - export USE_KIND="true"
+  jobs:
+    - KUBE=1.13.12
+    - KUBE=1.15.6
+    - KUBE=1.16.3
+
+stages:
+  - lint
+  - unit
+  - test
 
 install:
-- export GOPROXY=https://proxy.golang.org
-- go install github.com/onsi/ginkgo/ginkgo
-- export PATH=$PATH:$GOPATH/bin
+  # Download go dev dependencies
+  - export PATH=$PATH:$GOPATH/bin
+  - go install github.com/onsi/ginkgo/ginkgo
+  - go get github.com/mattn/goveralls
+  - go get github.com/modocache/gover
+
+before_script:
+  # Download and install kubectl
+  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+  # Download and install KinD
+  - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
+  # Create a new Kubernetes cluster using KinD
+  - kind create cluster --image kindest/node:v$KUBE --name kind$KUBE --wait 20s
+  - kubectl version
+  # Download and install helm
+  - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
+  - chmod 700 get_helm.sh
+  - sudo ./get_helm.sh
+  # yes, heredocs are broken in before_script: https://travis-ci.community/t/multiline-commands-have-two-spaces-in-front-breaks-heredocs/2756
+  - |
+    sed 's/^  //' <<\ \ EOF > tiller.yml
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: tiller
+      namespace: kube-system
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: tiller
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    subjects:
+      - kind: ServiceAccount
+        name: tiller
+        namespace: kube-system
+    EOF
+  - kubectl create -f tiller.yml
+  - helm init --service-account tiller --wait
+script:
+  - make test-cluster
+  - make coverage
 
 jobs:
   include:
-  - stage: Linting
-    before_script:
-    - curl -LO https://github.com/dominikh/go-tools/releases/download/2019.2.3/staticcheck_linux_amd64.tar.gz
-    - tar xfz staticcheck_linux_amd64.tar.gz --strip-component 1 -C $GOPATH/bin staticcheck/staticcheck
-    - go get -u golang.org/x/lint/golint
-    script:
-    - make lint
+    - stage: unit
+      services: []
+      before_script:
+        - curl -LO https://github.com/dominikh/go-tools/releases/download/2019.2.3/staticcheck_linux_amd64.tar.gz
+        - tar xfz staticcheck_linux_amd64.tar.gz --strip-component 1 -C $GOPATH/bin staticcheck/staticcheck
+        - go get -u golang.org/x/lint/golint
+      script: make lint
+      name: lint
+    - script: make test-unit coverage
+      services: []
+      before_script: []
+      name: unit
+      env: KUBE=none
 
-  - stage: Unit Tests
-    before_script:
-    - go get github.com/mattn/goveralls
-    - go get github.com/modocache/gover
-    script:
-    - make test-unit
-    - make coverage
+    - stage: Publishing image
+      if: branch = master
+      deploy:
+        provider: script
+        script: bash -c "make publish-image"
+        skip_cleanup: true
+        on:
+          branch: master
 
-  - stage: Cluster Tests
-    before_script:
-    # Download and install kubectl
-    - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-
-    # Download and install KinD
-    - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
-
-    # Create a new Kubernetes cluster using KinD
-    - kind create cluster
-    - kubectl version
-
-    # Set USE_KIND so build-image loads image into KinD
-    - export USE_KIND="true"
-
-    # Download and install helm
-    - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
-    - chmod 700 get_helm.sh
-    - sudo ./get_helm.sh
-    # yes, heredocs are broken in before_script: https://travis-ci.community/t/multiline-commands-have-two-spaces-in-front-breaks-heredocs/2756
-    - |
-      sed 's/^  //' <<\ \ EOF > tiller.yml
-      ---
-      apiVersion: v1
-      kind: ServiceAccount
-      metadata:
-        name: tiller
-        namespace: kube-system
-      ---
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: ClusterRoleBinding
-      metadata:
-        name: tiller
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: ClusterRole
-        name: cluster-admin
-      subjects:
-        - kind: ServiceAccount
-          name: tiller
-          namespace: kube-system
-      EOF
-    - kubectl create -f tiller.yml
-    - helm init --service-account tiller --wait
-    - go get github.com/mattn/goveralls
-    - go get github.com/modocache/gover
-    script:
-    - make test-cluster
-    - make coverage
-
-  - stage: Publishing image
-    if: branch = master
-    deploy:
-      provider: script
-      script: bash -c "make publish-image"
-      skip_cleanup: true
-      on:
-        branch: master
-
-  - stage: Publishing helm chart
-    if: branch = master
-    before_deploy:
-    - . bin/include/versioning
-    - ./bin/build-helm
-    - mkdir helm-charts
-    - cp helm/quarks-job*.tgz helm-charts/
-    deploy:
-      provider: s3
-      access_key_id: "${AWS_ACCESS_KEY}"
-      secret_access_key: "${AWS_SECRET_KEY}"
-      bucket: "${S3_BUCKET}"
-      acl: public_read
-      skip_cleanup: true
-      local_dir: helm-charts
-      upload_dir: helm-charts
-      on:
-        branch: master
+    - stage: Publishing helm chart
+      if: branch = master
+      before_deploy:
+      - . bin/include/versioning
+      - ./bin/build-helm
+      - mkdir helm-charts
+      - cp helm/quarks-job*.tgz helm-charts/
+      deploy:
+        provider: s3
+        access_key_id: "${AWS_ACCESS_KEY}"
+        secret_access_key: "${AWS_SECRET_KEY}"
+        bucket: "${S3_BUCKET}"
+        acl: public_read
+        skip_cleanup: true
+        local_dir: helm-charts
+        upload_dir: helm-charts
+        on:
+          branch: master

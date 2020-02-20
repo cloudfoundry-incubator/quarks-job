@@ -14,5 +14,6 @@ docker build "${GIT_ROOT}" \
   --tag "${image}"
 
 if [ -n "$USE_KIND" ]; then
-  kind load docker-image "$image"
+  cluster_name=$(kubectl config current-context | sed 's/^kind-//')
+  kind load docker-image "$image" --name "$cluster_name"
 fi

@@ -98,7 +98,7 @@ jobs:
       deploy:
         provider: script
         script: bash -c "make publish-image"
-        cleanup: false
+        skip_cleanup: true
         on:
           branch: master
 
@@ -119,7 +119,7 @@ jobs:
         secret_access_key: "${AWS_SECRET_KEY}"
         bucket: "${S3_BUCKET}"
         acl: public_read
-        cleanup: false
+        skip_cleanup: true
         local_dir: helm-charts
         upload_dir: helm-charts
         on:

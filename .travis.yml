@@ -85,6 +85,7 @@ jobs:
       script: make lint
       name: lint
     - script: make test-unit coverage
+      # do not inherit
       services: []
       before_script: []
       name: unit
@@ -92,15 +93,21 @@ jobs:
 
     - stage: Publishing image
       if: branch = master
+      # do not inherit
+      before_script: []
+      script: echo "Publishing image"
       deploy:
         provider: script
         script: bash -c "make publish-image"
-        skip_cleanup: true
+        cleanup: false
         on:
           branch: master
 
     - stage: Publishing helm chart
       if: branch = master
+      # do not inherit
+      before_script: []
+      script: echo "Publishing helm chart"
       before_deploy:
       - . bin/include/versioning
       - ./bin/build-helm
@@ -112,7 +119,7 @@ jobs:
         secret_access_key: "${AWS_SECRET_KEY}"
         bucket: "${S3_BUCKET}"
         acl: public_read
-        skip_cleanup: true
+        cleanup: false
         local_dir: helm-charts
         upload_dir: helm-charts
         on:

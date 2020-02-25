@@ -27,6 +27,9 @@ var (
 	LabelQJobName = fmt.Sprintf("%s/qjob-name", apis.GroupName)
 	// LabelTriggeringPod key for label, which is set to the UID of the pod that triggered an QuarksJob
 	LabelTriggeringPod = fmt.Sprintf("%s/triggering-pod", apis.GroupName)
+
+	// LabelEntanglementKey to identify a quarks link
+	LabelEntanglementKey = fmt.Sprintf("%s/entanglement", apis.GroupName)
 )
 
 // QuarksJobSpec defines the desired state of QuarksJob
@@ -39,6 +42,9 @@ type QuarksJobSpec struct {
 
 // Strategy describes the trigger strategy
 type Strategy string
+
+// PersistenceMethod describes the secret persistence implemention style
+type PersistenceMethod string
 
 const (
 	// RemoteIDKey is the key for the ENV variable which is copied to the
@@ -55,12 +61,7 @@ const (
 	TriggerOnce Strategy = "once"
 	// TriggerDone jobs are no longer triggered. It's the final state for TriggerOnce strategies
 	TriggerDone Strategy = "done"
-)
 
-// PersistenceMethod describes the secret persistence implemention style
-type PersistenceMethod string
-
-const (
 	// PersistOneToOne results in one secret per input file using the provided
 	// name as the secret name
 	PersistOneToOne PersistenceMethod = "one-to-one"
@@ -81,6 +82,10 @@ type SecretOptions struct {
 	AdditionalSecretLabels map[string]string `json:"secretLabels,omitempty"`
 	Versioned              bool              `json:"versioned,omitempty"`
 	PersistenceMethod      PersistenceMethod `json:"persistencemethod,omitempty"`
+}
+
+func (so SecretOptions) FanOutName(key string) string {
+	return so.Name + "-" + key
 }
 
 // FilesToSecrets maps file names to secret names

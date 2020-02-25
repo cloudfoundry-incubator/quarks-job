@@ -109,6 +109,7 @@ var _ = Describe("OutputPersistor", func() {
 					Expect(secret).ShouldNot(BeNil())
 					Expect(secret.Labels).Should(Equal(map[string]string{
 						"quarks.cloudfoundry.org/container-name": "busybox",
+						"quarks.cloudfoundry.org/entanglement":   "foo-busybox",
 						"key":                                    "value"}))
 				})
 			})
@@ -137,6 +138,7 @@ var _ = Describe("OutputPersistor", func() {
 					secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox-v1", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
 					Expect(secret.Labels).Should(Equal(map[string]string{
+						"quarks.cloudfoundry.org/entanglement":   "foo-busybox",
 						"quarks.cloudfoundry.org/container-name": "busybox",
 						"fake-label":                             "fake-deployment",
 						versionedsecretstore.LabelSecretKind:     "versionedSecret",

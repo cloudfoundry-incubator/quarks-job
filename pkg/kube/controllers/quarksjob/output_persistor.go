@@ -18,6 +18,7 @@ import (
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
+	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	podutil "code.cloudfoundry.org/quarks-utils/pkg/pod"
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
@@ -311,6 +312,8 @@ func (po *OutputPersistor) createSecret(
 	if id, ok := podutil.LookupEnv(container.Env, qjv1a1.RemoteIDKey); ok {
 		secretLabels[qjv1a1.LabelRemoteID] = id
 	}
+
+	secretName = names.SanitizeSubdomain(secretName)
 
 	if versioned {
 		ownerName := qJob.GetName()

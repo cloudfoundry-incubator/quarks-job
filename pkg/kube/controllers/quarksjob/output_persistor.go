@@ -3,7 +3,6 @@ package quarksjob
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -127,6 +126,10 @@ func (po *OutputPersistor) persistContainer(
 			for fileName, options := range filesToSecrets {
 				filePath := filepath.Join(prefix, fileName)
 
+				if options.AdditionalSecretLabels == nil {
+					options.AdditionalSecretLabels = map[string]string{}
+				}
+
 				// Fetch json from file
 				file, err := ioutil.ReadFile(filePath)
 				if err != nil {
@@ -142,7 +145,8 @@ func (po *OutputPersistor) persistContainer(
 				case qjv1a1.PersistUsingFanOut:
 					po.log.Debugf("container '%s': creating secrets with prefix '%s' from '%s'", container.Name, options.Name, filePath)
 					for key, value := range data {
-						secretName := fmt.Sprintf("%s-%s", options.Name, key)
+						secretName := options.FanOutName(key)
+						options.AdditionalSecretLabels[qjv1a1.LabelEntanglementKey] = secretName
 
 						var secretData map[string]string
 						if err := json.Unmarshal([]byte(value), &secretData); err != nil {
@@ -156,6 +160,7 @@ func (po *OutputPersistor) persistContainer(
 
 				default:
 					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
+					options.AdditionalSecretLabels[qjv1a1.LabelEntanglementKey] = options.Name
 					if err := po.createSecret(qJob, container, options.Name, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
 						errorContainerChannel <- err
 					}

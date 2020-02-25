@@ -4,7 +4,10 @@ set -euo pipefail
 GOVER_FILE=${GOVER_FILE:-gover-unit.coverprofile}
 
 # Run code coverage only in CI
-if [ -n "$COVERAGE" ]; then COV_ARG="-cover -outputdir=./code-coverage  -coverprofile=${GOVER_FILE}"; fi
+COV_ARG=""
+if [ ${COVERAGE+x} ]; then
+  COV_ARG="-cover -outputdir=./code-coverage  -coverprofile=${GOVER_FILE}"
+fi
 
 mkdir -p code-coverage
 ginkgo -p -r \

@@ -12,7 +12,6 @@ output_dir=${GIT_ROOT}/helm
 # helm does not accept ^v and considers any version with dash to be a
 # pre-release
 version=$(echo "$ARTIFACT_VERSION" | sed 's/^v//; s/-/+/')
-filename="${output_dir}/${ARTIFACT_NAME}-${version}.tgz"
 
 [ -d "${output_dir}" ] && rm -r "${output_dir}"
 cp -r "${GIT_ROOT}/deploy/helm" "${output_dir}"
@@ -20,9 +19,8 @@ cp -r "${GIT_ROOT}/deploy/helm" "${output_dir}"
 perl -pi -e "s|repository: .*|repository: ${DOCKER_IMAGE_REPOSITORY}|g" "${output_dir}/quarks-job/values.yaml"
 perl -pi -e "s|org: .*|org: ${DOCKER_IMAGE_ORG}|g" "${output_dir}/quarks-job/values.yaml"
 perl -pi -e "s|tag: .*|tag: ${DOCKER_IMAGE_TAG}|g" "${output_dir}/quarks-job/values.yaml"
-perl -pi -e "s|version: .*|version: ${version}|g" "${output_dir}/quarks-job/Chart.yaml"
-perl -pi -e "s|appVersion: .*|appVersion: ${version}|g" "${output_dir}/quarks-job/Chart.yaml"
 
-tar -C "${output_dir}" -czvf "${filename}" quarks-job
-
-echo "The helm chart is now available from ${filename}"
+helm package helm/quarks-job \
+  --app-version "$version" \
+  --version "$version" \
+  --destination "$output_dir"

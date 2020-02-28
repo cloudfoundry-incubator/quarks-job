@@ -1,8 +1,8 @@
 # Publishing
 
-We're publishing docker images and helm charts over travis. The travis will run these two jobs on master branch.
+We're publishing docker images and helm charts over Travis. The travis will run these two jobs on master branch.
 
-The travis needs following credentials variables to define variables in Repository Settings:
+The Travis job needs the following credentials defined in "Repository Settings":
 
 ```bash
 DOCKER_IMAGE_ORG="DOCKER IMAGE ORGANIZATION"

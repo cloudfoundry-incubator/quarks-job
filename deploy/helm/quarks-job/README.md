@@ -4,46 +4,22 @@
 
 This helm chart deploys the quarks-job operator.
 
-## Installing the latest stable chart
+## Installing the Latest Stable Chart
 
 To install the latest stable helm chart, with `quarks-job` as the release name into the namespace `quarks`:
 
 ```bash
-$ helm install --namespace quarks --name quarks-job https://s3.amazonaws.com/cf-operators/helm-charts/quarks-job-v0.0.1%2B47.g24492ea.tgz
+$ helm install quarks-job https://s3.amazonaws.com/cf-operators/helm-charts/quarks-job-v0.0.1%2B47.g24492ea.tgz --namespace quarks
 ```
 
-## Installing the chart from develop branch
+## Installing the Chart From the Developmenet Branch
 
-To install the helm chart directly from the [quarks-job repository](https://github.com/cloudfoundry-incubator/quarks-job) (any branch), the following parameters in the `values.yaml` need to be set in advance:
+Run `bin/build-image` to create a new docker image, export `DOCKER_IMAGE_TAG` to override the tag.
 
+To install the helm chart directly from the [quarks-job repository](https://github.com/cloudfoundry-incubator/quarks-job) (any branch), run `bin/build-helm` first.
 
-| Parameter                                         | Description                                                          | Default                                        |
-| ------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------- |
-| `image.repository`                                | docker hub repository for the quarks-job image                      | `quarks-job`                                  |
-| `image.org`                                       | docker hub organization for the quarks-job image                    | `cfcontainerization`                           |
-| `image.tag`                                       | docker image tag                                                     | `foobar`                                       |
+## Uninstalling the Chart
 
-
-### For a local development with minikube, you can generate the image first and then use the `$ARTIFACT_VERSION` environment variable into the `image.tag`:
-```bash
-$ eval `minikube docker-env`
-$ . bin/include/versioning
-$ echo "Tag for docker image is $ARTIFACT_VERSION"
-$ bin/build-image
-```
-
-Either set the `image.tag` in the `values.yaml`, or pass it to `helm install`:
-
-```bash
-$ helm install deploy/helm/quarks-job/ --namespace quarks --name quarks-job --set image.tag=$ARTIFACT_VERSION
-```
-
-
-## Uninstalling the chart
-
-To delete the helm chart:
-
-```bash
 To delete the helm chart:
 
 ```bash
@@ -68,11 +44,7 @@ $ helm delete quarks-job --purge
 
 By default, the helm chart will install RBAC ClusterRole and ClusterRoleBinding based on the chart release name, it will also grant the ClusterRole to an specific service account, which have the same name of the chart release.
 
-The RBAC resources are enable by default. To disable:
-
-```bash
-$ helm install --namespace quarks --name quarks-job https://s3.amazonaws.com/cf-operators/helm-charts/quarks-job-v0.2.2%2B47.g24492ea.tgz --set global.rbacEnable=false
-```
+The RBAC resources are enable by default. To disable use `--set global.rbacEnable=false`.
 
 ## Custom Resources
 

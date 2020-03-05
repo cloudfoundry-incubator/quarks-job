@@ -303,12 +303,12 @@ func (po *OutputPersistor) createSecret(
 ) error {
 	secretLabels := map[string]string{}
 	for k, v := range qJob.Spec.Output.SecretLabels {
-		secretLabels[k] = v
+		secretLabels[k] = names.Sanitize(v)
 	}
 	for k, v := range additionalSecretLabels {
-		secretLabels[k] = v
+		secretLabels[k] = names.Sanitize(v)
 	}
-	secretLabels[qjv1a1.LabelPersistentSecretContainer] = container.Name
+	secretLabels[qjv1a1.LabelPersistentSecretContainer] = names.Sanitize(container.Name)
 	if id, ok := podutil.LookupEnv(container.Env, qjv1a1.RemoteIDKey); ok {
 		secretLabels[qjv1a1.LabelRemoteID] = id
 	}

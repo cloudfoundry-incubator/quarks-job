@@ -106,7 +106,11 @@ jobs:
       if: branch = master
       # do not inherit
       install: []
-      before_script: []
+      before_script:
+        - export DESIRED_VERSION="v3.1.0"
+        - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
+        - chmod 700 get_helm.sh
+        - sudo ./get_helm.sh
       script: echo "Publishing helm chart"
       before_deploy:
       - . bin/include/versioning

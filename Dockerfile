@@ -16,7 +16,7 @@ COPY . .
 RUN bin/build && \
     cp -p binaries/quarks-job /usr/local/bin/quarks-job
 
-FROM cfcontainerization/cf-operator-base
+FROM registry.opensuse.org/cloud/platform/quarks/sle_15_sp1/quarks-operator-base:latest
 RUN groupadd -g 1000 quarks && \
     useradd -r -u 1000 -g quarks quarks
 USER quarks

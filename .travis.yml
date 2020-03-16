@@ -117,14 +117,12 @@ jobs:
       - ./bin/build-helm
       - mkdir helm-charts
       - cp helm/quarks-job*.tgz helm-charts/
+      - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
       deploy:
-        provider: s3
-        access_key_id: "${AWS_ACCESS_KEY}"
-        secret_access_key: "${AWS_SECRET_KEY}"
-        bucket: "${S3_BUCKET}"
-        acl: public_read
+      - provider: releases
+        api_key: $GITHUB_TOKEN
+        file_glob: true
+        file: "helm-charts/quarks-job*.tgz"
         skip_cleanup: true
-        local_dir: helm-charts
-        upload_dir: helm-charts
         on:
           branch: master

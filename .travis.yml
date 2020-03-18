@@ -119,6 +119,11 @@ jobs:
       - cp helm/quarks-job*.tgz helm-charts/
       - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
       deploy:
+      - provider: script
+        script: git clone https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-helm.git ./updated/ && cp helm-charts/quarks-job*.tgz updated/ && ./bin/publish-helm-repo
+        skip_cleanup: true
+        on:
+          branch: master
       - provider: releases
         api_key: $GITHUB_TOKEN
         file_glob: true

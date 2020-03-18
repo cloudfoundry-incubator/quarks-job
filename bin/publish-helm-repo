@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -v
+
+version=$ARTIFACT_VERSION
+
+pushd updated
+  helm repo index .
+  git add .
+  git config --global user.name "CFContainerizationBot"
+  git config --global user.email "cfcontainerizationbot@cloudfoundry.org"
+  git commit -m "add quarks-job chart: $version"
+  git push
+popd

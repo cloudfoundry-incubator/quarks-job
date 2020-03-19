@@ -40,7 +40,7 @@ var _ = Describe("CLI", func() {
   -t, --docker-image-tag string           \(DOCKER_IMAGE_TAG\) Tag of the operator docker image \(default "\d+.\d+.\d+"\)
   -h, --help                              help for quarks-job
   -c, --kubeconfig string                 \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
-  -l, --log-level string                  \(LOG_LEVEL\) Only print log messages from this level onward \(default "debug"\)
+  -l, --log-level string                  \(LOG_LEVEL\) Only print log messages from this level onward \(trace,debug,info,warn\) \(default "debug"\)
       --max-workers int                   \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
       --service-account string            \(SERVICE_ACCOUNT\) service acount for the persist output container in the created jobs \(default "default"\)
   -a, --watch-namespace string            \(WATCH_NAMESPACE\) Act on this namespace, watch for BOSH deployments and create resources \(default "staging"\)

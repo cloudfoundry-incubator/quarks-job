@@ -14,6 +14,7 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
 	"code.cloudfoundry.org/quarks-utils/pkg/cmd"
 	"code.cloudfoundry.org/quarks-utils/pkg/kubeconfig"
+	"code.cloudfoundry.org/quarks-utils/pkg/logger"
 )
 
 // persistOutputCmd is the persist-output command.
@@ -40,7 +41,7 @@ into a versioned secret or kube native secret using flags specified to this comm
 			return errors.Wrapf(err, "pod name is empty.")
 		}
 
-		log := cmd.Logger(zap.AddCallerSkip(1))
+		log = logger.NewControllerLogger(cmd.LogLevel())
 		defer log.Sync()
 
 		// Authenticate with the cluster

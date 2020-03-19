@@ -20,6 +20,7 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/cmd"
 	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
+	"code.cloudfoundry.org/quarks-utils/pkg/logger"
 )
 
 var log *zap.SugaredLogger
@@ -32,7 +33,7 @@ var rootCmd = &cobra.Command{
 	Use:   "quarks-job",
 	Short: "quarks-job starts the operator",
 	RunE: func(_ *cobra.Command, args []string) error {
-		log = cmd.Logger(zap.AddCallerSkip(1))
+		log = logger.NewControllerLogger(cmd.LogLevel())
 		defer log.Sync()
 
 		restConfig, err := cmd.KubeConfig(log)

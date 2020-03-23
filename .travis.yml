@@ -10,6 +10,9 @@ cache:
 services:
 - docker
 
+git:
+  depth: false
+
 env:
   global:
     - GOPROXY="https://proxy.golang.org"
@@ -113,21 +116,18 @@ jobs:
         - sudo ./get_helm.sh
       script: echo "Publishing helm chart"
       before_deploy:
-      - . bin/include/versioning
-      - ./bin/build-helm
-      - mkdir helm-charts
-      - cp helm/quarks-job*.tgz helm-charts/
-      - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
+        - . bin/include/versioning
+        - ./bin/build-helm
+        - mkdir helm-charts
+        - cp helm/quarks-job*.tgz helm-charts/
+        - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
+        - export ARTIFACT_VERSION=$ARTIFACT_VERSION
       deploy:
-      - provider: script
-        script: git clone https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-helm.git ./updated/ && cp helm-charts/quarks-job*.tgz updated/ && ./bin/publish-helm-repo
-        skip_cleanup: true
-        on:
-          branch: master
-      - provider: releases
-        api_key: $GITHUB_TOKEN
-        file_glob: true
-        file: "helm-charts/quarks-job*.tgz"
-        skip_cleanup: true
-        on:
-          branch: master
+        - provider: script
+          script:
+            git clone https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-helm.git ./updated/ &&
+            cp helm-charts/quarks-job*.tgz updated/ &&
+            ./bin/publish-helm-repo
+          skip_cleanup: true
+          on:
+            branch: master

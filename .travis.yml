@@ -10,9 +10,6 @@ cache:
 services:
 - docker
 
-git:
-  depth: false
-
 env:
   global:
     - GOPROXY="https://proxy.golang.org"
@@ -43,34 +40,11 @@ before_script:
   - kind create cluster --image kindest/node:v$KUBE --name kind$KUBE --wait 240s
   - kubectl version
   # Download and install helm
-  - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
+  - export DESIRED_VERSION="v3.1.0"
+  - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh
   - chmod 700 get_helm.sh
   - sudo ./get_helm.sh
   # yes, heredocs are broken in before_script: https://travis-ci.community/t/multiline-commands-have-two-spaces-in-front-breaks-heredocs/2756
-  - |
-    sed 's/^  //' <<\ \ EOF > tiller.yml
-    ---
-    apiVersion: v1
-    kind: ServiceAccount
-    metadata:
-      name: tiller
-      namespace: kube-system
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: ClusterRoleBinding
-    metadata:
-      name: tiller
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: ClusterRole
-      name: cluster-admin
-    subjects:
-      - kind: ServiceAccount
-        name: tiller
-        namespace: kube-system
-    EOF
-  - kubectl create -f tiller.yml
-  - helm init --service-account tiller --wait
 script:
   - USE_KIND="true" make test-cluster
   - make coverage
@@ -109,11 +83,6 @@ jobs:
       if: branch = master
       # do not inherit
       install: []
-      before_script:
-        - export DESIRED_VERSION="v3.1.0"
-        - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get > get_helm.sh
-        - chmod 700 get_helm.sh
-        - sudo ./get_helm.sh
       script: echo "Publishing helm chart"
       before_deploy:
         - . bin/include/versioning

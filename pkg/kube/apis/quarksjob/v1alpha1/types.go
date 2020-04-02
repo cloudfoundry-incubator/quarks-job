@@ -84,6 +84,7 @@ type SecretOptions struct {
 	PersistenceMethod      PersistenceMethod `json:"persistencemethod,omitempty"`
 }
 
+// FanOutName returns the name of the secret for PersistenceMethod 'fan-out'
 func (so SecretOptions) FanOutName(key string) string {
 	return so.Name + "-" + key
 }
@@ -144,6 +145,11 @@ func (q *QuarksJob) ToBeDeleted() bool {
 // IsAutoErrand returns true if this quarks job is an auto errand
 func (q *QuarksJob) IsAutoErrand() bool {
 	return q.Spec.Trigger.Strategy == TriggerOnce || q.Spec.Trigger.Strategy == TriggerDone
+}
+
+// GetNamespacedName returns the resource name with its namespace
+func (q *QuarksJob) GetNamespacedName() string {
+	return fmt.Sprintf("%s/%s", q.Namespace, q.Name)
 }
 
 // NewFileToSecret returns a FilesToSecrets with just one mapping

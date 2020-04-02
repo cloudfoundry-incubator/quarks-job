@@ -18,8 +18,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
+	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
@@ -50,7 +50,8 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(qJob).Debug(
 					ctx, e.Meta, qjv1a1.QuarksJobResourceName,
-					fmt.Sprintf("Create predicate passed for '%s', existing quarksJob spec.Trigger.Strategy  matches the values 'now' or 'once'",
+					fmt.Sprintf("Create predicate passed for '%s/%s', existing quarksJob spec.Trigger.Strategy  matches the values 'now' or 'once'",
+						e.Meta.GetNamespace(),
 						e.Meta.GetName()),
 				)
 			}
@@ -76,7 +77,8 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(o).Debug(
 					ctx, e.MetaNew, qjv1a1.QuarksJobResourceName,
-					fmt.Sprintf("Update predicate passed for '%s', a change in it´s referenced secrets have been detected",
+					fmt.Sprintf("Update predicate passed for '%s/%s', a change in it´s referenced secrets have been detected",
+						e.MetaNew.GetNamespace(),
 						e.MetaNew.GetName()),
 				)
 			}
@@ -114,7 +116,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 
 			reconciles, err := reference.GetReconciles(ctx, mgr.GetClient(), reference.ReconcileForQuarksJob, cm)
 			if err != nil {
-				ctxlog.Errorf(ctx, "Failed to calculate reconciles for config '%s': %v", cm.Name, err)
+				ctxlog.Errorf(ctx, "Failed to calculate reconciles for config '%s/%s': %v", cm.Namespace, cm.Name, err)
 			}
 
 			for _, reconciliation := range reconciles {
@@ -162,7 +164,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 
 			reconciles, err := reference.GetReconciles(ctx, mgr.GetClient(), reference.ReconcileForQuarksJob, s)
 			if err != nil {
-				ctxlog.Errorf(ctx, "Failed to calculate reconciles for secret '%s': %v", s.Name, err)
+				ctxlog.Errorf(ctx, "Failed to calculate reconciles for secret '%s/%s': %v", s.Namespace, s.Name, err)
 			}
 
 			for _, reconciliation := range reconciles {

@@ -54,7 +54,7 @@ jobs:
     - stage: unit
       services: []
       before_script:
-        - curl -LO https://github.com/dominikh/go-tools/releases/download/2019.2.3/staticcheck_linux_amd64.tar.gz
+        - curl -LO https://github.com/dominikh/go-tools/releases/download/2020.1.3/staticcheck_linux_amd64.tar.gz
         - tar xfz staticcheck_linux_amd64.tar.gz --strip-component 1 -C $GOPATH/bin staticcheck/staticcheck
         - go get -u golang.org/x/lint/golint
       script: make lint

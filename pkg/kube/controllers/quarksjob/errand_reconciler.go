@@ -85,7 +85,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	if meltdown.NewWindow(r.config.MeltdownDuration, qJob.Status.LastReconcile).Contains(time.Now()) {
-		ctxlog.WithEvent(qJob, "Meltdown").Debugf(ctx, "Resource '%s' is in meltdown, requeue reconcile after %s", qJob.Name, r.config.MeltdownRequeueAfter)
+		ctxlog.WithEvent(qJob, "Meltdown").Debugf(ctx, "Resource '%s' is in meltdown, requeue reconcile after %s", request.NamespacedName, r.config.MeltdownRequeueAfter)
 		return reconcile.Result{RequeueAfter: r.config.MeltdownRequeueAfter}, nil
 	}
 
@@ -93,15 +93,15 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		// Set Strategy back to manual for errand jobs.
 		qJob.Spec.Trigger.Strategy = qjv1a1.TriggerManual
 		if err := r.client.Update(ctx, qJob); err != nil {
-			return reconcile.Result{}, ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to revert to 'trigger.strategy=manual' on job '%s': %s", qJob.Name, err)
+			return reconcile.Result{}, ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to revert to 'trigger.strategy=manual' on job '%s': %s", qJob.GetNamespacedName(), err)
 		}
 	}
 
 	r.injectContainerEnv(&qJob.Spec.Template.Spec.Template.Spec)
 	if retry, err := r.jobCreator.Create(ctx, *qJob, request.Namespace); err != nil {
-		return reconcile.Result{}, ctxlog.WithEvent(qJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", qJob.Name, err)
+		return reconcile.Result{}, ctxlog.WithEvent(qJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", qJob.GetNamespacedName(), err)
 	} else if retry {
-		ctxlog.Infof(ctx, "Retrying to create job '%s'", qJob.Name)
+		ctxlog.Infof(ctx, "Retrying to create job '%s'", qJob.GetNamespacedName())
 		result := reconcile.Result{
 			Requeue:      true,
 			RequeueAfter: time.Second * 5,
@@ -109,13 +109,13 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		return result, nil
 	}
 
-	ctxlog.WithEvent(qJob, "CreateJob").Infof(ctx, "Created errand job for '%s'", qJob.Name)
+	ctxlog.WithEvent(qJob, "CreateJob").Infof(ctx, "Created errand job for '%s'", qJob.GetNamespacedName())
 
 	if qJob.Spec.Trigger.Strategy == qjv1a1.TriggerOnce {
 		// Traverse Strategy into the final 'done' state.
 		qJob.Spec.Trigger.Strategy = qjv1a1.TriggerDone
 		if err := r.client.Update(ctx, qJob); err != nil {
-			ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", qJob.Name, err)
+			ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", qJob.GetNamespacedName(), err)
 			return reconcile.Result{Requeue: false}, nil
 		}
 	}
@@ -124,7 +124,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	qJob.Status.LastReconcile = &now
 	err := r.client.Status().Update(ctx, qJob)
 	if err != nil {
-		ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.Name, qJob.ResourceVersion, err)
+		ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
 		return reconcile.Result{Requeue: false}, nil
 	}
 

@@ -117,7 +117,7 @@ func SkipReconciles(ctx context.Context, client crc.Client, object apis.Object) 
 		cm := &corev1.ConfigMap{}
 		err := client.Get(ctx, types.NamespacedName{Name: object.Name, Namespace: object.Namespace}, cm)
 		if err != nil {
-			log.Errorf(ctx, "Failed to get ConfigMap '%s': %s", object.Name, err)
+			log.Errorf(ctx, "Failed to get ConfigMap '%s/%s': %s", object.Namespace, object.Name, err)
 			return true
 		}
 
@@ -126,7 +126,7 @@ func SkipReconciles(ctx context.Context, client crc.Client, object apis.Object) 
 		s := &corev1.Secret{}
 		err := client.Get(ctx, types.NamespacedName{Name: object.Name, Namespace: object.Namespace}, s)
 		if err != nil {
-			log.Errorf(ctx, "Failed to get Secret '%s': %s", object.Name, err)
+			log.Errorf(ctx, "Failed to get Secret '%s/%s': %s", object.Namespace, object.Name, err)
 			return true
 		}
 

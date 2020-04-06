@@ -134,12 +134,12 @@ func (po *OutputPersistor) persistContainer(
 				// Fetch json from file
 				file, err := ioutil.ReadFile(filePath)
 				if err != nil {
-					errorContainerChannel <- errors.Wrapf(err, "unable to read file %s in container %s in pod %s", filePath, container.Name, po.podName)
+					errorContainerChannel <- errors.Wrapf(err, "unable to read file %s in container %s in pod '%s/%s'", filePath, container.Name, po.namespace, po.podName)
 				}
 
 				var data map[string]string
 				if err := json.Unmarshal([]byte(file), &data); err != nil {
-					errorContainerChannel <- errors.Wrapf(err, "failed to convert output file %s into json for creating secret(s) %s in pod %s", filePath, options.Name, po.podName)
+					errorContainerChannel <- errors.Wrapf(err, "failed to convert output file %s into json for creating secret(s) %s in pod '%s/%s'", filePath, options.Name, po.namespace, po.podName)
 				}
 
 				switch options.PersistenceMethod {
@@ -179,7 +179,7 @@ func (po *OutputPersistor) getContainerExitCode(containerIndex int) (int, error)
 	for {
 		pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(po.podName, metav1.GetOptions{})
 		if err != nil {
-			return -1, errors.Wrapf(err, "failed to fetch pod %s", po.podName)
+			return -1, errors.Wrapf(err, "failed to fetch pod '%s/%s'", po.namespace, po.podName)
 		}
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			if containerStatus.Name == pod.Spec.Containers[containerIndex].Name && containerStatus.State.Terminated != nil {
@@ -324,7 +324,7 @@ func (po *OutputPersistor) createSecret(
 		err := store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
 		if err != nil {
 			if !versionedsecretstore.IsSecretIdenticalError(err) {
-				return errors.Wrapf(err, "could not persist qJob's %s output to a secret", qJob.GetName())
+				return errors.Wrapf(err, "could not persist qJob's '%s' output to a secret", qJob.GetNamespacedName())
 			}
 			// No-op. the latest version is identical to the one we have
 			return nil
@@ -347,10 +347,10 @@ func (po *OutputPersistor) createSecret(
 				// If it exists update it
 				_, err = po.clientSet.CoreV1().Secrets(po.namespace).Update(secret)
 				if err != nil {
-					return errors.Wrapf(err, "failed to update secret %s for container %s in pod %s.", secretName, container.Name, po.podName)
+					return errors.Wrapf(err, "failed to update secret %s for container %s in pod '%s/%s'", secretName, container.Name, po.namespace, po.podName)
 				}
 			} else {
-				return errors.Wrapf(err, "failed to create secret %s for container %s in pod %s.", secretName, container.Name, po.podName)
+				return errors.Wrapf(err, "failed to create secret %s for container %s in pod '%s/%s'", secretName, container.Name, po.namespace, po.podName)
 			}
 		}
 

@@ -247,7 +247,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot find job's pod").Len()).To(Equal(1))
-			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Listing job's %s pods failed.", job.Name)).Len()).To(Equal(1))
+			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Listing job's '/%s' pods failed.", job.Name)).Len()).To(Equal(1))
 		})
 
 		It("handles an error when pod list is empty", func() {
@@ -271,7 +271,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot find job's pod").Len()).To(Equal(1))
-			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Job %s does not own any pods?", job.Name)).Len()).To(Equal(1))
+			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Job '/%s' does not own any pods?", job.Name)).Len()).To(Equal(1))
 		})
 	})
 

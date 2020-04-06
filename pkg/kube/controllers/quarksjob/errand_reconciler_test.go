@@ -145,7 +145,7 @@ var _ = Describe("ErrandReconciler", func() {
 				It("should return and try to requeue", func() {
 					_, err := act()
 					Expect(err).To(HaveOccurred())
-					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Failed to revert to 'trigger.strategy=manual' on job '%s': fake-error", qJobName)).Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Failed to revert to 'trigger.strategy=manual' on job '/%s': fake-error", qJobName)).Len()).To(Equal(1))
 					Expect(client.CreateCallCount()).To(Equal(0))
 				})
 			})
@@ -157,7 +157,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 				It("should log create error and requeue", func() {
 					_, err := act()
-					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Failed to create job '%s': fake-error", qJobName)).Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Failed to create job '/%s': fake-error", qJobName)).Len()).To(Equal(1))
 					Expect(err).To(HaveOccurred())
 					Expect(client.CreateCallCount()).To(Equal(1))
 				})
@@ -174,7 +174,7 @@ var _ = Describe("ErrandReconciler", func() {
 					result, err := act()
 					Expect(err).NotTo(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
-					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip '%s': already running", qJobName)).Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip '/%s': already running", qJobName)).Len()).To(Equal(1))
 					Expect(client.CreateCallCount()).To(Equal(1))
 				})
 			})
@@ -386,7 +386,7 @@ var _ = Describe("ErrandReconciler", func() {
 					result, err := act()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(result.Requeue).To(BeTrue())
-					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip create job '%s' due to configMap 'config1' not found", qJobName)).Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip create job '/%s' due to configMap 'config1' not found", qJobName)).Len()).To(Equal(1))
 
 					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 						switch obj := obj.(type) {
@@ -406,7 +406,7 @@ var _ = Describe("ErrandReconciler", func() {
 					result, err = act()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(result.Requeue).To(BeTrue())
-					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip create job '%s' due to secret 'secret1' not found", qJobName)).Len()).To(Equal(1))
+					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip create job '/%s' due to secret 'secret1' not found", qJobName)).Len()).To(Equal(1))
 				})
 			})
 		})

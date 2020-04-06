@@ -133,7 +133,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 	// Create k8s job
 	name, err := names.JobName(qJob.Name)
 	if err != nil {
-		return false, errors.Wrapf(err, "could not generate job name for qJob '%s'", qJob.Name)
+		return false, errors.Wrapf(err, "could not generate job name for qJob '%s'", qJob.GetNamespacedName())
 	}
 
 	job := &batchv1.Job{
@@ -146,12 +146,12 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 	}
 
 	if err := j.setOwnerReference(&qJob, job, j.scheme); err != nil {
-		return false, ctxlog.WithEvent(&qJob, "SetOwnerReferenceError").Errorf(ctx, "failed to set owner reference on job for '%s': %s", qJob.Name, err)
+		return false, ctxlog.WithEvent(&qJob, "SetOwnerReferenceError").Errorf(ctx, "failed to set owner reference on job for '%s': %s", qJob.GetNamespacedName(), err)
 	}
 
 	if err := j.client.Create(ctx, job); err != nil {
 		if apierrors.IsAlreadyExists(err) {
-			ctxlog.WithEvent(&qJob, "AlreadyRunning").Infof(ctx, "Skip '%s': already running", qJob.Name)
+			ctxlog.WithEvent(&qJob, "AlreadyRunning").Infof(ctx, "Skip '%s': already running", qJob.GetNamespacedName())
 			// Don't requeue the job.
 			return false, nil
 		}
@@ -167,7 +167,7 @@ func (j jobCreatorImpl) validateReferences(ctx context.Context, qJob qjv1a1.Quar
 	for configMapName := range configMaps {
 		if err := j.client.Get(ctx, crc.ObjectKey{Name: configMapName, Namespace: qJob.Namespace}, configMap); err != nil {
 			if apierrors.IsNotFound(err) {
-				ctxlog.Debugf(ctx, "Skip create job '%s' due to configMap '%s' not found", qJob.Name, configMapName)
+				ctxlog.Debugf(ctx, "Skip create job '%s' due to configMap '%s' not found", qJob.GetNamespacedName(), configMapName)
 			}
 			return err
 		}
@@ -178,7 +178,7 @@ func (j jobCreatorImpl) validateReferences(ctx context.Context, qJob qjv1a1.Quar
 	for secretName := range secrets {
 		if err := j.client.Get(ctx, crc.ObjectKey{Name: secretName, Namespace: qJob.Namespace}, secret); err != nil {
 			if apierrors.IsNotFound(err) {
-				ctxlog.Debugf(ctx, "Skip create job '%s' due to secret '%s' not found", qJob.Name, secretName)
+				ctxlog.Debugf(ctx, "Skip create job '%s' due to secret '%s' not found", qJob.GetNamespacedName(), secretName)
 			}
 			return err
 		}

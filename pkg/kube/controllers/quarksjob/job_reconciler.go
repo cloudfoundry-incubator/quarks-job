@@ -82,12 +82,12 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 	qj := qjv1a1.QuarksJob{}
 	err = r.client.Get(ctx, types.NamespacedName{Name: parentName, Namespace: instance.GetNamespace()}, &qj)
 	if err != nil {
-		return reconcile.Result{}, errors.Wrapf(err, "getting parent quarksJob in Job Reconciler for job %s", instance.GetName())
+		return reconcile.Result{}, errors.Wrapf(err, "getting parent quarksJob in Job Reconciler for job '%s/%s'", request.Namespace, instance.GetName())
 	}
 
 	// Delete Job if it succeeded
 	if instance.Status.Succeeded == 1 {
-		ctxlog.WithEvent(&qj, "DeletingJob").Infof(ctx, "Deleting succeeded job '%s'", instance.Name)
+		ctxlog.WithEvent(&qj, "DeletingJob").Infof(ctx, "Deleting succeeded job '%s/%s'", request.Namespace, instance.Name)
 		err = r.client.Delete(ctx, instance)
 		if err != nil {
 			ctxlog.WithEvent(instance, "DeleteError").Errorf(ctx, "Cannot delete succeeded job: '%s'", err)
@@ -100,7 +100,7 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 					ctxlog.WithEvent(instance, "NotFoundError").Errorf(ctx, "Cannot find job's pod: '%s'", err)
 					return reconcile.Result{}, nil
 				}
-				ctxlog.WithEvent(&qj, "DeletingJobsPod").Infof(ctx, "Deleting succeeded job's pod '%s'", pod.Name)
+				ctxlog.WithEvent(&qj, "DeletingJobsPod").Infof(ctx, "Deleting succeeded job's pod '%s/%s'", pod.Namespace, pod.Name)
 				err = r.client.Delete(ctx, pod)
 				if err != nil {
 					ctxlog.WithEvent(instance, "DeleteError").Errorf(ctx, "Cannot delete succeeded job's pod: '%s'", err)
@@ -122,10 +122,10 @@ func (r *ReconcileJob) jobPod(ctx context.Context, name string, namespace string
 		client.MatchingLabels(map[string]string{"job-name": name}),
 	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Listing job's %s pods failed.", name)
+		return nil, errors.Wrapf(err, "Listing job's '%s/%s' pods failed.", namespace, name)
 	}
 	if len(list.Items) == 0 {
-		return nil, errors.Errorf("Job %s does not own any pods?", name)
+		return nil, errors.Errorf("Job '%s/%s' does not own any pods?", namespace, name)
 	}
 
 	// If there is only one job pod, then return index 0 pod.
@@ -143,6 +143,6 @@ func (r *ReconcileJob) jobPod(ctx context.Context, name string, namespace string
 		}
 	}
 
-	ctxlog.Infof(ctx, "Considering job pod %s for persisting output", latestPod.GetName())
+	ctxlog.Infof(ctx, "Considering job pod '%s/%s' for persisting output", namespace, latestPod.GetName())
 	return &latestPod, nil
 }

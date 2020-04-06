@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
 	. "github.com/onsi/gomega"
 
 	"k8s.io/client-go/rest"
@@ -53,7 +52,7 @@ var _ = BeforeEach(func() {
 
 	err := env.SetupClientsets()
 	if err != nil {
-		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	err = env.SetupNamespace()
@@ -69,7 +68,7 @@ var _ = BeforeEach(func() {
 
 	env.Stop, err = env.StartOperator()
 	if err != nil {
-		gomega.Expect(err).NotTo(gomega.HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 	}
 })
 

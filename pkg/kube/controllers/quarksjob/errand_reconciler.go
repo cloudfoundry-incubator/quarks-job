@@ -120,6 +120,8 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
+	// Reset status
+	qJob.Status.Completed = false
 	now := metav1.Now()
 	qJob.Status.LastReconcile = &now
 	err := r.client.Status().Update(ctx, qJob)

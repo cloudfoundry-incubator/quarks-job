@@ -107,6 +107,14 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 				}
 			}
 		}
+
+		// Update QuarksJob status
+		qj.Status.Completed = true
+		err := r.client.Status().Update(ctx, &qj)
+		if err != nil {
+			ctxlog.WithEvent(&qj, "UpdateError").Errorf(ctx, "Failed to update quarks job status '%s' (%v): %s", qj.GetNamespacedName(), qj.ResourceVersion, err)
+			return reconcile.Result{Requeue: false}, nil
+		}
 	}
 
 	return reconcile.Result{}, nil

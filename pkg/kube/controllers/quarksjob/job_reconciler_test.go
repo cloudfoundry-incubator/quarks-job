@@ -77,6 +77,7 @@ var _ = Describe("ReconcileJob", func() {
 			return nil
 		})
 		manager.GetClientReturns(client)
+		client.StatusCalls(func() crc.StatusWriter { return &cfakes.FakeStatusWriter{} })
 	})
 
 	JustBeforeEach(func() {
@@ -120,6 +121,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(1))
+			Expect(client.StatusCallCount()).To(Equal(1))
 		})
 
 		It("deletes owned pod together with the job", func() {
@@ -131,6 +133,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(2))
+			Expect(client.StatusCallCount()).To(Equal(1))
 		})
 
 		It("deletes latest owned pod together with the job", func() {
@@ -168,6 +171,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(2))
+			Expect(client.StatusCallCount()).To(Equal(1))
 		})
 
 		It("handles an error when getting job's quarks job reference failed", func() {

@@ -80,7 +80,7 @@ jobs:
           branch: master
 
     - stage: Publishing helm chart
-      if: branch = master
+      if: branch = ed/seq-version
       # do not inherit
       install: []
       script: echo "Publishing helm chart"
@@ -100,4 +100,4 @@ jobs:
             ./bin/publish-helm-repo
           skip_cleanup: true
           on:
-            branch: master
+            branch: ed/seq-version

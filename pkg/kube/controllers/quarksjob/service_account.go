@@ -18,15 +18,15 @@ const (
 )
 
 func (j jobCreatorImpl) serviceAccountMount(ctx context.Context, namespace string, serviceAccountName string) (*corev1.Volume, *corev1.VolumeMount, error) {
-	var createdServiceAccount corev1.ServiceAccount
-	if err := j.client.Get(ctx, crc.ObjectKey{Name: serviceAccountName, Namespace: namespace}, &createdServiceAccount); err != nil {
+	var acct corev1.ServiceAccount
+	if err := j.client.Get(ctx, crc.ObjectKey{Name: serviceAccountName, Namespace: namespace}, &acct); err != nil {
 		return nil, nil, errors.Wrapf(err, "could not get service account '%s'", serviceAccountName)
 	}
 
-	if len(createdServiceAccount.Secrets) == 0 {
+	if len(acct.Secrets) == 0 {
 		return nil, nil, fmt.Errorf("missing service account secret for '%s'", serviceAccountName)
 	}
-	tokenSecretName := createdServiceAccount.Secrets[0].Name
+	tokenSecretName := acct.Secrets[0].Name
 
 	// Mount service account token on container
 	serviceAccountVolumeName := names.Sanitize(fmt.Sprintf("%s-%s", serviceAccountName, tokenSecretName))

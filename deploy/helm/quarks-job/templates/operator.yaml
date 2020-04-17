@@ -40,8 +40,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-            - name: SERVICE_ACCOUNT
-              value: quarks-job-persist-output
             - name: OPERATOR_NAME
               value: "quarks-job"
             - name: DOCKER_IMAGE_ORG

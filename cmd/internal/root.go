@@ -43,8 +43,7 @@ var rootCmd = &cobra.Command{
 
 		cfg := config.NewDefaultConfig(afero.NewOsFs())
 
-		watchNamespace := cmd.WatchNamespace(cfg.Config, log)
-		log.Infof("Starting quarks-job %s with namespace %s", version.Version, watchNamespace)
+		log.Infof("Starting quarks-job %s", version.Version)
 
 		err = cmd.DockerImage()
 		if err != nil {
@@ -53,12 +52,6 @@ var rootCmd = &cobra.Command{
 		log.Infof("quarks-job docker image: %s", sharedcfg.GetOperatorDockerImage())
 
 		cfg.MaxQuarksJobWorkers = viper.GetInt("max-workers")
-
-		serviceAccount := viper.GetString("service-account")
-		if serviceAccount == "" {
-			serviceAccount = "default"
-		}
-		cfg.ServiceAccount = serviceAccount
 
 		cmd.CtxTimeOut(cfg.Config)
 		cmd.Meltdown(cfg.Config)
@@ -71,7 +64,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		mgr, err := operator.NewManager(ctx, cfg, restConfig, manager.Options{
-			Namespace:          watchNamespace,
 			MetricsBindAddress: "0",
 			LeaderElection:     false,
 		})
@@ -111,7 +103,6 @@ func init() {
 	cmd.CtxTimeOutFlags(pf, argToEnv)
 	cmd.KubeConfigFlags(pf, argToEnv)
 	cmd.LoggerFlags(pf, argToEnv)
-	cmd.WatchNamespaceFlags(pf, argToEnv)
 	cmd.DockerImageFlags(pf, argToEnv, "quarks-job", version.Version)
 	cmd.ApplyCRDsFlags(pf, argToEnv)
 	cmd.MeltdownFlags(pf, argToEnv)
@@ -119,10 +110,6 @@ func init() {
 	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
 	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))
 	argToEnv["max-workers"] = "MAX_WORKERS"
-
-	pf.String("service-account", "default", "service acount for the persist output container in the created jobs")
-	viper.BindPFlag("service-account", pf.Lookup("service-account"))
-	argToEnv["service-account"] = "SERVICE_ACCOUNT"
 
 	// Add env variables to help
 	cmd.AddEnvToUsage(rootCmd, argToEnv)

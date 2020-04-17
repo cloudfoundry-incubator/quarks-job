@@ -15,10 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/version"
 	"code.cloudfoundry.org/quarks-utils/pkg/cmd"
-	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/logger"
 )
@@ -43,18 +42,20 @@ var rootCmd = &cobra.Command{
 
 		cfg := config.NewDefaultConfig(afero.NewOsFs())
 
-		log.Infof("Starting quarks-job %s", version.Version)
+		cmd.MonitoredID(cfg)
+
+		log.Infof("Starting quarks-job %s, monitoring namespaces labeled with '%s'", version.Version, cfg.MonitoredID)
 
 		err = cmd.DockerImage()
 		if err != nil {
 			return wrapError(err, "")
 		}
-		log.Infof("quarks-job docker image: %s", sharedcfg.GetOperatorDockerImage())
+		log.Infof("quarks-job docker image: %s", config.GetOperatorDockerImage())
 
 		cfg.MaxQuarksJobWorkers = viper.GetInt("max-workers")
 
-		cmd.CtxTimeOut(cfg.Config)
-		cmd.Meltdown(cfg.Config)
+		cmd.CtxTimeOut(cfg)
+		cmd.Meltdown(cfg)
 
 		ctx := ctxlog.NewParentContext(log)
 
@@ -101,6 +102,7 @@ func init() {
 	argToEnv := map[string]string{}
 
 	cmd.CtxTimeOutFlags(pf, argToEnv)
+	cmd.MonitoredIDFlags(pf, argToEnv)
 	cmd.KubeConfigFlags(pf, argToEnv)
 	cmd.LoggerFlags(pf, argToEnv)
 	cmd.DockerImageFlags(pf, argToEnv, "quarks-job", version.Version)

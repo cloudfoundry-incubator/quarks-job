@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ template "quarks-job.fullname" . }}
-  namespace: {{ .Release.Namespace }}
+  namespace: "{{ .Release.Namespace }}"
 spec:
   replicas: 1
   selector:
@@ -36,6 +36,8 @@ spec:
               value: "{{ .Values.global.meltdownDuration }}"
             - name: MELTDOWN_REQUEUE_AFTER
               value: "{{ .Values.global.meltdownRequeueAfter }}"
+            - name: MONITORED_ID
+              value: {{ template "quarks-job.monitoredID" . }}
             - name: POD_NAME
               valueFrom:
                 fieldRef:

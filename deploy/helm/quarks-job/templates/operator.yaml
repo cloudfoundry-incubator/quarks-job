@@ -30,8 +30,6 @@ spec:
               value: "{{ .Values.logLevel }}"
             - name: MAX_WORKERS
               value: "{{ .Values.maxWorkers }}"
-            - name: WATCH_NAMESPACE
-              value: "{{ .Values.global.operator.watchNamespace }}"
             - name: CTX_TIMEOUT
               value: "{{ .Values.global.contextTimeout }}"
             - name: MELTDOWN_DURATION

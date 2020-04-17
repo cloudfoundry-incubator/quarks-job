@@ -6,9 +6,6 @@
 # applyCRD is a boolean to control the installation of CRD's.
 applyCRD: true
 
-# createWatchNamespace is a boolean to control creation of watchnamespace.
-createWatchNamespace: true
-
 # fullnameOverride overrides the release name
 fullnameOverride: ""
 
@@ -36,6 +33,11 @@ serviceAccount:
   # name of the service account.
   name:
 
+# single namespace creates the resources (namespace, service account) for watching a single namespace
+singleNamespace:
+      create: true
+      name: staging
+
 global:
   # contextTimeout is the timeout value for each K8's API request in seconds.
   contextTimeout: 30
@@ -50,6 +52,3 @@ global:
   image:
     # pullPolicy defines the policy used for pulling docker images.
     pullPolicy: IfNotPresent
-  operator:
-    # watchNamespace is the namespace to watch for BOSH deployments.
-    watchNamespace: default

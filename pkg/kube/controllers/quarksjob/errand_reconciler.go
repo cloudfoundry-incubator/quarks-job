@@ -98,7 +98,8 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	r.injectContainerEnv(&qJob.Spec.Template.Spec.Template.Spec)
-	if retry, err := r.jobCreator.Create(ctx, *qJob, request.Namespace); err != nil {
+	serviceAccount := "quarks-job-persist-output"
+	if retry, err := r.jobCreator.Create(ctx, *qJob, serviceAccount); err != nil {
 		return reconcile.Result{}, ctxlog.WithEvent(qJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", qJob.GetNamespacedName(), err)
 	} else if retry {
 		ctxlog.Infof(ctx, "Retrying to create job '%s'", qJob.GetNamespacedName())

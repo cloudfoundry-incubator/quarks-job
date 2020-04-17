@@ -11,7 +11,6 @@ import (
 // Config modified for quarks-job
 type Config struct {
 	*sharedcfg.Config
-	ServiceAccount string
 }
 
 // NewDefaultConfig returns a new Config for a manager of controllers

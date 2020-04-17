@@ -59,10 +59,11 @@ type jobCreatorImpl struct {
 
 // Create satisfies the JobCreator interface. It creates a Job to complete ExJob. It returns the
 // retry if one of the references are not present.
-func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, namespace string) (bool, error) {
+func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, serviceAccount string) (bool, error) {
+	namespace := qJob.Namespace
 	template := qJob.Spec.Template.DeepCopy()
 
-	serviceAccountVolume, serviceAccountVolumeMount, err := j.serviceAccountMount(ctx, namespace, j.config.ServiceAccount)
+	serviceAccountVolume, serviceAccountVolumeMount, err := j.serviceAccountMount(ctx, namespace, serviceAccount)
 	if err != nil {
 		return false, err
 	}

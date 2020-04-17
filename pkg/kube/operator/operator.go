@@ -9,7 +9,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/crd"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 

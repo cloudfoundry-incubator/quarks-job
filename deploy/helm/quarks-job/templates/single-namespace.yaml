@@ -1,36 +1,35 @@
-{{- if .Values.singleNamespace.create }}
-
+{{- if .Values.global.singleNamespace.create }}
+{{- if .Values.singleNamespace.createNamespace }}
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: {{ .Values.singleNamespace.name }}
+  name: "{{ .Values.global.singleNamespace.name }}"
   labels:
-    quarks.cloudfoundry.org/qjob-namespace: true
-    quarks.cloudfoundry.org/qjob-service-account: quarks-job-persist-output
+    quarks.cloudfoundry.org/monitored: {{ template "quarks-job.monitoredID" . }}
+    quarks.cloudfoundry.org/qjob-service-account: "{{ .Values.persistOutputClusterRole.name }}"
+{{- end }}
 
-{{- if .Values.global.rbac.create }}
+{{- if .Values.singleNamespace.createAccount }}
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: quarks-job-persist-output
-  namespace: {{ .Values.singleNamespace.name }}
+  name: "{{ .Values.persistOutputClusterRole.name }}"
+  namespace: "{{ .Values.global.singleNamespace.name }}"
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: quarks-job-persist-output
-  namespace: {{ .Values.singleNamespace.name }}
+  name: "{{ .Values.persistOutputClusterRole.name }}"
+  namespace: "{{ .Values.global.singleNamespace.name }}"
 subjects:
 - kind: ServiceAccount
-  name: quarks-job-persist-output
+  name: "{{ .Values.persistOutputClusterRole.name }}"
 roleRef:
   kind: ClusterRole
-  name: quarks-job-persist-output
+  name: "{{ .Values.persistOutputClusterRole.name }}"
   apiGroup: rbac.authorization.k8s.io
 {{- end }}
-
 {{- end }}
-

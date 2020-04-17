@@ -51,7 +51,6 @@ func (e *Environment) setupOperator() (manager.Manager, error) {
 	}
 
 	mgr, err := operator.NewManager(ctx, e.Config, e.KubeConfig, manager.Options{
-		Namespace:          e.Namespace,
 		MetricsBindAddress: "0",
 		LeaderElection:     false,
 		Host:               "0.0.0.0",

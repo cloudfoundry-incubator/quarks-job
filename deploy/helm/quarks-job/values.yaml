@@ -33,10 +33,20 @@ serviceAccount:
   # name of the service account.
   name:
 
-# single namespace creates the resources (namespace, service account) for watching a single namespace
+persistOutputClusterRole:
+  # create is a boolean to control the creation of the persist output cluster role
+  create: true
+  # name of the cluster role.
+  name: qjob-persist-output
+
+# singleNamespace requires global.singleNamespace.create to be true
 singleNamespace:
-      create: true
-      name: staging
+  # namespace is a boolean to control the creation of a single namespace for a simplified setup
+  createNamespace: true
+  # account is a boolean to control the creation of rbac resources
+  # (service account, rolebinding) for watching a single namespace in a
+  # simplified setup.
+  createAccount: true
 
 global:
   # contextTimeout is the timeout value for each K8's API request in seconds.
@@ -52,3 +62,14 @@ global:
   image:
     # pullPolicy defines the policy used for pulling docker images.
     pullPolicy: IfNotPresent
+  # monitoredID is a string that has to match the content of the 'monitored' label in each monitored namespace.
+  # The monitoredID helper uses the release fullname, unless this is set.
+  monitoredID:
+  rbac:
+    # create is a boolean to control the installation of rbac resources.
+    create: true
+  singleNamespace:
+    # create is a boolean to control the creation of resources for a simplified setup
+    create: true
+    # name is  the name of the single namespace.
+    name: staging

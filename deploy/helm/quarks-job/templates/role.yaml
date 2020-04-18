@@ -15,6 +15,7 @@ rules:
   - get
   - list
   - watch
+
 - apiGroups:
   - ""
   resources:
@@ -23,6 +24,7 @@ rules:
   - get
   - list
   - watch
+
 - apiGroups:
   - ""
   resources:
@@ -31,6 +33,7 @@ rules:
   - get
   - list
   - watch
+
 - apiGroups:
   - ""
   resources:
@@ -41,6 +44,7 @@ rules:
   - list
   - update
   - watch
+
 - apiGroups:
   - ""
   resources:
@@ -49,6 +53,7 @@ rules:
   - create
   - patch
   - update
+
 - apiGroups:
   - quarks.cloudfoundry.org
   resources:
@@ -59,12 +64,14 @@ rules:
   - list
   - update
   - watch
+
 - apiGroups:
   - quarks.cloudfoundry.org
   resources:
   - quarksjobs/status
   verbs:
   - update
+
 - apiGroups:
   - batch
   resources:

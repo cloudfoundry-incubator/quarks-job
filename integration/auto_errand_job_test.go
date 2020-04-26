@@ -140,8 +140,8 @@ var _ = Describe("AutoErrandJob", func() {
 				qj.Spec.UpdateOnConfigChange = true
 				qj.Spec.Template = env.ConfigJobTemplate()
 
-				configMap = env.DefaultConfigMap("config1")
-				secret = env.DefaultSecret("secret1")
+				configMap = env.DefaultConfigMap("config1", env.Namespace)
+				secret = env.DefaultSecret("secret1", env.Namespace)
 
 				tearDown, err := env.CreateConfigMap(env.Namespace, configMap)
 				Expect(err).ToNot(HaveOccurred())
@@ -192,8 +192,8 @@ var _ = Describe("AutoErrandJob", func() {
 				qj.Spec.UpdateOnConfigChange = false
 				qj.Spec.Template = env.ConfigJobTemplate()
 
-				configMap = env.DefaultConfigMap("config1")
-				secret = env.DefaultSecret("secret1")
+				configMap = env.DefaultConfigMap("config1", env.Namespace)
+				secret = env.DefaultSecret("secret1", env.Namespace)
 
 				tearDown, err := env.CreateConfigMap(env.Namespace, configMap)
 				Expect(err).ToNot(HaveOccurred())
@@ -224,8 +224,8 @@ var _ = Describe("AutoErrandJob", func() {
 				qj.Spec.UpdateOnConfigChange = true
 				qj.Spec.Template = env.ConfigJobTemplate()
 
-				configMap = env.DefaultConfigMap("config1")
-				secret = env.DefaultSecret("secret1")
+				configMap = env.DefaultConfigMap("config1", env.Namespace)
+				secret = env.DefaultSecret("secret1", env.Namespace)
 
 			})
 

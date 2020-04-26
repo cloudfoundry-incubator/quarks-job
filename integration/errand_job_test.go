@@ -63,7 +63,7 @@ var _ = Describe("ErrandJob", func() {
 
 	Context("when trigger is set to now", func() {
 		BeforeEach(func() {
-			qj = env.ErrandQuarksJob("qj-now")
+			qj = env.ErrandQuarksJob("qj-now", env.Namespace)
 			// a short running job might disappear to fast
 			cmd := []string{"sleep", "30"}
 			qj.Spec.Template = env.CmdJobTemplate(cmd)
@@ -79,7 +79,7 @@ var _ = Describe("ErrandJob", func() {
 
 	Context("when using manually triggered ErrandJob", func() {
 		BeforeEach(func() {
-			qj = env.ErrandQuarksJob("qj-noop")
+			qj = env.ErrandQuarksJob("qj-noop", env.Namespace)
 			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
 		})
 
@@ -104,7 +104,7 @@ var _ = Describe("ErrandJob", func() {
 
 	Context("when updating trigger to now", func() {
 		BeforeEach(func() {
-			qj = env.ErrandQuarksJob("qj-manual")
+			qj = env.ErrandQuarksJob("qj-manual", env.Namespace)
 			qj.Spec.Trigger.Strategy = qjv1a1.TriggerManual
 		})
 

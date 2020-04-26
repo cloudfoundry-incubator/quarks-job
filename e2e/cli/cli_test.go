@@ -33,7 +33,7 @@ var _ = Describe("CLI", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Eventually(session.Out).Should(Say(`Flags:
       --apply-crd                         \(APPLY_CRD\) If true, apply CRDs on start \(default true\)
-      --ctx-timeout int                   \(CTX_TIMEOUT\) context timeout for each k8s API request in seconds \(default 30\)
+      --ctx-timeout int                   \(CTX_TIMEOUT\) context timeout for each k8s API request in seconds \(default 300\)
   -o, --docker-image-org string           \(DOCKER_IMAGE_ORG\) Dockerhub organization that provides the operator docker image \(default "cfcontainerization"\)
       --docker-image-pull-policy string   \(DOCKER_IMAGE_PULL_POLICY\) Image pull policy \(default "IfNotPresent"\)
   -r, --docker-image-repository string    \(DOCKER_IMAGE_REPOSITORY\) Dockerhub repository that provides the operator docker image \(default "quarks-job"\)

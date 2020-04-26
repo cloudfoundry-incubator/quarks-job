@@ -13,6 +13,7 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
 	"code.cloudfoundry.org/quarks-utils/pkg/cmd"
+	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/kubeconfig"
 	"code.cloudfoundry.org/quarks-utils/pkg/logger"
 )
@@ -50,9 +51,11 @@ into a versioned secret or kube native secret using flags specified to this comm
 			return err
 		}
 
+		ctx := ctxlog.NewParentContext(log)
+
 		po := quarksjob.NewOutputPersistor(log, namespace, podName, clientSet, versionedClientSet, "/mnt/quarks")
 
-		return po.Persist()
+		return po.Persist(ctx)
 	},
 }
 

@@ -17,9 +17,9 @@ import (
 type Catalog struct{}
 
 // DefaultConfigMap for tests
-func (c *Catalog) DefaultConfigMap(name string) corev1.ConfigMap {
+func (c *Catalog) DefaultConfigMap(name, namespace string) corev1.ConfigMap {
 	return corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Data: map[string]string{
 			name: "default-value",
 		},
@@ -27,9 +27,9 @@ func (c *Catalog) DefaultConfigMap(name string) corev1.ConfigMap {
 }
 
 // DefaultServiceAccount for tests
-func (c *Catalog) DefaultServiceAccount(name string) corev1.ServiceAccount {
+func (c *Catalog) DefaultServiceAccount(name, namespace string) corev1.ServiceAccount {
 	return corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Secrets: []corev1.ObjectReference{
 			{
 				Name: name,
@@ -39,9 +39,9 @@ func (c *Catalog) DefaultServiceAccount(name string) corev1.ServiceAccount {
 }
 
 // DefaultSecret for tests
-func (c *Catalog) DefaultSecret(name string) corev1.Secret {
+func (c *Catalog) DefaultSecret(name, namespace string) corev1.Secret {
 	return corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		StringData: map[string]string{
 			name: "default-value",
 		},
@@ -63,10 +63,11 @@ func (c *Catalog) Sleep1hPodSpec() corev1.PodSpec {
 }
 
 // DefaultPod defines a pod with a simple web server useful for testing
-func (c *Catalog) DefaultPod(name string) corev1.Pod {
+func (c *Catalog) DefaultPod(name, namespace string) corev1.Pod {
 	return corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
+			Namespace: namespace,
 		},
 		Spec: c.Sleep1hPodSpec(),
 	}
@@ -201,10 +202,10 @@ func (c *Catalog) CmdJobTemplate(cmd []string) batchv1b1.JobTemplateSpec {
 }
 
 // DefaultQuarksJob default values
-func (c *Catalog) DefaultQuarksJob(name string) *qjv1a1.QuarksJob {
+func (c *Catalog) DefaultQuarksJob(name, namespace string) *qjv1a1.QuarksJob {
 	cmd := []string{"sleep", "1"}
 	return &qjv1a1.QuarksJob{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: qjv1a1.QuarksJobSpec{
 			Trigger: qjv1a1.Trigger{
 				Strategy: qjv1a1.TriggerNow,
@@ -215,10 +216,11 @@ func (c *Catalog) DefaultQuarksJob(name string) *qjv1a1.QuarksJob {
 }
 
 // DefaultQuarksJobPod defines a pod with a simple web server and with a output-persist container
-func (c *Catalog) DefaultQuarksJobPod(name string) corev1.Pod {
+func (c *Catalog) DefaultQuarksJobPod(name, namespace string) corev1.Pod {
 	return corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
+			Name:      name,
+			Namespace: namespace,
 		},
 		Spec: c.Sleep1hQuarksJobPodSpec(),
 	}
@@ -244,12 +246,13 @@ func (c *Catalog) Sleep1hQuarksJobPodSpec() corev1.PodSpec {
 }
 
 // DefaultQuarksJobWithSucceededJob returns an QuarksJob and a Job owned by it
-func (c *Catalog) DefaultQuarksJobWithSucceededJob(name string) (*qjv1a1.QuarksJob, *batchv1.Job, *corev1.Pod) {
-	qJob := c.DefaultQuarksJob(name)
+func (c *Catalog) DefaultQuarksJobWithSucceededJob(name, namespace string) (*qjv1a1.QuarksJob, *batchv1.Job, *corev1.Pod) {
+	qJob := c.DefaultQuarksJob(name, namespace)
 	backoffLimit := pointers.Int32(2)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: name + "-job",
+			Name:      name + "-job",
+			Namespace: namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Name:       name,
@@ -261,18 +264,19 @@ func (c *Catalog) DefaultQuarksJobWithSucceededJob(name string) (*qjv1a1.QuarksJ
 		Spec:   batchv1.JobSpec{BackoffLimit: backoffLimit},
 		Status: batchv1.JobStatus{Succeeded: 1},
 	}
-	pod := c.DefaultQuarksJobPod(name + "-pod")
+	pod := c.DefaultQuarksJobPod(name+"-pod", namespace)
 	pod.Labels = map[string]string{
-		"job-name": job.GetName(),
+		"job-name":                          job.GetName(),
+		"quarks.cloudfoundry.org/qjob-name": qJob.Name,
 	}
 	return qJob, job, &pod
 }
 
 // ErrandQuarksJob default values
-func (c *Catalog) ErrandQuarksJob(name string) qjv1a1.QuarksJob {
+func (c *Catalog) ErrandQuarksJob(name, namespace string) qjv1a1.QuarksJob {
 	cmd := []string{"sleep", "1"}
 	return qjv1a1.QuarksJob{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: qjv1a1.QuarksJobSpec{
 			Trigger: qjv1a1.Trigger{
 				Strategy: qjv1a1.TriggerNow,

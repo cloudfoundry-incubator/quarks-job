@@ -47,9 +47,9 @@ func NewOutputPersistor(log *zap.SugaredLogger, namespace string, podName string
 
 // Persist converts the output files of each container
 // in the pod related to an qJob into a kubernetes secret.
-func (po *OutputPersistor) Persist() error {
+func (po *OutputPersistor) Persist(ctx context.Context) error {
 	// Fetch the pod
-	pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(po.podName, metav1.GetOptions{})
+	pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(ctx, po.podName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch pod %s", po.podName)
 	}
@@ -58,14 +58,14 @@ func (po *OutputPersistor) Persist() error {
 	qJobName := pod.GetLabels()[qjv1a1.LabelQJobName]
 
 	qJobClient := po.versionedClientSet.QuarksjobV1alpha1().QuarksJobs(po.namespace)
-	qJob, err := qJobClient.Get(qJobName, metav1.GetOptions{})
+	qJob, err := qJobClient.Get(ctx, qJobName, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "failed to fetch qJob")
 	}
 
 	// Persist output if needed
 	if !reflect.DeepEqual(qjv1a1.Output{}, qJob.Spec.Output) && qJob.Spec.Output != nil {
-		err = po.persistPod(pod, qJob)
+		err = po.persistPod(ctx, pod, qJob)
 		if err != nil {
 			return err
 		}
@@ -74,7 +74,7 @@ func (po *OutputPersistor) Persist() error {
 }
 
 // persistPod starts goroutine for creating secrets for each output found in our containers
-func (po *OutputPersistor) persistPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) error {
+func (po *OutputPersistor) persistPod(ctx context.Context, pod *corev1.Pod, qJob *qjv1a1.QuarksJob) error {
 	errorContainerChannel := make(chan error)
 
 	// Loop over containers and create go routine
@@ -88,7 +88,7 @@ func (po *OutputPersistor) persistPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) e
 			continue
 		}
 
-		go po.persistContainer(qJob, containerIndex, container, filesToSecrets, errorContainerChannel)
+		go po.persistContainer(ctx, qJob, containerIndex, container, filesToSecrets, errorContainerChannel)
 	}
 
 	// wait for all container go routines
@@ -104,6 +104,7 @@ func (po *OutputPersistor) persistPod(pod *corev1.Pod, qJob *qjv1a1.QuarksJob) e
 // persistContainer converts json output file
 // of the specified container into secret(s)
 func (po *OutputPersistor) persistContainer(
+	ctx context.Context,
 	qJob *qjv1a1.QuarksJob,
 	containerIndex int,
 	container corev1.Container,
@@ -119,7 +120,7 @@ func (po *OutputPersistor) persistContainer(
 		errorContainerChannel <- err
 	}
 	if containerIndex != -1 {
-		exitCode, err := po.getContainerExitCode(containerIndex)
+		exitCode, err := po.getContainerExitCode(ctx, containerIndex)
 		if err != nil {
 			errorContainerChannel <- err
 		}
@@ -154,7 +155,7 @@ func (po *OutputPersistor) persistContainer(
 							errorContainerChannel <- err
 						}
 
-						if err := po.createSecret(qJob, container, secretName, secretData, options.AdditionalSecretLabels, options.Versioned); err != nil {
+						if err := po.createSecret(ctx, qJob, container, secretName, secretData, options.AdditionalSecretLabels, options.Versioned); err != nil {
 							errorContainerChannel <- err
 						}
 					}
@@ -162,7 +163,7 @@ func (po *OutputPersistor) persistContainer(
 				default:
 					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
 					options.AdditionalSecretLabels[qjv1a1.LabelEntanglementKey] = options.Name
-					if err := po.createSecret(qJob, container, options.Name, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
+					if err := po.createSecret(ctx, qJob, container, options.Name, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
 						errorContainerChannel <- err
 					}
 				}
@@ -174,10 +175,10 @@ func (po *OutputPersistor) persistContainer(
 }
 
 // getContainerExitCode returns the exit code of the container
-func (po *OutputPersistor) getContainerExitCode(containerIndex int) (int, error) {
+func (po *OutputPersistor) getContainerExitCode(ctx context.Context, containerIndex int) (int, error) {
 	// Wait until the container gets into terminated state
 	for {
-		pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(po.podName, metav1.GetOptions{})
+		pod, err := po.clientSet.CoreV1().Pods(po.namespace).Get(ctx, po.podName, metav1.GetOptions{})
 		if err != nil {
 			return -1, errors.Wrapf(err, "failed to fetch pod '%s/%s'", po.namespace, po.podName)
 		}
@@ -294,6 +295,7 @@ func fileExists(filename string) bool {
 
 // createSecret converts the output file into json and creates a secret for a given container
 func (po *OutputPersistor) createSecret(
+	ctx context.Context,
 	qJob *qjv1a1.QuarksJob,
 	container corev1.Container,
 	secretName string,
@@ -340,12 +342,12 @@ func (po *OutputPersistor) createSecret(
 		secret.StringData = secretData
 		secret.Labels = secretLabels
 
-		_, err := po.clientSet.CoreV1().Secrets(po.namespace).Create(secret)
+		_, err := po.clientSet.CoreV1().Secrets(po.namespace).Create(ctx, secret, metav1.CreateOptions{})
 
 		if err != nil {
 			if apierrors.IsAlreadyExists(err) {
 				// If it exists update it
-				_, err = po.clientSet.CoreV1().Secrets(po.namespace).Update(secret)
+				_, err = po.clientSet.CoreV1().Secrets(po.namespace).Update(ctx, secret, metav1.UpdateOptions{})
 				if err != nil {
 					return errors.Wrapf(err, "failed to update secret %s for container %s in pod '%s/%s'", secretName, container.Name, po.namespace, po.podName)
 				}

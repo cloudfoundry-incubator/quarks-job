@@ -1,6 +1,7 @@
 package environment
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -26,16 +27,16 @@ type Machine struct {
 // GetQuarksJob gets an QuarksJob custom resource
 func (m *Machine) GetQuarksJob(namespace string, name string) (*qjv1a1.QuarksJob, error) {
 	client := m.VersionedClientset.QuarksjobV1alpha1().QuarksJobs(namespace)
-	d, err := client.Get(name, metav1.GetOptions{})
+	d, err := client.Get(context.Background(), name, metav1.GetOptions{})
 	return d, err
 }
 
 // CreateQuarksJob creates an QuarksJob
 func (m *Machine) CreateQuarksJob(namespace string, job qjv1a1.QuarksJob) (*qjv1a1.QuarksJob, machine.TearDownFunc, error) {
 	client := m.VersionedClientset.QuarksjobV1alpha1().QuarksJobs(namespace)
-	d, err := client.Create(&job)
+	d, err := client.Create(context.Background(), &job, metav1.CreateOptions{})
 	return d, func() error {
-		pods, err := m.Clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+		pods, err := m.Clientset.CoreV1().Pods(namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: labels.Set(map[string]string{
 				qjv1a1.LabelQJobName: job.Name,
 			}).String(),
@@ -44,13 +45,13 @@ func (m *Machine) CreateQuarksJob(namespace string, job qjv1a1.QuarksJob) (*qjv1
 			return err
 		}
 
-		err = client.Delete(job.GetName(), &metav1.DeleteOptions{})
+		err = client.Delete(context.Background(), job.GetName(), metav1.DeleteOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return err
 		}
 
 		for _, pod := range pods.Items {
-			err = m.Clientset.CoreV1().Pods(namespace).Delete(pod.GetName(), &metav1.DeleteOptions{})
+			err = m.Clientset.CoreV1().Pods(namespace).Delete(context.Background(), pod.GetName(), metav1.DeleteOptions{})
 			if err != nil && !apierrors.IsNotFound(err) {
 				return err
 			}
@@ -63,7 +64,7 @@ func (m *Machine) CreateQuarksJob(namespace string, job qjv1a1.QuarksJob) (*qjv1
 // UpdateQuarksJob updates an quarks job
 func (m *Machine) UpdateQuarksJob(namespace string, qJob qjv1a1.QuarksJob) error {
 	client := m.VersionedClientset.QuarksjobV1alpha1().QuarksJobs(namespace)
-	_, err := client.Update(&qJob)
+	_, err := client.Update(context.Background(), &qJob, metav1.UpdateOptions{})
 	return err
 }
 
@@ -93,7 +94,7 @@ func (m *Machine) QuarksJobExists(namespace string, name string) (bool, error) {
 func (m *Machine) CollectJobs(namespace string, labels string, n int) ([]batchv1.Job, error) {
 	found := map[string]batchv1.Job{}
 	err := wait.PollImmediate(m.PollInterval, m.PollTimeout, func() (bool, error) {
-		jobs, err := m.Clientset.BatchV1().Jobs(namespace).List(metav1.ListOptions{
+		jobs, err := m.Clientset.BatchV1().Jobs(namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: labels,
 		})
 		if err != nil {
@@ -119,7 +120,7 @@ func (m *Machine) CollectJobs(namespace string, labels string, n int) ([]batchv1
 
 // JobExists returns true if job with that name exists
 func (m *Machine) JobExists(namespace string, name string) (bool, error) {
-	_, err := m.Clientset.BatchV1().Jobs(namespace).Get(name, metav1.GetOptions{})
+	_, err := m.Clientset.BatchV1().Jobs(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return false, nil
@@ -135,7 +136,7 @@ func (m *Machine) JobExists(namespace string, name string) (bool, error) {
 func (m *Machine) WaitForJobExists(namespace string, labels string) (bool, error) {
 	found := false
 	err := wait.Poll(5*time.Second, 30*time.Second, func() (bool, error) {
-		jobs, err := m.Clientset.BatchV1().Jobs(namespace).List(metav1.ListOptions{
+		jobs, err := m.Clientset.BatchV1().Jobs(namespace).List(context.Background(), metav1.ListOptions{
 			LabelSelector: labels,
 		})
 		if err != nil {

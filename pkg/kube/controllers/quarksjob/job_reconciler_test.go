@@ -83,7 +83,7 @@ var _ = Describe("ReconcileJob", func() {
 		ctx := ctxlog.NewParentContext(log)
 		config := config.NewConfigWithTimeout(10 * time.Second)
 		reconciler, _ = qj.NewJobReconciler(ctx, config, manager)
-		qJob, job, pod1 = env.DefaultQuarksJobWithSucceededJob("foo")
+		qJob, job, pod1 = env.DefaultQuarksJobWithSucceededJob("foo", request.Namespace)
 	})
 
 	act := func() (reconcile.Result, error) {
@@ -247,7 +247,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot find job's pod").Len()).To(Equal(1))
-			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Listing job's '/%s' pods failed.", job.Name)).Len()).To(Equal(1))
+			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Listing job's '%s/%s' pods failed.", job.Namespace, job.Name)).Len()).To(Equal(1))
 		})
 
 		It("handles an error when pod list is empty", func() {
@@ -271,7 +271,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot find job's pod").Len()).To(Equal(1))
-			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Job '/%s' does not own any pods?", job.Name)).Len()).To(Equal(1))
+			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Job '%s/%s' does not own any pods?", job.Namespace, job.Name)).Len()).To(Equal(1))
 		})
 	})
 

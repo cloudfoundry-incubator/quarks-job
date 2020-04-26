@@ -106,8 +106,8 @@ var _ = Describe("ErrandReconciler", func() {
 				mgr.GetClientReturns(&client)
 
 				qJobName = "fake-qj"
-				qJob = env.ErrandQuarksJob(qJobName)
-				serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
+				qJob = env.ErrandQuarksJob(qJobName, qJob.Namespace)
+				serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 				client.GetCalls(clientGetStub)
 				request = newRequest(qJob)
 			})
@@ -189,8 +189,8 @@ var _ = Describe("ErrandReconciler", func() {
 
 			Context("and the errand is a manual errand", func() {
 				BeforeEach(func() {
-					qJob = env.ErrandQuarksJob("fake-qj")
-					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
+					qJob = env.ErrandQuarksJob("fake-qj", qJob.Namespace)
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					client = fakes.FakeClient{}
 					mgr.GetClientReturns(&client)
 					client.GetCalls(clientGetStub)
@@ -222,7 +222,7 @@ var _ = Describe("ErrandReconciler", func() {
 			Context("and the errand is an auto-errand", func() {
 				BeforeEach(func() {
 					qJob = env.AutoErrandQuarksJob("fake-qj")
-					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					client = fakes.FakeClient{}
 					statusWriter = fakes.FakeStatusWriter{}
 					mgr.GetClientReturns(&client)
@@ -317,12 +317,12 @@ var _ = Describe("ErrandReconciler", func() {
 				)
 
 				BeforeEach(func() {
-					c1 := env.DefaultConfigMap("config1")
+					c1 := env.DefaultConfigMap("config1", qJob.Namespace)
 					configMap = &c1
-					s1 := env.DefaultSecret("secret1")
+					s1 := env.DefaultSecret("secret1", qJob.Namespace)
 					secret = &s1
 
-					serviceAccount = env.DefaultServiceAccount("persist-output-service-account")
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					qJobName = "fake-qj"
 					qJob = env.AutoErrandQuarksJob(qJobName)
 					qJob.Spec.Template = env.ConfigJobTemplate()

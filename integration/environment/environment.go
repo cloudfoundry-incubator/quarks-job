@@ -1,6 +1,7 @@
 package environment
 
 import (
+	"context"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -127,7 +128,7 @@ func (e *Environment) SetupServiceAccount() error {
 	}
 
 	client := e.Clientset.CoreV1().ServiceAccounts(e.Namespace)
-	if _, err := client.Create(serviceAccount); err != nil {
+	if _, err := client.Create(context.Background(), serviceAccount, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return errors.Wrapf(err, "could not create service account")
 		}
@@ -156,7 +157,7 @@ func (e *Environment) SetupServiceAccount() error {
 	}
 
 	rbac := e.Clientset.RbacV1().RoleBindings(e.Namespace)
-	if _, err := rbac.Create(roleBinding); err != nil {
+	if _, err := rbac.Create(context.Background(), roleBinding, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return errors.Wrapf(err, "could not create role binding")
 		}
@@ -166,7 +167,7 @@ func (e *Environment) SetupServiceAccount() error {
 
 // ApplyCRDs applies the CRDs to the cluster
 func ApplyCRDs(kubeConfig *rest.Config) error {
-	err := operator.ApplyCRDs(kubeConfig)
+	err := operator.ApplyCRDs(context.Background(), kubeConfig)
 	if err != nil {
 		return err
 	}

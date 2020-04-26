@@ -1,6 +1,7 @@
 package quarksjob_test
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"os"
@@ -37,7 +38,7 @@ var _ = Describe("OutputPersistor", func() {
 
 	BeforeEach(func() {
 		namespace = "test"
-		qJob, _, pod = env.DefaultQuarksJobWithSucceededJob("foo")
+		qJob, _, pod = env.DefaultQuarksJobWithSucceededJob("foo", namespace)
 		clientSet = clientfake.NewSimpleClientset()
 		versionedClientSet = clientsetfake.NewSimpleClientset()
 		_, log := helper.NewTestLogger()
@@ -52,9 +53,10 @@ var _ = Describe("OutputPersistor", func() {
 
 	JustBeforeEach(func() {
 		// Create necessary kube resources
-		_, err := versionedClientSet.QuarksjobV1alpha1().QuarksJobs(namespace).Create(qJob)
+		_, err := versionedClientSet.QuarksjobV1alpha1().QuarksJobs(namespace).Create(context.Background(), qJob, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		_, err = clientSet.CoreV1().Pods(namespace).Create(pod)
+
+		_, err = clientSet.CoreV1().Pods(namespace).Create(context.Background(), pod, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -83,9 +85,9 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("does not persist output", func() {
-					err := po.Persist()
+					err := po.Persist(context.Background())
 					Expect(err).NotTo(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox", metav1.GetOptions{})
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -103,9 +105,9 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("creates the secret and persists the output and have the configured labels", func() {
-					err := po.Persist()
+					err := po.Persist(context.Background())
 					Expect(err).NotTo(HaveOccurred())
-					secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					secret, _ := clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
 					Expect(secret.Labels).Should(Equal(map[string]string{
 						"quarks.cloudfoundry.org/container-name": "busybox",
@@ -133,9 +135,9 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("creates versioned manifest secret and persists the output", func() {
-					err := po.Persist()
+					err := po.Persist(context.Background())
 					Expect(err).NotTo(HaveOccurred())
-					secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox-v1", metav1.GetOptions{})
+					secret, _ := clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox-v1", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
 					Expect(secret.Labels).Should(Equal(map[string]string{
 						"quarks.cloudfoundry.org/entanglement":   "foo-busybox",
@@ -175,9 +177,9 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("does persist the output", func() {
-					err := po.Persist()
+					err := po.Persist(context.Background())
 					Expect(err).NotTo(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox", metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
@@ -212,13 +214,13 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("does not persist output", func() {
-					err := po.Persist()
+					err := po.Persist(context.Background())
 					Expect(err).NotTo(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox", metav1.GetOptions{})
 					Expect(err).To(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("nats", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "nats", metav1.GetOptions{})
 					Expect(err).To(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("nuts", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "nuts", metav1.GetOptions{})
 					Expect(err).To(HaveOccurred())
 				})
 			})
@@ -231,13 +233,13 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("creates the secret and persists the output and have the configured labels", func() {
-					err := po.Persist()
+					err := po.Persist(context.Background())
 					Expect(err).NotTo(HaveOccurred())
-					secret, _ := clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					secret, _ := clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
-					secret, _ = clientSet.CoreV1().Secrets(namespace).Get("fake-nats", metav1.GetOptions{})
+					secret, _ = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "fake-nats", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
-					secret, _ = clientSet.CoreV1().Secrets(namespace).Get("bar-nuts-v1", metav1.GetOptions{})
+					secret, _ = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "bar-nuts-v1", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
 				})
 			})
@@ -287,10 +289,10 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("creates a secret per each key/value of the given input file", func() {
-					Expect(po.Persist()).NotTo(HaveOccurred())
+					Expect(po.Persist(context.Background())).NotTo(HaveOccurred())
 
-					Expect(clientSet.CoreV1().Secrets(namespace).Get("link-nats-deployment-nats-nats", metav1.GetOptions{})).ShouldNot(BeNil())
-					Expect(clientSet.CoreV1().Secrets(namespace).Get("link-nats-deployment-nats-nuts", metav1.GetOptions{})).ShouldNot(BeNil())
+					Expect(clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "link-nats-deployment-nats-nats", metav1.GetOptions{})).ShouldNot(BeNil())
+					Expect(clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "link-nats-deployment-nats-nuts", metav1.GetOptions{})).ShouldNot(BeNil())
 				})
 			})
 		})
@@ -316,13 +318,13 @@ var _ = Describe("OutputPersistor", func() {
 				})
 
 				It("does persist the output", func() {
-					err := po.Persist()
+					err := po.Persist(context.Background())
 					Expect(err).NotTo(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("foo-busybox", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox", metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("fake-nats", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "fake-nats", metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
-					_, err = clientSet.CoreV1().Secrets(namespace).Get("bar-nuts-v1", metav1.GetOptions{})
+					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "bar-nuts-v1", metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})

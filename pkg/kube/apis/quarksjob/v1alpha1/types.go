@@ -27,9 +27,6 @@ var (
 	LabelQJobName = fmt.Sprintf("%s/qjob-name", apis.GroupName)
 	// LabelTriggeringPod key for label, which is set to the UID of the pod that triggered an QuarksJob
 	LabelTriggeringPod = fmt.Sprintf("%s/triggering-pod", apis.GroupName)
-
-	// LabelEntanglementKey to identify a quarks link
-	LabelEntanglementKey = fmt.Sprintf("%s/entanglement", apis.GroupName)
 )
 
 // QuarksJobSpec defines the desired state of QuarksJob

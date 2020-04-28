@@ -61,6 +61,7 @@ var rootCmd = &cobra.Command{
 		cfg.ServiceAccount = serviceAccount
 
 		cmd.CtxTimeOut(cfg.Config)
+		cmd.Meltdown(cfg.Config)
 
 		ctx := ctxlog.NewParentContext(log)
 
@@ -113,6 +114,7 @@ func init() {
 	cmd.WatchNamespaceFlags(pf, argToEnv)
 	cmd.DockerImageFlags(pf, argToEnv, "quarks-job", version.Version)
 	cmd.ApplyCRDsFlags(pf, argToEnv)
+	cmd.MeltdownFlags(pf, argToEnv)
 
 	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
 	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))

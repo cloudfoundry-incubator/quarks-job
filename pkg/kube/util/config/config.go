@@ -17,11 +17,7 @@ type Config struct {
 // NewDefaultConfig returns a new Config for a manager of controllers
 func NewDefaultConfig(fs afero.Fs) *Config {
 	return &Config{
-		Config: &sharedcfg.Config{
-			MeltdownDuration:     sharedcfg.MeltdownDuration,
-			MeltdownRequeueAfter: sharedcfg.MeltdownRequeueAfter,
-			Fs:                   fs,
-		},
+		Config: sharedcfg.NewDefaultConfig(fs),
 	}
 }
 

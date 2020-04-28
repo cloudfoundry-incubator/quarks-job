@@ -117,6 +117,26 @@ var _ = Describe("OutputPersistor", func() {
 						"quarks.cloudfoundry.org/entanglement":   "foo-busybox",
 						"key":                                    "value"}))
 				})
+
+				Context("when the output file is not json valid", func() {
+
+					BeforeEach(func() {
+						// Create faulty output file
+						dataJSON = []byte("{\"hello\"= \"world\"}")
+						err := ioutil.WriteFile(filepath.Join(tmpDir, "busybox", "faultyoutput.json"), dataJSON, 0755)
+						Expect(err).NotTo(HaveOccurred())
+
+						qJob.Spec.Output.OutputMap = qjv1a1.OutputMap{
+							"busybox": qjv1a1.NewFileToSecret("faultyoutput.json", "foo-busybox", false, map[string]string{}),
+						}
+					})
+
+					It("should throw out an error", func() {
+						err := po.Persist(context.Background())
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("failed to convert output file"))
+					})
+				})
 			})
 
 			Context("when versioned output is enabled", func() {

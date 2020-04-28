@@ -99,7 +99,7 @@ var _ = Describe("OutputPersistor", func() {
 							"key": "value",
 						},
 						OutputMap: qjv1a1.OutputMap{
-							"busybox": qjv1a1.NewFileToSecret("output.json", "foo-busybox", false),
+							"busybox": qjv1a1.NewFileToSecret("output.json", "foo-busybox", false, nil),
 						},
 					}
 				})
@@ -263,7 +263,7 @@ var _ = Describe("OutputPersistor", func() {
 				BeforeEach(func() {
 					qJob.Spec.Output = &qjv1a1.Output{
 						OutputMap: qjv1a1.OutputMap{
-							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false),
+							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false, nil),
 						},
 					}
 

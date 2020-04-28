@@ -150,24 +150,26 @@ func (q *QuarksJob) GetNamespacedName() string {
 }
 
 // NewFileToSecret returns a FilesToSecrets with just one mapping
-func NewFileToSecret(fileName string, secretName string, versioned bool) FilesToSecrets {
+func NewFileToSecret(fileName string, secretName string, versioned bool, additionalLabels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
-			Name:              secretName,
-			Versioned:         versioned,
-			PersistenceMethod: PersistOneToOne,
+			Name:                   secretName,
+			Versioned:              versioned,
+			PersistenceMethod:      PersistOneToOne,
+			AdditionalSecretLabels: additionalLabels,
 		},
 	}
 }
 
 // NewFileToSecrets uses a fan out style and creates one secret per key/value
 // pair in the given input file
-func NewFileToSecrets(fileName string, secretName string, versioned bool) FilesToSecrets {
+func NewFileToSecrets(fileName string, secretName string, versioned bool, additionalLabels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
-			Name:              secretName,
-			Versioned:         versioned,
-			PersistenceMethod: PersistUsingFanOut,
+			Name:                   secretName,
+			Versioned:              versioned,
+			PersistenceMethod:      PersistUsingFanOut,
+			AdditionalSecretLabels: additionalLabels,
 		},
 	}
 }

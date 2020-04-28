@@ -154,14 +154,14 @@ func (po *OutputPersistor) persistContainer(
 							errorContainerChannel <- err
 						}
 
-						if err := po.createSecret(ctx, qJob, container, secretName, secretData, map[string]string{}, options.Versioned); err != nil {
+						if err := po.createSecret(ctx, qJob, container, secretName, secretData, options.AdditionalSecretLabels, options.Versioned); err != nil {
 							errorContainerChannel <- err
 						}
 					}
 
 				default:
 					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
-					if err := po.createSecret(ctx, qJob, container, options.Name, data, map[string]string{}, options.Versioned); err != nil {
+					if err := po.createSecret(ctx, qJob, container, options.Name, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
 						errorContainerChannel <- err
 					}
 				}

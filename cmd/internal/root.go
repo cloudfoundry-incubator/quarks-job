@@ -26,7 +26,7 @@ import (
 var log *zap.SugaredLogger
 
 func wrapError(err error, msg string) error {
-	return errors.Wrap(err, "quarks-job command failed. "+msg)
+	return errors.Wrapf(err, "quarks-job command failed. %s", msg)
 }
 
 var rootCmd = &cobra.Command{

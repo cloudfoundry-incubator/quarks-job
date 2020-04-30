@@ -42,6 +42,8 @@ var _ = Describe("CLI", func() {
   -c, --kubeconfig string                 \(KUBECONFIG\) Path to a kubeconfig, not required in-cluster
   -l, --log-level string                  \(LOG_LEVEL\) Only print log messages from this level onward \(trace,debug,info,warn\) \(default "debug"\)
       --max-workers int                   \(MAX_WORKERS\) Maximum number of workers concurrently running the controller \(default 1\)
+      --meltdown-duration int             \(MELTDOWN_DURATION\) Duration \(in seconds\) of the meltdown period, in which we postpone further reconciles for the same resource \(default 60\)
+      --meltdown-requeue-after int        \(MELTDOWN_REQUEUE_AFTER\) Duration \(in seconds\) for which we delay the requeuing of the reconcile \(default 30\)
       --service-account string            \(SERVICE_ACCOUNT\) service acount for the persist output container in the created jobs \(default "default"\)
   -a, --watch-namespace string            \(WATCH_NAMESPACE\) Act on this namespace, watch for BOSH deployments and create resources \(default "staging"\)
 

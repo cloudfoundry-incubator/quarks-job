@@ -27,9 +27,6 @@ var (
 	LabelQJobName = fmt.Sprintf("%s/qjob-name", apis.GroupName)
 	// LabelTriggeringPod key for label, which is set to the UID of the pod that triggered an QuarksJob
 	LabelTriggeringPod = fmt.Sprintf("%s/triggering-pod", apis.GroupName)
-
-	// LabelEntanglementKey to identify a quarks link
-	LabelEntanglementKey = fmt.Sprintf("%s/entanglement", apis.GroupName)
 )
 
 // QuarksJobSpec defines the desired state of QuarksJob
@@ -154,26 +151,28 @@ func (q *QuarksJob) GetNamespacedName() string {
 }
 
 // NewFileToSecret returns a FilesToSecrets with just one mapping
-func NewFileToSecret(fileName string, secretName string, versioned bool, annotations map[string]string) FilesToSecrets {
+func NewFileToSecret(fileName string, secretName string, versioned bool, annotations map[string]string, labels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
 			Name:                        secretName,
 			Versioned:                   versioned,
 			PersistenceMethod:           PersistOneToOne,
 			AdditionalSecretAnnotations: annotations,
+      AdditionalSecretLabels:      labels,
 		},
 	}
 }
 
 // NewFileToSecrets uses a fan out style and creates one secret per key/value
 // pair in the given input file
-func NewFileToSecrets(fileName string, secretName string, versioned bool, annotations map[string]string) FilesToSecrets {
+func NewFileToSecrets(fileName string, secretName string, versioned bool, annotations map[string]string, labels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
 			Name:                        secretName,
 			Versioned:                   versioned,
 			PersistenceMethod:           PersistUsingFanOut,
 			AdditionalSecretAnnotations: annotations,
+      AdditionalSecretLabels:      labels,
 		},
 	}
 }

@@ -94,12 +94,15 @@ var _ = Describe("OutputPersistor", func() {
 
 			Context("when output persistence is configured", func() {
 				BeforeEach(func() {
+					additionalLabels := map[string]string{
+						"quarks.cloudfoundry.org/entanglement": "foo-busybox",
+					}
 					qJob.Spec.Output = &qjv1a1.Output{
 						SecretLabels: map[string]string{
 							"key": "value",
 						},
 						OutputMap: qjv1a1.OutputMap{
-							"busybox": qjv1a1.NewFileToSecret("output.json", "foo-busybox", false, nil),
+							"busybox": qjv1a1.NewFileToSecret("output.json", "foo-busybox", false, nil, additionalLabels),
 						},
 					}
 				})
@@ -114,9 +117,31 @@ var _ = Describe("OutputPersistor", func() {
 						"quarks.cloudfoundry.org/entanglement":   "foo-busybox",
 						"key":                                    "value"}))
 				})
+
+				Context("when the output file is not json valid", func() {
+					BeforeEach(func() {
+						// Create faulty output file
+						faultydataJSON := []byte("{\"hello\"= \"world\"}")
+						err := ioutil.WriteFile(filepath.Join(tmpDir, "busybox", "faultyoutput.json"), faultydataJSON, 0755)
+						Expect(err).NotTo(HaveOccurred())
+
+						qJob.Spec.Output.OutputMap = qjv1a1.OutputMap{
+							"busybox": qjv1a1.NewFileToSecret("faultyoutput.json", "foo-busybox", false, map[string]string{}, map[string]string{}),
+						}
+					})
+
+					It("should throw out an error", func() {
+						err := po.Persist(context.Background())
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("failed to convert output file"))
+					})
+				})
 			})
 
 			Context("when versioned output is enabled", func() {
+				additionalLabels := map[string]string{
+					"quarks.cloudfoundry.org/entanglement": "foo-busybox",
+				}
 				BeforeEach(func() {
 					qJob.Spec.Output = &qjv1a1.Output{
 						SecretLabels: map[string]string{
@@ -126,8 +151,9 @@ var _ = Describe("OutputPersistor", func() {
 						OutputMap: qjv1a1.OutputMap{
 							"busybox": qjv1a1.FilesToSecrets{
 								"output.json": qjv1a1.SecretOptions{
-									Name:      "foo-busybox",
-									Versioned: true,
+									Name:                   "foo-busybox",
+									Versioned:              true,
+									AdditionalSecretLabels: additionalLabels,
 								},
 							},
 						},
@@ -183,6 +209,10 @@ var _ = Describe("OutputPersistor", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
+		})
+
+		AfterEach(func() {
+			Expect(os.RemoveAll(tmpDir)).ToNot(HaveOccurred())
 		})
 	})
 
@@ -263,7 +293,7 @@ var _ = Describe("OutputPersistor", func() {
 				BeforeEach(func() {
 					qJob.Spec.Output = &qjv1a1.Output{
 						OutputMap: qjv1a1.OutputMap{
-							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false, nil),
+							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false, nil, map[string]string{}),
 						},
 					}
 
@@ -299,6 +329,9 @@ var _ = Describe("OutputPersistor", func() {
 
 		Context("With a failed Job", func() {
 			BeforeEach(func() {
+				err := ioutil.WriteFile(filepath.Join(tmpDir, "busybox", "output.json"), dataJSON, 0755)
+				Expect(err).NotTo(HaveOccurred())
+
 				pod.Status.ContainerStatuses = []corev1.ContainerStatus{
 					{
 						Name: "busybox",
@@ -327,6 +360,10 @@ var _ = Describe("OutputPersistor", func() {
 					_, err = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "bar-nuts-v1", metav1.GetOptions{})
 					Expect(err).NotTo(HaveOccurred())
 				})
+			})
+
+			AfterEach(func() {
+				Expect(os.RemoveAll(tmpDir)).ToNot(HaveOccurred())
 			})
 		})
 	})

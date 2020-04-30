@@ -148,7 +148,6 @@ func (po *OutputPersistor) persistContainer(
 					po.log.Debugf("container '%s': creating secrets with prefix '%s' from '%s'", container.Name, options.Name, filePath)
 					for key, value := range data {
 						secretName := options.FanOutName(key)
-						options.AdditionalSecretLabels[qjv1a1.LabelEntanglementKey] = secretName
 
 						var secretData map[string]string
 						if err := json.Unmarshal([]byte(value), &secretData); err != nil {
@@ -162,7 +161,6 @@ func (po *OutputPersistor) persistContainer(
 
 				default:
 					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
-					options.AdditionalSecretLabels[qjv1a1.LabelEntanglementKey] = options.Name
 					if err := po.createSecret(ctx, qJob, container, options.Name, options.AdditionalSecretAnnotations, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
 						errorContainerChannel <- err
 					}

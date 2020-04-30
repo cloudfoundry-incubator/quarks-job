@@ -102,7 +102,7 @@ var _ = Describe("OutputPersistor", func() {
 							"key": "value",
 						},
 						OutputMap: qjv1a1.OutputMap{
-							"busybox": qjv1a1.NewFileToSecret("output.json", "foo-busybox", false, additionalLabels),
+							"busybox": qjv1a1.NewFileToSecret("output.json", "foo-busybox", false, nil, additionalLabels),
 						},
 					}
 				})
@@ -126,7 +126,7 @@ var _ = Describe("OutputPersistor", func() {
 						Expect(err).NotTo(HaveOccurred())
 
 						qJob.Spec.Output.OutputMap = qjv1a1.OutputMap{
-							"busybox": qjv1a1.NewFileToSecret("faultyoutput.json", "foo-busybox", false, map[string]string{}),
+							"busybox": qjv1a1.NewFileToSecret("faultyoutput.json", "foo-busybox", false, map[string]string{}, map[string]string{}),
 						}
 					})
 
@@ -293,7 +293,7 @@ var _ = Describe("OutputPersistor", func() {
 				BeforeEach(func() {
 					qJob.Spec.Output = &qjv1a1.Output{
 						OutputMap: qjv1a1.OutputMap{
-							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false, map[string]string{}),
+							"busybox": qjv1a1.NewFileToSecrets("provides.json", "link-nats-deployment", false, nil, map[string]string{}),
 						},
 					}
 

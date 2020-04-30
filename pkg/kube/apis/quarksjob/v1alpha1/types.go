@@ -75,10 +75,11 @@ type Trigger struct {
 
 // SecretOptions specify the name of the output secret and if it's versioned
 type SecretOptions struct {
-	Name                   string            `json:"name,omitempty"`
-	AdditionalSecretLabels map[string]string `json:"secretLabels,omitempty"`
-	Versioned              bool              `json:"versioned,omitempty"`
-	PersistenceMethod      PersistenceMethod `json:"persistencemethod,omitempty"`
+	Name                        string            `json:"name,omitempty"`
+	AdditionalSecretLabels      map[string]string `json:"secretLabels,omitempty"`
+	AdditionalSecretAnnotations map[string]string `json:"secretAnnotations,omitempty"`
+	Versioned                   bool              `json:"versioned,omitempty"`
+	PersistenceMethod           PersistenceMethod `json:"persistencemethod,omitempty"`
 }
 
 // FanOutName returns the name of the secret for PersistenceMethod 'fan-out'
@@ -151,26 +152,28 @@ func (q *QuarksJob) GetNamespacedName() string {
 }
 
 // NewFileToSecret returns a FilesToSecrets with just one mapping
-func NewFileToSecret(fileName string, secretName string, versioned bool, additionalLabels map[string]string) FilesToSecrets {
+func NewFileToSecret(fileName string, secretName string, versioned bool, annotations map[string]string, labels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
-			Name:                   secretName,
-			Versioned:              versioned,
-			PersistenceMethod:      PersistOneToOne,
-			AdditionalSecretLabels: additionalLabels,
+			Name:                        secretName,
+			Versioned:                   versioned,
+			PersistenceMethod:           PersistOneToOne,
+			AdditionalSecretAnnotations: annotations,
+      AdditionalSecretLabels:      labels,
 		},
 	}
 }
 
 // NewFileToSecrets uses a fan out style and creates one secret per key/value
 // pair in the given input file
-func NewFileToSecrets(fileName string, secretName string, versioned bool, additionalLabels map[string]string) FilesToSecrets {
+func NewFileToSecrets(fileName string, secretName string, versioned bool, annotations map[string]string, labels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
-			Name:                   secretName,
-			Versioned:              versioned,
-			PersistenceMethod:      PersistUsingFanOut,
-			AdditionalSecretLabels: additionalLabels,
+			Name:                        secretName,
+			Versioned:                   versioned,
+			PersistenceMethod:           PersistUsingFanOut,
+			AdditionalSecretAnnotations: annotations,
+      AdditionalSecretLabels:      labels,
 		},
 	}
 }

@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 version=$ARTIFACT_VERSION
 
 pushd updated

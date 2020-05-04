@@ -87,13 +87,14 @@ jobs:
       install: []
       script: echo "Publishing helm chart"
       before_deploy:
+        - git fetch --unshallow
         - . bin/include/versioning
         - ./bin/build-helm
         - mkdir helm-charts
         - cp -a helm/quarks-job*.tgz helm-charts/
         - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
         - git push --quiet https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-job.git $ARTIFACT_VERSION > /dev/null 2>&1
-        - export ARTIFACT_VERSION=$ARTIFACT_VERSION
+        - export ARTIFACT_VERSION
       deploy:
         - provider: script
           script:

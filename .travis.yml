@@ -77,41 +77,31 @@ jobs:
       name: unit
       env: KUBE=none
 
-    - stage: Publishing docker image
+    - stage: Publishing
       # security: only on master, or if PR repo is our repo
       if: branch = master OR (type = pull_request AND head_repo = repo)
       # do not inherit
       install: []
       before_script: []
-      script: echo "Publishing docker image"
-      deploy:
-        provider: script
-        script: bash -c "make publish-image"
-        skip_cleanup: true
-        on:
-          branch: master
-
-    - stage: Publishing helm chart
-      # security: only on master, or if PR repo is our repo
-      if: branch = master OR (type = pull_request AND head_repo = repo)
-      # do not inherit
-      install: []
-      script: echo "Publishing helm chart"
+      script: echo "Publishing"
       before_deploy:
         - git fetch --unshallow
         - . bin/include/versioning
-        - ./bin/build-helm
-        - mkdir helm-charts
-        - cp -a helm/quarks-job*.tgz helm-charts/
-        - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
-        - git push --quiet https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-job.git $ARTIFACT_VERSION > /dev/null 2>&1
-        - export ARTIFACT_VERSION
       deploy:
         - provider: script
           script:
-            git clone https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-helm.git ./updated/ &&
-            cp -a helm-charts/quarks-job*.tgz updated/ &&
-            ./bin/publish-helm-repo
-          skip_cleanup: true
-          on:
-            branch: master
+            - bin/build-image
+            - bin/publish-image
+
+        - provider: script
+          script:
+            - ./bin/build-helm
+            - |
+              git clone https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-helm.git ./updated/ &&
+              cp -a helm/quarks-job*.tgz updated/ &&
+              ./bin/publish-helm-repo
+
+        - provider: script
+          script:
+            - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
+            - git push --quiet https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-job.git $ARTIFACT_VERSION > /dev/null 2>&1

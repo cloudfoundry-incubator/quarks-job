@@ -102,6 +102,7 @@ jobs:
               ./bin/publish-helm-repo
 
         - provider: script
+          if: branch = master AND type = push
           script:
             - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
             - git push --quiet https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-job.git $ARTIFACT_VERSION > /dev/null 2>&1

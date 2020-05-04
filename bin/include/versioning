@@ -1,4 +1,21 @@
 #!/bin/bash
 
+TRAVIS_PULL_REQUEST=${TRAVIS_PULL_REQUEST-}
+TRAVIS_COMMIT=${TRAVIS_COMMIT-}
 COMMIT_NUMBER=$(git rev-list --first-parent --count HEAD)
-ARTIFACT_VERSION="v0.0.${COMMIT_NUMBER}"
+
+if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then
+  # travis is building on master
+  ARTIFACT_VERSION="v1.0.$COMMIT_NUMBER"
+
+elif [ -n "${TRAVIS_PULL_REQUEST:-}" ]; then
+  # this is running on a travis PR
+  ARTIFACT_VERSION="v0.0.$TRAVIS_PULL_REQUEST-g$TRAVIS_COMMIT"
+
+else
+  # this is not running in travis
+  COMMIT=$(git describe --tags --long | awk -F - '{ print $NF }')
+  ARTIFACT_VERSION="v0.0.$COMMIT_NUMBER-$COMMIT"
+fi
+
+export ARTIFACT_VERSION

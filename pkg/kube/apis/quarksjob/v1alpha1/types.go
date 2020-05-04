@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	batchv1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/apis"
@@ -15,6 +16,15 @@ import (
 // Run "make generate" after modifying this file
 
 var (
+	// LabelNamespace key for label on a namespace to indicate that cf-operator is monitoring it.
+	// Can be used as an ID, to keep operators in a cluster from intefering with each other.
+	LabelNamespace = fmt.Sprintf("%s/monitored", apis.GroupName)
+
+	// LabelServiceAccount key for label on a namespace, which names the
+	// service account, that will be injected to capture job output into a
+	// secret
+	LabelServiceAccount = fmt.Sprintf("%s/qjob-service-account", apis.GroupName)
+
 	// LabelPersistentSecretContainer is a label used for persisted secrets,
 	// identifying the container that created them
 	LabelPersistentSecretContainer = fmt.Sprintf("%s/container-name", apis.GroupName)
@@ -149,6 +159,18 @@ func (q *QuarksJob) IsAutoErrand() bool {
 // GetNamespacedName returns the resource name with its namespace
 func (q *QuarksJob) GetNamespacedName() string {
 	return fmt.Sprintf("%s/%s", q.Namespace, q.Name)
+}
+
+// IsMonitoredNamespace returns true if the namespace has all the necessary
+// labels and should be included in controller watches.
+func IsMonitoredNamespace(n *corev1.Namespace, id string) bool {
+	if _, ok := n.Labels[LabelServiceAccount]; !ok {
+		return false
+	}
+	if value, ok := n.Labels[LabelNamespace]; ok && value == id {
+		return true
+	}
+	return false
 }
 
 // NewFileToSecret returns a FilesToSecrets with just one mapping

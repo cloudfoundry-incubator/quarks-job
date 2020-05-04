@@ -14,9 +14,8 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
-	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
@@ -28,7 +27,7 @@ const (
 	mountPath                 = "/mnt/quarks/"
 	// EnvNamespace is the namespace in which the jobs run, used by
 	// persist-output to create the secrets
-	EnvNamespace = "WATCH_NAMESPACE"
+	EnvNamespace = "NAMESPACE"
 )
 
 type setOwnerReferenceFunc func(owner, object metav1.Object, scheme *runtime.Scheme) error
@@ -46,7 +45,7 @@ func NewJobCreator(client crc.Client, scheme *runtime.Scheme, f setOwnerReferenc
 
 // JobCreator is the interface that wraps the basic Create method.
 type JobCreator interface {
-	Create(ctx context.Context, qJob qjv1a1.QuarksJob, namespace string) (retry bool, err error)
+	Create(ctx context.Context, qJob qjv1a1.QuarksJob) (retry bool, err error)
 }
 
 type jobCreatorImpl struct {
@@ -59,10 +58,16 @@ type jobCreatorImpl struct {
 
 // Create satisfies the JobCreator interface. It creates a Job to complete ExJob. It returns the
 // retry if one of the references are not present.
-func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, namespace string) (bool, error) {
+func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob) (bool, error) {
+	namespace := qJob.Namespace
 	template := qJob.Spec.Template.DeepCopy()
 
-	serviceAccountVolume, serviceAccountVolumeMount, err := j.serviceAccountMount(ctx, namespace, j.config.ServiceAccount)
+	serviceAccount, err := j.getServiceAccountName(ctx, namespace)
+	if err != nil {
+		return false, err
+	}
+
+	serviceAccountVolume, serviceAccountVolumeMount, err := j.serviceAccountMount(ctx, namespace, serviceAccount)
 	if err != nil {
 		return false, err
 	}
@@ -70,12 +75,12 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob, names
 	// Set serviceaccount to the container
 	template.Spec.Template.Spec.Volumes = append(template.Spec.Template.Spec.Volumes, *serviceAccountVolume)
 
-	ctxlog.Debugf(ctx, "Add persist output container, using DOCKER_IMAGE_TAG=%s", sharedcfg.GetOperatorDockerImage())
+	ctxlog.Debugf(ctx, "Add persist output container, using DOCKER_IMAGE_TAG=%s", config.GetOperatorDockerImage())
 	// Create a container for persisting output
 	outputPersistContainer := corev1.Container{
 		Name:            "output-persist",
-		Image:           sharedcfg.GetOperatorDockerImage(),
-		ImagePullPolicy: sharedcfg.GetOperatorImagePullPolicy(),
+		Image:           config.GetOperatorDockerImage(),
+		ImagePullPolicy: config.GetOperatorImagePullPolicy(),
 		Args:            []string{"persist-output"},
 		Env: []corev1.EnvVar{
 			{

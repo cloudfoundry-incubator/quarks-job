@@ -24,9 +24,8 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	. "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
-	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
@@ -46,6 +45,8 @@ var _ = Describe("ErrandReconciler", func() {
 			setOwnerReferenceCallCount int
 		)
 
+		namespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default", Labels: map[string]string{qjv1a1.LabelServiceAccount: "persist-output"}}}
+
 		newRequest := func(qJob qjv1a1.QuarksJob) reconcile.Request {
 			return reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -57,6 +58,9 @@ var _ = Describe("ErrandReconciler", func() {
 
 		clientGetStub := func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 			switch obj := obj.(type) {
+			case *corev1.Namespace:
+				namespace.DeepCopyInto(obj)
+				return nil
 			case *qjv1a1.QuarksJob:
 				qJob.DeepCopyInto(obj)
 				return nil
@@ -74,7 +78,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 		JustBeforeEach(func() {
 			ctx := ctxlog.NewParentContext(log)
-			config := config.NewConfigWithTimeout(10 * time.Second)
+			config := helper.NewConfigWithTimeout(10 * time.Second)
 			reconciler = NewErrandReconciler(
 				ctx,
 				config,
@@ -255,7 +259,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 					result, err := act()
 					Expect(err).ToNot(HaveOccurred())
-					Expect(result.RequeueAfter).To(Equal(sharedcfg.MeltdownRequeueAfter))
+					Expect(result.RequeueAfter).To(Equal(config.MeltdownRequeueAfter))
 				})
 
 				It("handles an error when updating job's strategy failed", func() {
@@ -338,6 +342,9 @@ var _ = Describe("ErrandReconciler", func() {
 				It("should trigger the job", func() {
 					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 						switch obj := obj.(type) {
+						case *corev1.Namespace:
+							namespace.DeepCopyInto(obj)
+							return nil
 						case *qjv1a1.QuarksJob:
 							qJob.DeepCopyInto(obj)
 							return nil
@@ -373,6 +380,9 @@ var _ = Describe("ErrandReconciler", func() {
 				It("should skip when references are missing", func() {
 					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 						switch obj := obj.(type) {
+						case *corev1.Namespace:
+							namespace.DeepCopyInto(obj)
+							return nil
 						case *qjv1a1.QuarksJob:
 							qJob.DeepCopyInto(obj)
 							return nil
@@ -390,6 +400,9 @@ var _ = Describe("ErrandReconciler", func() {
 
 					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 						switch obj := obj.(type) {
+						case *corev1.Namespace:
+							namespace.DeepCopyInto(obj)
+							return nil
 						case *qjv1a1.QuarksJob:
 							qJob.DeepCopyInto(obj)
 							return nil

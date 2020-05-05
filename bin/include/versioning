@@ -10,7 +10,8 @@ if [ "$TRAVIS_BRANCH" = "master" ]; then
 
 elif [ -n "${TRAVIS_BRANCH:-}" ]; then
   # this is running on a travis push
-  ARTIFACT_VERSION="v0.0.$COMMIT_NUMBER-g$TRAVIS_COMMIT"
+  sha=$(git rev-parse --short "$TRAVIS_COMMIT")
+  ARTIFACT_VERSION="v0.0.$COMMIT_NUMBER-g$sha"
 
 else
   COMMIT=$(git describe --tags --long | awk -F - '{ print $NF }')

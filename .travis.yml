@@ -26,12 +26,6 @@ stages:
   - unit
   - test
 
-# Avoid too many builds, works for PRs too, as this is also their base branch.
-# Otherwise opening a PR from a branch would trigger two builds.
-branches:
-  only:
-  - master
-
 install:
   # Download go dev dependencies
   - export PATH=$PATH:$GOPATH/bin
@@ -39,6 +33,9 @@ install:
   - go get github.com/mattn/goveralls
   - go get github.com/modocache/gover
 
+# Avoid too many builds.
+# Otherwise opening a PR from a local branch would trigger two builds.
+if: type = push OR (type = pull_request AND head_repo != repo)
 
 # The matrix build for all Kubernetes versions
 before_script:
@@ -78,8 +75,8 @@ jobs:
       env: KUBE=none
 
     - stage: Publishing
-      # security: only on master, or if PR repo is our repo
-      if: branch = master OR (type = pull_request AND head_repo = repo)
+      # security: only push
+      if: type = push
       # do not inherit
       install: []
       before_script: []
@@ -102,6 +99,7 @@ jobs:
               ./bin/publish-helm-repo
 
         - provider: script
+          # only master creates tags
           if: branch = master AND type = push
           script:
             - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"

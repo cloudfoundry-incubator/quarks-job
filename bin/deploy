@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -euo pipefail
+
+GIT_ROOT=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
+. "${GIT_ROOT}/bin/include/versioning"
+
+if [ -z ${ARTIFACT_VERSION+x} ]; then
+  echo "missing ARTIFACT_VERSION"
+  exit 1
+fi
+
+if [ -z ${GITHUB_TOKEN+x} ]; then
+  echo "missing GITHUB_TOKEN"
+  exit 1
+fi
+
+if [ -z ${DOCKER_PASSWORD+x} ]; then
+  echo "missing DOCKER_PASSWORD"
+  exit 1
+fi
+
+echo "Publish Docker Image"
+"$GIT_ROOT"/bin/build-image
+"$GIT_ROOT"/bin/publish-image
+
+echo "Publish Helm Chart"
+"$GIT_ROOT"/bin/build-helm
+
+base_url="https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator"
+git clone "$base_url/quarks-helm.git" ./updated/ && \
+  cp -a helm/quarks-job*.tgz updated/ && \
+  "$GIT_ROOT"/bin/publish-helm-repo
+
+echo "Tag Github Commit"
+git tag -a "$ARTIFACT_VERSION" -m "tag $ARTIFACT_VERSION"
+git push --quiet "$base_url/quarks-job.git" "$ARTIFACT_VERSION" > /dev/null 2>&1

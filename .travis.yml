@@ -14,11 +14,13 @@ env:
   global:
     - GOPROXY="https://proxy.golang.org"
     - COVERAGE=true
+    # for Helm
+    - DESIRED_VERSION="v3.1.0"
   jobs:
-    - KUBE=1.14.10
-    - KUBE=1.15.7
-    - KUBE=1.16.4
-    - KUBE=1.17.0
+    # - KUBE=1.14.10
+    # - KUBE=1.15.7
+    # - KUBE=1.16.4
+    # - KUBE=1.17.0
     - KUBE=1.18.0
 
 stages:
@@ -37,24 +39,24 @@ install:
 # Otherwise opening a PR from a local branch would trigger two builds.
 if: type = push OR (type = pull_request AND head_repo != repo)
 
-# The matrix build for all Kubernetes versions
 before_script:
-  # Download and install kubectl
-  - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-  # Download and install KinD
-  - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
-  # Create a new Kubernetes cluster using KinD
-  - kind create cluster --image kindest/node:v$KUBE --name kind$KUBE --wait 240s
-  - kubectl version
-  # Download and install helm
-  - export DESIRED_VERSION="v3.1.0"
-  - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh
-  - chmod 700 get_helm.sh
-  - sudo ./get_helm.sh
-  # yes, heredocs are broken in before_script: https://travis-ci.community/t/multiline-commands-have-two-spaces-in-front-breaks-heredocs/2756
+  # # Download and install kubectl
+  # - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+  # # Download and install KinD
+  # - curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-linux-amd64 && chmod +x kind && sudo mv kind /usr/local/bin/
+  # # Create a new Kubernetes cluster using KinD
+  # - kind create cluster --image kindest/node:v$KUBE --name kind$KUBE --wait 240s
+  # - kubectl version
+  # # Download and install helm
+  # - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh
+  # - chmod 700 get_helm.sh
+  # - sudo ./get_helm.sh
+
+# The matrix build for all Kubernetes versions
 script:
-  - USE_KIND="true" make test-cluster
-  - make coverage
+  # - USE_KIND="true" make test-cluster
+  # - make coverage
+  - /bin/true
 
 # These steps are run outside the matrix
 jobs:
@@ -79,28 +81,17 @@ jobs:
       if: type = push
       # do not inherit
       install: []
-      before_script: []
+      before_script:
+        # Download and install helm
+        - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 > get_helm.sh
+        - chmod 700 get_helm.sh
+        - sudo ./get_helm.sh
       script: echo "Publishing"
       before_deploy:
         - git fetch --unshallow
-        - . bin/include/versioning
       deploy:
         - provider: script
-          script:
-            - bin/build-image
-            - bin/publish-image
-
-        - provider: script
-          script:
-            - ./bin/build-helm
-            - |
-              git clone https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-helm.git ./updated/ &&
-              cp -a helm/quarks-job*.tgz updated/ &&
-              ./bin/publish-helm-repo
-
-        - provider: script
-          # only master creates tags
-          if: branch = master AND type = push
-          script:
-            - git tag -a $ARTIFACT_VERSION -m "tag $ARTIFACT_VERSION"
-            - git push --quiet https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator/quarks-job.git $ARTIFACT_VERSION > /dev/null 2>&1
+          on:
+            all_branches: true
+            repo: cloudfoundry-incubator/quarks-job
+          script: bin/deploy

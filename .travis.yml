@@ -37,7 +37,7 @@ install:
 
 # Avoid too many builds.
 # Otherwise opening a PR from a local branch would trigger two builds.
-if: type = push OR (type = pull_request AND head_repo != repo)
+if: tag IS blank AND (type = push OR (type = pull_request AND head_repo != repo))
 
 before_script:
   # Download and install kubectl

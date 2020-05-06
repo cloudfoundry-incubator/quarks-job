@@ -20,11 +20,11 @@ if [ -z ${DOCKER_PASSWORD+x} ]; then
   exit 1
 fi
 
-echo "Publish Docker Image"
+echo "Publish Docker Image for $ARTIFACT_VERSION"
 "$GIT_ROOT"/bin/build-image
 "$GIT_ROOT"/bin/publish-image
 
-echo "Publish Helm Chart"
+echo "Publish Helm Chart for $ARTIFACT_VERSION"
 "$GIT_ROOT"/bin/build-helm
 
 base_url="https://CFContainerizationBot:$GITHUB_TOKEN@github.com/cloudfoundry-incubator"
@@ -32,6 +32,6 @@ git clone "$base_url/quarks-helm.git" ./updated/ && \
   cp -a helm/quarks-job*.tgz updated/ && \
   "$GIT_ROOT"/bin/publish-helm-repo
 
-echo "Tag Github Commit"
+echo "Tag Github Commit with $ARTIFACT_VERSION"
 git tag -a "$ARTIFACT_VERSION" -m "tag $ARTIFACT_VERSION"
 git push --quiet "$base_url/quarks-job.git" "$ARTIFACT_VERSION" > /dev/null 2>&1

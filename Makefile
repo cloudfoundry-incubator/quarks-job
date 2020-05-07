@@ -18,6 +18,13 @@ publish-image:
 	bin/build-image
 	bin/publish-image
 
+############ GENERATE TARGETS ############
+
+generate: gen-kube
+
+gen-kube:
+	bin/gen-kube
+
 gen-command-docs:
 	rm -f docs/commands/*
 	go run cmd/docs/gen-command-docs.go

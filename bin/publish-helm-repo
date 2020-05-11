@@ -2,8 +2,13 @@
 
 version=$ARTIFACT_VERSION
 
+# https://github.com/helm/helm/issues/7363
+helm repo index --merge updated/index.yml helm/
+
+cp -a helm/quarks-job*.tgz updated/
+cp  helm/index.yml updated/
+
 pushd updated
-  helm repo index .
   git add .
   git config --global user.name "CFContainerizationBot"
   git config --global user.email "cfcontainerizationbot@cloudfoundry.org"

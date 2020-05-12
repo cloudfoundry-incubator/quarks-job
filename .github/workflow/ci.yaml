@@ -1,0 +1,16 @@
+name: quarks-job-ci
+
+on: push
+      
+jobs:
+  lint:
+    runs-on: suse-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: lint
+      run: |
+        curl -LO https://github.com/dominikh/go-tools/releases/download/2020.1.3/staticcheck_linux_amd64.tar.gz
+        tar xfz staticcheck_linux_amd64.tar.gz --strip-component 1 -C $GOPATH/bin staticcheck/staticcheck
+        go get -u golang.org/x/lint/golint
+        make lint
+

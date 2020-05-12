@@ -24,6 +24,7 @@ jobs:
 
   unit-tests:
     needs: [lint]
+    runs-on: ubuntu-latest
     strategy:
       matrix: 
         go_version: ["1.13.4"]

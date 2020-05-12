@@ -54,3 +54,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run cluster tests
       run: USE_KIND=true make test-cluster
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: testing
+      run: echo rohit

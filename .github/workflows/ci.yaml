@@ -1,9 +1,6 @@
 name: quarks-job-ci
 
 on: [push, pull_request]
-defaults:
-      run:
-            
       
 jobs:
   lint:

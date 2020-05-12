@@ -1,5 +1,0 @@
-#!/bin/bash
-set -v
-go list ./... | xargs go vet
-go list ./... | xargs golint
-staticcheck ./...

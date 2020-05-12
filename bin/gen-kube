@@ -6,20 +6,16 @@ set -o pipefail
 
 GO111MODULE=${GO111MODULE:-on} #Always on, so it works also inside GOPATH
 GIT_ROOT=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
-PROJECT="quarks-job"
 GROUP_VERSIONS="quarksjob:v1alpha1"
-QUARKS_UTILS=${QUARKS_UTILS:-../quarks-utils}
+QUARKS_UTILS=${QUARKS_UTILS:-$(cd "${GIT_ROOT}"; ls -d -1 ./vendor/code.cloudfoundry.org/quarks-utils 2>/dev/null)}
+
+ # We need to be sure to be aligned to what go mod declares
+go mod vendor
 
 cd "$GIT_ROOT"
 
-if [ -z ${QUARKS_UTILS+x} ] || [ ! -d "$QUARKS_UTILS" ]; then
-  echo 'Please set QUARKS_UTILS to the location of code.cloudfoundry.org/quarks-utils'
-  echo 'git clone https://github.com/cloudfoundry-incubator/quarks-utils.git ../quarks-utils'
-  echo
-  exit 1
-fi
-
 export GIT_ROOT
-export PROJECT
 export GROUP_VERSIONS
-$QUARKS_UTILS/bin/gen-kube
+
+# invoking with bash required for permissions: https://github.com/golang/go/issues/34965
+bash $QUARKS_UTILS/bin/gen-kube

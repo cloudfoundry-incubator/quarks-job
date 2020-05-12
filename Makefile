@@ -1,15 +1,22 @@
-test-unit:
-	bin/test-unit
+export PROJECT ?= quarks-job
+export QUARKS_UTILS ?= vendor/code.cloudfoundry.org/quarks-utils
+export INTEGRATION_TESTS_PACKAGE ?= "code.cloudfoundry.org/quarks-job/cmd/...,\
+code.cloudfoundry.org/quarks-job/pkg/kube/operator/...,\
+code.cloudfoundry.org/quarks-job/pkg/kube/util/...,\
+code.cloudfoundry.org/quarks-job/pkg/kube/controllers/..."
 
-test-cluster:
+test-unit: vendor
+	bash $(QUARKS_UTILS)/bin/test-unit
+
+test-cluster: vendor
 	bin/build-image
-	bin/test-integration
-	bin/test-cli-e2e
+	bash $(QUARKS_UTILS)/bin/test-integration
+	bash $(QUARKS_UTILS)/bin/test-cli-e2e
 	bin/build-helm
-	bin/test-helm-e2e
+	bash $(QUARKS_UTILS)/bin/test-helm-e2e
 
-lint:
-	bin/lint
+lint: vendor
+	bash $(QUARKS_UTILS)/bin/lint
 
 build-image:
 	bin/build-image
@@ -29,7 +36,10 @@ gen-command-docs:
 	rm -f docs/commands/*
 	go run cmd/docs/gen-command-docs.go
 
+vendor:
+	go mod vendor
+
 ############ COVERAGE TARGETS ############
 
-coverage:
-	bin/coverage
+coverage: vendor
+	bash $(QUARKS_UTILS)/bin/coverage

@@ -22,3 +22,18 @@ jobs:
         go get -u golang.org/x/lint/golint
         make lint
 
+  unit-tests:
+    needs: [lint]
+    strategy:
+      matrix: 
+        go_version: ["1.13.4"]
+          
+    steps:
+    - name: Set up Go ${{matrix.go_version}} 
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{matrix.go_version}}
+    - uses: actions/checkout@v2
+    - name: Run unit tests
+      run: make test-unit
+

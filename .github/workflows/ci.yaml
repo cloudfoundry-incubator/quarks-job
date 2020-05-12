@@ -5,7 +5,15 @@ on: [push, pull_request]
 jobs:
   lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        go_version: ["1.13.4"]
+          
     steps:
+    - name: Set up Go ${{matrix.go_version}} 
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{matrix.go_version}}
     - uses: actions/checkout@v2
     - name: lint
       run: |

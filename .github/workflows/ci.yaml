@@ -53,6 +53,8 @@ jobs:
       with:
        version: v0.8.0
        image: kindest/node:${{matrix.kubernetes_version}}
+    - name: Testing 
+      run: env
     - name: Run cluster tests
       run: USE_KIND=true make test-cluster
 

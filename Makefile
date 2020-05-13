@@ -1,9 +1,6 @@
 export PROJECT ?= quarks-job
 export QUARKS_UTILS ?= vendor/code.cloudfoundry.org/quarks-utils
-export INTEGRATION_TESTS_PACKAGE ?= "code.cloudfoundry.org/quarks-job/cmd/...,\
-code.cloudfoundry.org/quarks-job/pkg/kube/operator/...,\
-code.cloudfoundry.org/quarks-job/pkg/kube/util/...,\
-code.cloudfoundry.org/quarks-job/pkg/kube/controllers/..."
+export GROUP_VERSIONS ?= quarksjob:v1alpha1
 
 test-unit: vendor
 	bash $(QUARKS_UTILS)/bin/test-unit
@@ -30,7 +27,7 @@ publish-image:
 generate: gen-kube
 
 gen-kube:
-	bin/gen-kube
+	bash $(QUARKS_UTILS)/bin/gen-kube
 
 gen-command-docs:
 	rm -f docs/commands/*

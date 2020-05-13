@@ -32,7 +32,7 @@ git clone "$base_url/quarks-helm.git" ./updated/ && \
   cp -a helm/quarks-job*.tgz updated/ && \
   "$GIT_ROOT"/bin/publish-helm-repo
 
-if [ "$TRAVIS_BRANCH" = "master" ]; then
+if [ "$GITHUB_ACTION_BRANCH" = "master" ]; then
   echo "Tag Github Commit with $ARTIFACT_VERSION"
   git tag -a "$ARTIFACT_VERSION" -m "tag $ARTIFACT_VERSION"
   git push --quiet "$base_url/quarks-job.git" "$ARTIFACT_VERSION" > /dev/null 2>&1

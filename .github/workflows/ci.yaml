@@ -63,19 +63,18 @@ jobs:
         GITHUB_ACTION_BRANCH: ${{ steps.prepare_branch_env.outputs.branch }}
         
   publish:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
+    - uses: azure/setup-helm@v1
+      with:
+        version: v3.0.0
     - uses: actions/checkout@v2
     - name: Prepare GITHUB_ACTION_BRANCH env
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: prepare_branch_env
-    - uses: azure/setup-helm@v1
-      with:
-        version: v3.0.0
     - name: Publish Helm Chart
-      run: |
-        ls
-        bash ./bin/deploy
+      run: bash ./bin/deploy
       env:
         GITHUB_ACTION_BRANCH: ${{ steps.prepare_branch_env.outputs.branch }}

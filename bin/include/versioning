@@ -4,6 +4,9 @@ GITHUB_BRANCH=${GITHUB_BRANCH-}
 GITHUB_SHA=${GITHUB_SHA-}
 COMMIT_NUMBER=$(git rev-list --first-parent --count HEAD)
 
+echo $GITHUB_BRANCH
+echo $GITHUB_SHA
+
 # https://semver.org/#semantic-versioning-200
 
 if [ "$GITHUB_BRANCH" = "master" ]; then

@@ -5,5 +5,5 @@ set -euo pipefail
 GIT_ROOT=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
 . "${GIT_ROOT}/bin/include/versioning"
 
-#BASEDIR="$(cd "$(dirname "$0")/.." && pwd)"
-#CGO_ENABLED=0 go build -o "${BASEDIR}/binaries/quarks-job" -ldflags="-X code.cloudfoundry.org/quarks-job/version.Version=${ARTIFACT_VERSION}" cmd/main.go
+BASEDIR="$(cd "$(dirname "$0")/.." && pwd)"
+CGO_ENABLED=0 go build -o "${BASEDIR}/binaries/quarks-job" -ldflags="-X code.cloudfoundry.org/quarks-job/version.Version=${ARTIFACT_VERSION}" cmd/main.go

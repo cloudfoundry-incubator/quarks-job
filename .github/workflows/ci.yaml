@@ -56,7 +56,7 @@ jobs:
     - name: Run cluster tests
       run: USE_KIND=true make test-cluster
       env:
-        GITHUB_ACTION_BRANCH: echo $GITHUB_REF#refs/heads/
+        GITHUB_ACTION_BRANCH: $(echo ${GITHUB_REF#refs/heads/})
         
   publish:
     runs-on: ubuntu-latest

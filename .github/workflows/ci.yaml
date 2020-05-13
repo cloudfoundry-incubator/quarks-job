@@ -53,8 +53,11 @@ jobs:
       with:
        version: v0.8.0
        image: kindest/node:${{matrix.kubernetes_version}}
-    - name: Testing 
-      run: env
+    - name: Step that prints name of pull request's base branch
+      run: |
+        echo "Pull request's base branch is: ${BASE_BRANCH}"
+      env:
+            BASE_BRANCH: ${{ github.base_ref }}
     - name: Run cluster tests
       run: USE_KIND=true make test-cluster
 

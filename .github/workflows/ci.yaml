@@ -77,5 +77,5 @@ jobs:
     - name: Publish Helm Chart
       run: bash ./bin/deploy
       env:
-        GITHUB_ACTION_BRANCH: ${{ echo ${GITHUB_REF#refs/heads/} }}
+        GITHUB_ACTION_BRANCH: ${{ $(echo ${GITHUB_REF#refs/heads/}) }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

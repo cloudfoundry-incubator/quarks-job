@@ -1,20 +1,19 @@
 #!/bin/bash
 
-GITHUB_BRANCH=${GITHUB_BRANCH-}
+GITHUB_ACTION_BRANCH=${GITHUB_ACTION_BRANCH-}
 GITHUB_SHA=${GITHUB_SHA-}
 COMMIT_NUMBER=$(git rev-list --first-parent --count HEAD)
 
-echo $GITHUB_BRANCH
-echo $GITHUB_SHA
+echo $GITHUB_ACTION_BRANCH
 
 # https://semver.org/#semantic-versioning-200
 
-if [ "$GITHUB_BRANCH" = "master" ]; then
+if [ "$GITHUB_ACTION_BRANCH" = "master" ]; then
   # travis is building on master
   # unlike quarks-operator do not set a build identifier
   ARTIFACT_VERSION="v1.0.$COMMIT_NUMBER"
 
-elif [ -n "${GITHUB_BRANCH:-}" ]; then
+elif [ -n "${GITHUB_ACTION_BRANCH:-}" ]; then
   # this is running on a travis push
   # return pre-release version
   sha=$(git rev-parse --short "$GITHUB_SHA")

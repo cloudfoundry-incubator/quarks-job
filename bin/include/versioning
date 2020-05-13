@@ -14,6 +14,7 @@ if [ "$GITHUB_ACTION_BRANCH" = "master" ]; then
   ARTIFACT_VERSION="v1.0.$COMMIT_NUMBER"
 
 elif [ -n "${GITHUB_ACTION_BRANCH:-}" ]; then
+  echo "yes it came here"
   # this is running on a travis push
   # return pre-release version
   sha=$(git rev-parse --short "$GITHUB_SHA")
@@ -21,6 +22,7 @@ elif [ -n "${GITHUB_ACTION_BRANCH:-}" ]; then
 
 else
   # return pre-release version
+  echo "yes it should be not here"
   COMMIT=$(git describe --tags --long | awk -F - '{ print $NF }')
   ARTIFACT_VERSION="v0.0.$COMMIT_NUMBER-$COMMIT"
 fi

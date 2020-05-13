@@ -65,6 +65,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v2
     - name: Prepare GITHUB_ACTION_BRANCH env
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
@@ -73,6 +74,8 @@ jobs:
       with:
         version: v3.0.0
     - name: Publish Helm Chart
-      run: bash ./bin/deploy
+      run: |
+        ls
+        bash ./bin/deploy
       env:
         GITHUB_ACTION_BRANCH: ${{ steps.prepare_branch_env.outputs.branch }}

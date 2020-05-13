@@ -23,7 +23,7 @@ elif [ -n "${GITHUB_ACTION_BRANCH:-}" ]; then
 else
   # return pre-release version
   echo "yes it should be not here"
-  COMMIT=$(git describe --tags --long | awk -F - '{ print $NF }')
+  COMMIT=$(git describe --tags --long --always | awk -F - '{ print $NF }')
   ARTIFACT_VERSION="v0.0.$COMMIT_NUMBER-$COMMIT"
 fi
 

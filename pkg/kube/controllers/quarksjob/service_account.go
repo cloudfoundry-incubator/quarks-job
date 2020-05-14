@@ -28,7 +28,7 @@ func (j jobCreatorImpl) getServiceAccountName(ctx context.Context, name string) 
 	if acc, ok := ns.Labels[qjv1.LabelServiceAccount]; ok {
 		return acc, nil
 	}
-	return "", fmt.Errorf("failed to retrieve persist output service account from namespace label '%s'", qjv1.LabelNamespace)
+	return "", fmt.Errorf("failed to retrieve persist output service account from namespace label '%s'", qjv1.LabelServiceAccount)
 }
 
 func (j jobCreatorImpl) serviceAccountMount(ctx context.Context, namespace string, serviceAccountName string) (*corev1.Volume, *corev1.VolumeMount, error) {

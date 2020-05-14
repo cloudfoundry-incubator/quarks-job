@@ -29,7 +29,6 @@ echo "Publish Helm Chart for $ARTIFACT_VERSION"
 
 base_url="https://CFContainerizationBot:$GH_PASSWORD@github.com/cloudfoundry-incubator"
 git clone "$base_url/quarks-helm.git" ./updated/ && \
-  cp -a helm/quarks-job*.tgz updated/ && \
   "$GIT_ROOT"/bin/publish-helm-repo
 
 if [ "$GITHUB_ACTION_BRANCH" = "master" ]; then

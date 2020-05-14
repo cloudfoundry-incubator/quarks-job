@@ -3,5 +3,3 @@ set -eu
 
 # Send code coverage report to coveralls.io
 gover ./code-coverage ./code-coverage/gover.coverprofile
-
-goveralls -coverprofile code-coverage/gover.coverprofile -service=travis-ci -repotoken "$COVERALLS_TOKEN"

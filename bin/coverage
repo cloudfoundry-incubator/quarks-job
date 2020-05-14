@@ -1,6 +1,0 @@
-#!/bin/bash
-set -eu
-
-# Merge all code coverage files into one
-gover ./code-coverage ./code-coverage/gover.coverprofile
-sed -i 's/\([0-9]\)\(code.cloudfoundry.org\)/\1\n\2/g' ./code-coverage/gover.coverprofile

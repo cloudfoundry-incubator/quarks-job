@@ -1,5 +1,10 @@
 #!/bin/bash
 
+INTEGRATION_TESTS_PACKAGE="code.cloudfoundry.org/quarks-job/cmd/...,\
+code.cloudfoundry.org/quarks-job/pkg/kube/operator/...,\
+code.cloudfoundry.org/quarks-job/pkg/kube/util/...,\
+code.cloudfoundry.org/quarks-job/pkg/kube/controllers/..."
+
 function setup_testing_tmp {
   if [ -z ${CF_OPERATOR_TESTING_TMP+x} ]
   then

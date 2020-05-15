@@ -3,7 +3,7 @@
 version=$ARTIFACT_VERSION
 
 # https://github.com/helm/helm/issues/7363
-helm repo index --merge updated/index.yml helm/
+helm repo index --merge updated/index.yaml helm/
 
 cp -a helm/quarks-job*.tgz updated/
 cp  helm/index.yaml updated/

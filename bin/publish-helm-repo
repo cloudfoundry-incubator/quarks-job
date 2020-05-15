@@ -6,7 +6,7 @@ version=$ARTIFACT_VERSION
 helm repo index --merge updated/index.yml helm/
 
 cp -a helm/quarks-job*.tgz updated/
-cp  helm/index.yml updated/
+cp  helm/index.yaml updated/
 
 pushd updated
   git add .

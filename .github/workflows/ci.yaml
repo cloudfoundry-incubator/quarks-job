@@ -91,8 +91,6 @@ jobs:
         path-to-profile: ./code-coverage/gover.coverprofile
 
   publish:
-    needs: [cluster-tests]
-
     runs-on: ubuntu-latest
 
     steps:

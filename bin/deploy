@@ -31,8 +31,13 @@ base_url="https://CFContainerizationBot:$GH_PASSWORD@github.com/cloudfoundry-inc
 git clone "$base_url/quarks-helm.git" ./updated/ && \
   "$GIT_ROOT"/bin/publish-helm-repo
 
-if [ "$GITHUB_ACTION_BRANCH" = "master" ]; then
+if [ "$GITHUB_ACTION_BRANCH" = "rohit/fix" ]; then
   echo "Tag Github Commit with $ARTIFACT_VERSION"
   git tag -a "$ARTIFACT_VERSION" -m "tag $ARTIFACT_VERSION"
-  git push --quiet "$base_url/quarks-job.git" "$ARTIFACT_VERSION" > /dev/null 2>&1
+  echo "check 1"
+  git config --list
+  git remote set-url origin $base_url/quarks-job.git
+  git remote -v
+  git push --quiet "$base_url/quarks-job.git" "$ARTIFACT_VERSION"
+  echo "check 2"
 fi

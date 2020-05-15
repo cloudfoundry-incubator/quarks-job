@@ -14,4 +14,5 @@ pushd updated
   git config --global user.email "cfcontainerizationbot@cloudfoundry.org"
   git commit -m "add quarks-job chart: $version"
   git push
+  git remote -v
 popd

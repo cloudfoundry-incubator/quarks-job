@@ -84,7 +84,7 @@ var _ = Describe("AutoErrandJob", func() {
 						err = env.WaitForJobDeletion(env.Namespace, jobs[0].Name)
 						Expect(err).ToNot(HaveOccurred())
 
-						Expect(env.PodsDeleted(env.Namespace)).To(BeTrue())
+						Expect(env.WaitForPodsDelete(env.Namespace)).To(Succeed())
 					})
 				})
 

@@ -1,8 +1,15 @@
 name: quarks-job-ci
 
-on: [push]
+on:
+  push:
+  # Can't run for pull_requests, because of `publish`
+  #   tags:
+  #     - v*
+  #   branches:
+  #     - master
+  # pull_request:
 
-jobs:   
+jobs:
   unit-tests:
     runs-on: ubuntu-latest
 
@@ -26,11 +33,15 @@ jobs:
         go get -u golang.org/x/lint/golint
         curl -LO https://github.com/dominikh/go-tools/releases/download/2020.1.3/staticcheck_linux_amd64.tar.gz
         sudo tar xfz staticcheck_linux_amd64.tar.gz --strip-component 1 -C $GOPATH/bin staticcheck/staticcheck
+    - name: Install shared tools
+      run: |
+        bin/tools
     - name: Run lint
-      run: make lint
+      run: |
+        tools/quarks-utils/bin/lint
     - name: Run unit tests
       run: |
-        make test-unit
+        tools/quarks-utils/bin/test-unit
       env:
         COVERAGE: true
         GOPROXY: "https://proxy.golang.org"
@@ -53,7 +64,7 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: 1.13.4
-    - uses: actions/checkout@v2 
+    - uses: actions/checkout@v2
     - uses: actions/cache@v1
       with:
         path: ~/go/pkg/mod
@@ -69,6 +80,9 @@ jobs:
         go install github.com/onsi/ginkgo/ginkgo
         go get github.com/mattn/goveralls
         go get github.com/modocache/gover
+    - name: Install shared tools
+      run: |
+        bin/tools
     - name: Prepare GITHUB_ACTION_BRANCH env
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
@@ -80,10 +94,16 @@ jobs:
        image: kindest/node:${{matrix.kubernetes_version}}
     - name: Run cluster tests
       run: |
-        USE_KIND=true make test-cluster
-        make coverage
+        bin/build-image
+        tools/quarks-utils/bin/test-integration
+        tools/quarks-utils/bin/test-cli-e2e
+        bin/build-helm
+        tools/quarks-utils/bin/test-helm-e2e
+        tools/quarks-utils/bin/coverage
       env:
+        PROJECT: quarks-job
         GITHUB_ACTION_BRANCH: ${{ steps.prepare_branch_env.outputs.branch }}
+        USE_KIND: true
         COVERAGE: true
         GOPROXY: "https://proxy.golang.org"
     - uses: shogo82148/actions-goveralls@v1

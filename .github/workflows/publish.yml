@@ -2,6 +2,8 @@ name: quarks-job-publish
 
 on:
   push:
+    tags-ignore:
+      - '*'
 
 jobs:
   publish:

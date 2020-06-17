@@ -8,10 +8,10 @@ helm repo index --merge updated/index.yaml helm/
 cp -a helm/quarks-job*.tgz updated/
 cp  helm/index.yaml updated/
 
-pushd updated
+pushd updated || exit
   git add .
   git config --global user.name "CFContainerizationBot"
   git config --global user.email "cfcontainerizationbot@cloudfoundry.org"
   git commit -m "add quarks-job chart: $version"
   git push
-popd
+popd || exit

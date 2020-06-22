@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	batchv1 "k8s.io/api/batch/v1beta1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/apis"
@@ -15,6 +16,15 @@ import (
 // Run "make generate" after modifying this file
 
 var (
+	// LabelNamespace key for label on a namespace to indicate that cf-operator is monitoring it.
+	// Can be used as an ID, to keep operators in a cluster from intefering with each other.
+	LabelNamespace = fmt.Sprintf("%s/monitored", apis.GroupName)
+
+	// LabelServiceAccount key for label on a namespace, which names the
+	// service account, that will be injected to capture job output into a
+	// secret
+	LabelServiceAccount = fmt.Sprintf("%s/qjob-service-account", apis.GroupName)
+
 	// LabelPersistentSecretContainer is a label used for persisted secrets,
 	// identifying the container that created them
 	LabelPersistentSecretContainer = fmt.Sprintf("%s/container-name", apis.GroupName)
@@ -27,9 +37,6 @@ var (
 	LabelQJobName = fmt.Sprintf("%s/qjob-name", apis.GroupName)
 	// LabelTriggeringPod key for label, which is set to the UID of the pod that triggered an QuarksJob
 	LabelTriggeringPod = fmt.Sprintf("%s/triggering-pod", apis.GroupName)
-
-	// LabelEntanglementKey to identify a quarks link
-	LabelEntanglementKey = fmt.Sprintf("%s/entanglement", apis.GroupName)
 )
 
 // QuarksJobSpec defines the desired state of QuarksJob
@@ -78,10 +85,11 @@ type Trigger struct {
 
 // SecretOptions specify the name of the output secret and if it's versioned
 type SecretOptions struct {
-	Name                   string            `json:"name,omitempty"`
-	AdditionalSecretLabels map[string]string `json:"secretLabels,omitempty"`
-	Versioned              bool              `json:"versioned,omitempty"`
-	PersistenceMethod      PersistenceMethod `json:"persistencemethod,omitempty"`
+	Name                        string            `json:"name,omitempty"`
+	AdditionalSecretLabels      map[string]string `json:"secretLabels,omitempty"`
+	AdditionalSecretAnnotations map[string]string `json:"secretAnnotations,omitempty"`
+	Versioned                   bool              `json:"versioned,omitempty"`
+	PersistenceMethod           PersistenceMethod `json:"persistencemethod,omitempty"`
 }
 
 // FanOutName returns the name of the secret for PersistenceMethod 'fan-out'
@@ -112,6 +120,7 @@ type Output struct {
 // QuarksJobStatus defines the observed state of QuarksJob
 type QuarksJobStatus struct {
 	LastReconcile *metav1.Time `json:"lastReconcile"`
+	Completed     bool         `json:"completed"`
 }
 
 // +genclient
@@ -152,25 +161,41 @@ func (q *QuarksJob) GetNamespacedName() string {
 	return fmt.Sprintf("%s/%s", q.Namespace, q.Name)
 }
 
+// IsMonitoredNamespace returns true if the namespace has all the necessary
+// labels and should be included in controller watches.
+func IsMonitoredNamespace(n *corev1.Namespace, id string) bool {
+	if _, ok := n.Labels[LabelServiceAccount]; !ok {
+		return false
+	}
+	if value, ok := n.Labels[LabelNamespace]; ok && value == id {
+		return true
+	}
+	return false
+}
+
 // NewFileToSecret returns a FilesToSecrets with just one mapping
-func NewFileToSecret(fileName string, secretName string, versioned bool) FilesToSecrets {
+func NewFileToSecret(fileName string, secretName string, versioned bool, annotations map[string]string, labels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
-			Name:              secretName,
-			Versioned:         versioned,
-			PersistenceMethod: PersistOneToOne,
+			Name:                        secretName,
+			Versioned:                   versioned,
+			PersistenceMethod:           PersistOneToOne,
+			AdditionalSecretAnnotations: annotations,
+      AdditionalSecretLabels:      labels,
 		},
 	}
 }
 
 // NewFileToSecrets uses a fan out style and creates one secret per key/value
 // pair in the given input file
-func NewFileToSecrets(fileName string, secretName string, versioned bool) FilesToSecrets {
+func NewFileToSecrets(fileName string, secretName string, versioned bool, annotations map[string]string, labels map[string]string) FilesToSecrets {
 	return FilesToSecrets{
 		fileName: SecretOptions{
-			Name:              secretName,
-			Versioned:         versioned,
-			PersistenceMethod: PersistUsingFanOut,
+			Name:                        secretName,
+			Versioned:                   versioned,
+			PersistenceMethod:           PersistUsingFanOut,
+			AdditionalSecretAnnotations: annotations,
+      AdditionalSecretLabels:      labels,
 		},
 	}
 }

@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/meltdown"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
@@ -98,7 +98,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	r.injectContainerEnv(&qJob.Spec.Template.Spec.Template.Spec)
-	if retry, err := r.jobCreator.Create(ctx, *qJob, request.Namespace); err != nil {
+	if retry, err := r.jobCreator.Create(ctx, *qJob); err != nil {
 		return reconcile.Result{}, ctxlog.WithEvent(qJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", qJob.GetNamespacedName(), err)
 	} else if retry {
 		ctxlog.Infof(ctx, "Retrying to create job '%s'", qJob.GetNamespacedName())
@@ -120,6 +120,8 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 	}
 
+	// Reset status
+	qJob.Status.Completed = false
 	now := metav1.Now()
 	qJob.Status.LastReconcile = &now
 	err := r.client.Status().Update(ctx, qJob)

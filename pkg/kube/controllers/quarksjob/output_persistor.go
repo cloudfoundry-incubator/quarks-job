@@ -148,22 +148,20 @@ func (po *OutputPersistor) persistContainer(
 					po.log.Debugf("container '%s': creating secrets with prefix '%s' from '%s'", container.Name, options.Name, filePath)
 					for key, value := range data {
 						secretName := options.FanOutName(key)
-						options.AdditionalSecretLabels[qjv1a1.LabelEntanglementKey] = secretName
 
 						var secretData map[string]string
 						if err := json.Unmarshal([]byte(value), &secretData); err != nil {
 							errorContainerChannel <- err
 						}
 
-						if err := po.createSecret(ctx, qJob, container, secretName, secretData, options.AdditionalSecretLabels, options.Versioned); err != nil {
+						if err := po.createSecret(ctx, qJob, container, secretName, options.AdditionalSecretAnnotations, secretData, options.AdditionalSecretLabels, options.Versioned); err != nil {
 							errorContainerChannel <- err
 						}
 					}
 
 				default:
 					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
-					options.AdditionalSecretLabels[qjv1a1.LabelEntanglementKey] = options.Name
-					if err := po.createSecret(ctx, qJob, container, options.Name, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
+					if err := po.createSecret(ctx, qJob, container, options.Name, options.AdditionalSecretAnnotations, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
 						errorContainerChannel <- err
 					}
 				}
@@ -299,6 +297,7 @@ func (po *OutputPersistor) createSecret(
 	qJob *qjv1a1.QuarksJob,
 	container corev1.Container,
 	secretName string,
+	secretAnnotations map[string]string,
 	secretData map[string]string,
 	additionalSecretLabels map[string]string,
 	versioned bool,
@@ -323,7 +322,7 @@ func (po *OutputPersistor) createSecret(
 		sourceDescription := "created by quarksJob"
 
 		store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
-		err := store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretLabels, sourceDescription)
+		err := store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretAnnotations, secretLabels, sourceDescription)
 		if err != nil {
 			if !versionedsecretstore.IsSecretIdenticalError(err) {
 				return errors.Wrapf(err, "could not persist qJob's '%s' output to a secret", qJob.GetNamespacedName())
@@ -341,6 +340,7 @@ func (po *OutputPersistor) createSecret(
 
 		secret.StringData = secretData
 		secret.Labels = secretLabels
+		secret.Annotations = secretAnnotations
 
 		_, err := po.clientSet.CoreV1().Secrets(po.namespace).Create(ctx, secret, metav1.CreateOptions{})
 

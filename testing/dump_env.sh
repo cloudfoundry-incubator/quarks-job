@@ -7,7 +7,7 @@ NS="$1"
 echo "Collecting environment information for namespace ${NS}"
 
 function get_resources() {
-  kubectl get $1 --namespace "${NS}" --output=jsonpath='{.items[*].metadata.name}'
+  kubectl get "$1" --namespace "${NS}" --output=jsonpath='{.items[*].metadata.name}'
 }
 
 function describe_resource() {
@@ -64,9 +64,9 @@ fi
 printf "Output directory: $(basename $NAMESPACE_DIR)...\n"
 SECRETS_DIR="${NAMESPACE_DIR}/secrets"
 CONFIGMAPS_DIR="${NAMESPACE_DIR}/configmaps"
-mkdir -p ${OUTPUT_BASE}/env_dumps
-mkdir -p ${SECRETS_DIR}
-mkdir -p ${CONFIGMAPS_DIR}
+mkdir -p "${OUTPUT_BASE}/env_dumps"
+mkdir -p "${SECRETS_DIR}"
+mkdir -p "${CONFIGMAPS_DIR}"
 
 # Iterate over configmaps
 CONFIGMAPS=($(get_resources "configmaps" ))
@@ -78,19 +78,20 @@ done
 # Iterate over secrets
 SECRETS=($(get_resources "secrets"))
 for SECRET in "${SECRETS[@]}"; do
-  printf "Secret \e[0;32m$SECRET\e[0m\n"
-  get_resource secret "$SECRET" "${SECRETS_DIR}/${SECRET}.yaml"
+  if grep -qv "token" <<< "$SECRET"; then
+    printf "Secret \e[0;32m$SECRET\e[0m\n"
+    get_resource secret "$SECRET" "${SECRETS_DIR}/${SECRET}.yaml"
+  fi
 done
 
 # Iterate over jobs
-i=jobs
-RESOURCES=($(get_resources "$i"))
+RESOURCES=($(get_resources "jobs"))
 for RESOURCE in "${RESOURCES[@]}"; do
-  printf "$i \e[0;32m$RESOURCE\e[0m\n"
+  printf "jobs \e[0;32m$RESOURCE\e[0m\n"
 
-  RESOURCE_DIR="${NAMESPACE_DIR}/$i/${RESOURCE}"
-  mkdir -p ${RESOURCE_DIR}
-  describe_resource "$i" "$RESOURCE" "${RESOURCE_DIR}/describe.txt"
+  RESOURCE_DIR="${NAMESPACE_DIR}/jobs/${RESOURCE}"
+  mkdir -p "${RESOURCE_DIR}"
+  describe_resource "jobs" "$RESOURCE" "${RESOURCE_DIR}/describe.txt"
 done
 
 # Iterate over pods and their containers
@@ -107,7 +108,7 @@ for POD in "${PODS[@]}"; do
     printf "  container - \e[0;32m${CONTAINER}\e[0m logs:"
 
     CONTAINER_DIR="${POD_DIR}/${CONTAINER}"
-    mkdir -p ${CONTAINER_DIR}
+    mkdir -p "${CONTAINER_DIR}"
     retrieve_container_kube_logs 2> /dev/null || true
 
     printf "\n"
@@ -119,7 +120,7 @@ for POD in "${PODS[@]}"; do
     printf "  initContainer - \e[0;32m${INITCONTAINER}\e[0m logs:"
 
     INIT_CONTAINER_DIR="${POD_DIR}/init-containers/${INITCONTAINER}"
-    mkdir -p ${INIT_CONTAINER_DIR}
+    mkdir -p "${INIT_CONTAINER_DIR}"
     retrieve_init_container_kube_logs 2> /dev/null || true
 
     printf "\n"
@@ -130,6 +131,9 @@ done
 
 get_all_resources
 get_all_events
+
+find "$NAMESPACE_DIR" -type f -size 0 -delete
+find "$NAMESPACE_DIR" -type d -empty -delete
 
 printf "\e[0;32mDone\e[0m\n"
 exit

@@ -2,8 +2,8 @@ name: quarks-job-publish
 
 on:
   push:
-    tags-ignore:
-      - '*'
+    branches-ignore:
+    - refs/tags/*
 
 jobs:
   publish:
@@ -34,3 +34,4 @@ jobs:
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         DOCKER_USERNAME: cfcontainerization
         GOPROXY: "https://proxy.golang.org"
+

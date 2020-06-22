@@ -2,8 +2,8 @@ name: quarks-job-publish
 
 on:
   push:
-    tags-ignore:
-      - '*'
+    branches-ignore:
+    - refs/tags/*
 
 jobs:
   publish:
@@ -29,8 +29,8 @@ jobs:
         git fetch --unshallow
         bash ./bin/deploy
       env:
+        GOPROXY: "https://proxy.golang.org"
         GITHUB_ACTION_BRANCH: ${{ steps.prepare_branch_env.outputs.branch }}
         GH_PASSWORD: ${{ secrets.GH_PASSWORD }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         DOCKER_USERNAME: cfcontainerization
-        GOPROXY: "https://proxy.golang.org"

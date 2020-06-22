@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -69,17 +68,16 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			n := e.ObjectNew.(*qjv1a1.QuarksJob)
 
 			enqueueForManualErrand := n.Spec.Trigger.Strategy == qjv1a1.TriggerNow && o.Spec.Trigger.Strategy == qjv1a1.TriggerManual
+			enqueueForAutoErrand := n.Spec.Trigger.Strategy == qjv1a1.TriggerOnce && o.Spec.Trigger.Strategy == qjv1a1.TriggerDone
 
-			// enqueuing for auto-errand when referenced secrets changed
-			enqueueForConfigChange := n.IsAutoErrand() && n.Spec.UpdateOnConfigChange && hasConfigsChanged(o, n)
-
-			shouldProcessEvent := enqueueForManualErrand || enqueueForConfigChange
+			shouldProcessEvent := enqueueForManualErrand || enqueueForAutoErrand
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(o).Debug(
 					ctx, e.MetaNew, qjv1a1.QuarksJobResourceName,
-					fmt.Sprintf("Update predicate passed for '%s/%s', a change in it´s referenced secrets have been detected",
+					fmt.Sprintf("Update predicate passed for '%s/%s', strategy changed to '%s'",
 						e.MetaNew.GetNamespace(),
-						e.MetaNew.GetName()),
+						e.MetaNew.GetName(),
+						n.Spec.Trigger.Strategy),
 				)
 			}
 
@@ -176,45 +174,4 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 	}, p)
 
 	return err
-}
-
-// hasConfigsChanged return true if object's config references changed
-func hasConfigsChanged(oldEJob, newEJob *qjv1a1.QuarksJob) bool {
-	oldConfigMaps, oldSecrets := vss.GetConfigNamesFromSpec(oldEJob.Spec.Template.Spec.Template.Spec)
-	newConfigMaps, newSecrets := vss.GetConfigNamesFromSpec(newEJob.Spec.Template.Spec.Template.Spec)
-
-	if reflect.DeepEqual(oldConfigMaps, newConfigMaps) && reflect.DeepEqual(oldSecrets, newSecrets) {
-		return false
-	}
-
-	// For versioned secret, we only enqueue changes for higher version of secrets
-	for newSecret := range newSecrets {
-		secretPrefix := vss.NamePrefix(newSecret)
-		newVersion, err := vss.VersionFromName(newSecret)
-		if err != nil {
-			continue
-		}
-
-		if isLowerVersion(oldSecrets, secretPrefix, newVersion) {
-			return false
-		}
-	}
-
-	// other configs changes should be enqueued
-	return true
-}
-
-func isLowerVersion(oldSecrets map[string]struct{}, secretPrefix string, newVersion int) bool {
-	for oldSecret := range oldSecrets {
-		if strings.HasPrefix(oldSecret, secretPrefix) {
-			oldVersion, _ := vss.VersionFromName(oldSecret)
-
-			if newVersion < oldVersion {
-				return true
-			}
-		}
-	}
-
-	// if not found in old secrets, it's a new versioned secret
-	return false
 }

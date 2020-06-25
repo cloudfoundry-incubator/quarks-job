@@ -143,6 +143,8 @@ func (po *OutputPersistor) persistContainer(
 					errorContainerChannel <- errors.Wrapf(err, "failed to convert output file %s into json for creating secret(s) %s in pod '%s/%s'", filePath, options.Name, po.namespace, po.podName)
 				}
 
+				labels := newLabels(*qJob.Spec.Output, options.AdditionalSecretLabels, container)
+
 				switch options.PersistenceMethod {
 				case qjv1a1.PersistUsingFanOut:
 					po.log.Debugf("container '%s': creating secrets with prefix '%s' from '%s'", container.Name, options.Name, filePath)
@@ -154,14 +156,16 @@ func (po *OutputPersistor) persistContainer(
 							errorContainerChannel <- err
 						}
 
-						if err := po.createSecret(ctx, qJob, container, secretName, options.AdditionalSecretAnnotations, secretData, options.AdditionalSecretLabels, options.Versioned); err != nil {
+						if err := po.createSecret(ctx, qJob, secretName, options.AdditionalSecretAnnotations, secretData, labels, options.Versioned); err != nil {
+							err = errors.Wrapf(err, "failed to persist qjob '%s' output, pod '%s/%s', container '%s', using fan-out", qJob.Name, po.namespace, po.podName, container.Name)
 							errorContainerChannel <- err
 						}
 					}
 
 				default:
 					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
-					if err := po.createSecret(ctx, qJob, container, options.Name, options.AdditionalSecretAnnotations, data, options.AdditionalSecretLabels, options.Versioned); err != nil {
+					if err := po.createSecret(ctx, qJob, options.Name, options.AdditionalSecretAnnotations, data, labels, options.Versioned); err != nil {
+						err = errors.Wrapf(err, "failed to persist qjob '%s' output, pod '%s/%s', container '%s', using one-to-one", qJob.Name, po.namespace, po.podName, container.Name)
 						errorContainerChannel <- err
 					}
 				}
@@ -291,19 +295,9 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-// createSecret converts the output file into json and creates a secret for a given container
-func (po *OutputPersistor) createSecret(
-	ctx context.Context,
-	qJob *qjv1a1.QuarksJob,
-	container corev1.Container,
-	secretName string,
-	secretAnnotations map[string]string,
-	secretData map[string]string,
-	additionalSecretLabels map[string]string,
-	versioned bool,
-) error {
+func newLabels(output qjv1a1.Output, additionalSecretLabels map[string]string, container corev1.Container) map[string]string {
 	secretLabels := map[string]string{}
-	for k, v := range qJob.Spec.Output.SecretLabels {
+	for k, v := range output.SecretLabels {
 		secretLabels[k] = names.Sanitize(v)
 	}
 	for k, v := range additionalSecretLabels {
@@ -313,6 +307,19 @@ func (po *OutputPersistor) createSecret(
 	if id, ok := podutil.LookupEnv(container.Env, qjv1a1.RemoteIDKey); ok {
 		secretLabels[qjv1a1.LabelRemoteID] = id
 	}
+	return secretLabels
+}
+
+// createSecret converts the output file into json and creates a secret for a given container
+func (po *OutputPersistor) createSecret(
+	ctx context.Context,
+	qJob *qjv1a1.QuarksJob,
+	secretName string,
+	secretAnnotations map[string]string,
+	secretData map[string]string,
+	secretLabels map[string]string,
+	versioned bool,
+) error {
 
 	secretName = names.SanitizeSubdomain(secretName)
 
@@ -325,7 +332,7 @@ func (po *OutputPersistor) createSecret(
 		err := store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretAnnotations, secretLabels, sourceDescription)
 		if err != nil {
 			if !versionedsecretstore.IsSecretIdenticalError(err) {
-				return errors.Wrapf(err, "could not persist qJob's '%s' output to a secret", qJob.GetNamespacedName())
+				return errors.Wrap(err, "failed to create versioned secret")
 			}
 			// No-op. the latest version is identical to the one we have
 			return nil
@@ -349,10 +356,10 @@ func (po *OutputPersistor) createSecret(
 				// If it exists update it
 				_, err = po.clientSet.CoreV1().Secrets(po.namespace).Update(ctx, secret, metav1.UpdateOptions{})
 				if err != nil {
-					return errors.Wrapf(err, "failed to update secret %s for container %s in pod '%s/%s'", secretName, container.Name, po.namespace, po.podName)
+					return errors.Wrapf(err, "failed to update secret '%s'", secretName)
 				}
 			} else {
-				return errors.Wrapf(err, "failed to create secret %s for container %s in pod '%s/%s'", secretName, container.Name, po.namespace, po.podName)
+				return errors.Wrapf(err, "failed to create secret '%s'", secretName)
 			}
 		}
 

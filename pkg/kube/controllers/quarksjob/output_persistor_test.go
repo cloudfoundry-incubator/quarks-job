@@ -267,10 +267,15 @@ var _ = Describe("OutputPersistor", func() {
 					Expect(err).NotTo(HaveOccurred())
 					secret, _ := clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "foo-busybox", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
+					Expect(secret.StringData).To(HaveKeyWithValue("hello", "world"))
+
 					secret, _ = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "fake-nats", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
+					Expect(secret.StringData).To(HaveKeyWithValue("hello", "world"))
+
 					secret, _ = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "bar-nuts-v1", metav1.GetOptions{})
 					Expect(secret).ShouldNot(BeNil())
+					Expect(secret.StringData).To(HaveKeyWithValue("hello", "world"))
 				})
 			})
 
@@ -321,8 +326,17 @@ var _ = Describe("OutputPersistor", func() {
 				It("creates a secret per each key/value of the given input file", func() {
 					Expect(po.Persist(context.Background())).NotTo(HaveOccurred())
 
-					Expect(clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "link-nats-deployment-nats-nats", metav1.GetOptions{})).ShouldNot(BeNil())
-					Expect(clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "link-nats-deployment-nats-nuts", metav1.GetOptions{})).ShouldNot(BeNil())
+					secret, _ := clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "link-nats-deployment-nats-nats", metav1.GetOptions{})
+					Expect(secret).ShouldNot(BeNil())
+					Expect(secret.StringData).To(HaveKeyWithValue("nats.password", "changeme"))
+					Expect(secret.StringData).To(HaveKeyWithValue("nats.port", "1337"))
+					Expect(secret.StringData).To(HaveKeyWithValue("nats.user", "admin"))
+
+					secret, _ = clientSet.CoreV1().Secrets(namespace).Get(context.Background(), "link-nats-deployment-nats-nuts", metav1.GetOptions{})
+					Expect(secret).ShouldNot(BeNil())
+					Expect(secret.StringData).To(HaveKeyWithValue("nats.password", "chungeme"))
+					Expect(secret.StringData).To(HaveKeyWithValue("nats.port", "1337"))
+					Expect(secret.StringData).To(HaveKeyWithValue("nats.user", "udmin"))
 				})
 			})
 		})

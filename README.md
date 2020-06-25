@@ -32,7 +32,7 @@ There are two different kinds of `QuarksJob`:
 Errands are run manually by the user. They are created by setting `trigger.strategy: manual`.
 
 After the `QuarksJob` is created, run an errand by editing and applying the
-manifest, i.e. via `k edit errand1` and change `trigger.strategy: manual` to `trigger.strategy: now`. A `kubectl patch` is also a good way to trigger this type of `QuarksJob`.
+manifest, i.e. via `kubectl edit errand1` and change `trigger.strategy: manual` to `trigger.strategy: now`. A `kubectl patch` is also a good way to trigger this type of `QuarksJob`.
 
 After completion, this value is reset to `manual`.
 

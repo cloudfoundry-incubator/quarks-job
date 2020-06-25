@@ -156,17 +156,27 @@ func (po *OutputPersistor) persistContainer(
 							errorContainerChannel <- err
 						}
 
-						if err := po.createSecret(ctx, qJob, secretName, options.AdditionalSecretAnnotations, secretData, labels, options.Versioned); err != nil {
-							err = errors.Wrapf(err, "failed to persist qjob '%s' output, pod '%s/%s', container '%s', using fan-out", qJob.Name, po.namespace, po.podName, container.Name)
-							errorContainerChannel <- err
+						var err error
+						if options.Versioned {
+							err = po.createVersionedSecret(qJob, secretName, options.AdditionalSecretAnnotations, secretData, labels)
+						} else {
+							err = po.createSecret(ctx, secretName, options.AdditionalSecretAnnotations, secretData, labels)
+						}
+						if err != nil {
+							errorContainerChannel <- errors.Wrapf(err, "failed to persist qjob '%s' output, pod '%s/%s', container '%s', using fan-out", qJob.Name, po.namespace, po.podName, container.Name)
 						}
 					}
 
 				default:
 					po.log.Debugf("container '%s': creating secret '%s' from '%s'", container.Name, options.Name, filePath)
-					if err := po.createSecret(ctx, qJob, options.Name, options.AdditionalSecretAnnotations, data, labels, options.Versioned); err != nil {
-						err = errors.Wrapf(err, "failed to persist qjob '%s' output, pod '%s/%s', container '%s', using one-to-one", qJob.Name, po.namespace, po.podName, container.Name)
-						errorContainerChannel <- err
+					var err error
+					if options.Versioned {
+						err = po.createVersionedSecret(qJob, options.Name, options.AdditionalSecretAnnotations, data, labels)
+					} else {
+						err = po.createSecret(ctx, options.Name, options.AdditionalSecretAnnotations, data, labels)
+					}
+					if err != nil {
+						errorContainerChannel <- errors.Wrapf(err, "failed to persist qjob '%s' output, pod '%s/%s', container '%s', using one-to-one", qJob.Name, po.namespace, po.podName, container.Name)
 					}
 				}
 			}
@@ -310,59 +320,64 @@ func newLabels(output qjv1a1.Output, additionalSecretLabels map[string]string, c
 	return secretLabels
 }
 
-// createSecret converts the output file into json and creates a secret for a given container
-func (po *OutputPersistor) createSecret(
-	ctx context.Context,
+func (po *OutputPersistor) createVersionedSecret(
 	qJob *qjv1a1.QuarksJob,
 	secretName string,
 	secretAnnotations map[string]string,
 	secretData map[string]string,
 	secretLabels map[string]string,
-	versioned bool,
 ) error {
+	secretName = names.SanitizeSubdomain(secretName)
+	ownerName := qJob.GetName()
+	ownerID := qJob.GetUID()
+	sourceDescription := "created by quarksJob"
 
+	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
+	err := store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretAnnotations, secretLabels, sourceDescription)
+	if err != nil {
+		if !versionedsecretstore.IsSecretIdenticalError(err) {
+			return errors.Wrap(err, "failed to create versioned secret")
+		}
+		// No-op. the latest version is identical to the one we have
+		return nil
+	}
+	return nil
+}
+
+// createSecret converts the output file into json and creates a secret for a given container
+func (po *OutputPersistor) createSecret(
+	ctx context.Context,
+	secretName string,
+	secretAnnotations map[string]string,
+	secretData map[string]string,
+	secretLabels map[string]string,
+) error {
 	secretName = names.SanitizeSubdomain(secretName)
 
-	if versioned {
-		ownerName := qJob.GetName()
-		ownerID := qJob.GetUID()
-		sourceDescription := "created by quarksJob"
-
-		store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
-		err := store.Create(context.Background(), po.namespace, ownerName, ownerID, secretName, secretData, secretAnnotations, secretLabels, sourceDescription)
-		if err != nil {
-			if !versionedsecretstore.IsSecretIdenticalError(err) {
-				return errors.Wrap(err, "failed to create versioned secret")
-			}
-			// No-op. the latest version is identical to the one we have
-			return nil
-		}
-	} else {
-		secret := &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      secretName,
-				Namespace: po.namespace,
-			},
-		}
-
-		secret.StringData = secretData
-		secret.Labels = secretLabels
-		secret.Annotations = secretAnnotations
-
-		_, err := po.clientSet.CoreV1().Secrets(po.namespace).Create(ctx, secret, metav1.CreateOptions{})
-
-		if err != nil {
-			if apierrors.IsAlreadyExists(err) {
-				// If it exists update it
-				_, err = po.clientSet.CoreV1().Secrets(po.namespace).Update(ctx, secret, metav1.UpdateOptions{})
-				if err != nil {
-					return errors.Wrapf(err, "failed to update secret '%s'", secretName)
-				}
-			} else {
-				return errors.Wrapf(err, "failed to create secret '%s'", secretName)
-			}
-		}
-
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: po.namespace,
+		},
 	}
+
+	secret.StringData = secretData
+	secret.Labels = secretLabels
+	secret.Annotations = secretAnnotations
+
+	_, err := po.clientSet.CoreV1().Secrets(po.namespace).Create(ctx, secret, metav1.CreateOptions{})
+
+	if err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			// If it exists update it
+			_, err = po.clientSet.CoreV1().Secrets(po.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+			if err != nil {
+				return errors.Wrapf(err, "failed to update secret '%s'", secretName)
+			}
+		} else {
+			return errors.Wrapf(err, "failed to create secret '%s'", secretName)
+		}
+	}
+
 	return nil
 }

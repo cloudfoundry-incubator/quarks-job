@@ -24,11 +24,15 @@ jobs:
       shell: bash
       run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
       id: prepare_branch_env
+    - name: Install shared tools
+      run: |
+        bin/tools
     - name: Publish Helm Chart
       run: |
         git fetch --unshallow
         bash ./bin/deploy
       env:
+        PROJECT: quarks-job
         GITHUB_ACTION_BRANCH: ${{ steps.prepare_branch_env.outputs.branch }}
         GH_PASSWORD: ${{ secrets.GH_PASSWORD }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}

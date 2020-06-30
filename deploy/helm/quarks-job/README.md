@@ -45,7 +45,7 @@ Manually create before running `helm install`, for each namespace:
 
 ## Installing the Chart From the Developmenet Branch
 
-Run `bin/build-image` to create a new docker image, export `DOCKER_IMAGE_TAG` to override the tag.
+Download the shared scripts with `bin/tools`, set `PROJECT=quarks-job` and run `bin/build-image` to create a new docker image, export `DOCKER_IMAGE_TAG` to override the tag.
 
 To install the helm chart directly from the [quarks-job repository](https://github.com/cloudfoundry-incubator/quarks-job) (any branch), run `bin/build-helm` first.
 
@@ -66,6 +66,7 @@ $ helm delete quarks-job --purge
 | `image.tag`                                       | Docker image tag                                                                       | `foobar`                                       |
 | `global.contextTimeout`                           | Will set the context timeout in seconds, for future K8S API requests                   | `30`                                           |
 | `global.image.pullPolicy`                         | Kubernetes image pullPolicy                                                            | `IfNotPresent`                                 |
+| `global.monitoredID`                              | Label value of 'quarks.cloudfoundry.org/monitored'. Matching namespaces are watched    | release name                                  |
 | `global.rbac.create`                              | Install required RBAC service account, roles and rolebindings                          | `true`                                         |
 | `serviceAccount.create`                           | If true, create a service account                                                      |                                                |
 | `serviceAccount.name`                             | If not set and `create` is `true`, a name is generated using the fullname of the chart |                                                |

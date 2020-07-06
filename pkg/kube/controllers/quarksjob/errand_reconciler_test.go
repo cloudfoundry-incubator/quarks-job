@@ -25,7 +25,6 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	. "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
 	"code.cloudfoundry.org/quarks-job/testing"
-	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
@@ -111,8 +110,11 @@ var _ = Describe("ErrandReconciler", func() {
 
 				qJobName = "fake-qj"
 				qJob = env.ErrandQuarksJob(qJobName, qJob.Namespace)
+				qJobTime := metav1.NewTime(metav1.Now().Add(MeltdownDuration))
+				qJob.Status.LastReconcile = &qJobTime
 				serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 				client.GetCalls(clientGetStub)
+				client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
 				request = newRequest(qJob)
 			})
 
@@ -191,9 +193,44 @@ var _ = Describe("ErrandReconciler", func() {
 				statusWriter fakes.FakeStatusWriter
 			)
 
+			Context("meltdown should work", func() {
+				BeforeEach(func() {
+					qJob = env.ErrandQuarksJob("fake-qj", qJob.Namespace)
+					qJob.Status.LastReconcile = nil
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
+					client = fakes.FakeClient{}
+					mgr.GetClientReturns(&client)
+					client.GetCalls(clientGetStub)
+					client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
+
+					request = newRequest(qJob)
+				})
+
+				It("should go into meltdown", func() {
+					result, err := act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.RequeueAfter).To(Equal(MeltdownDuration))
+				})
+
+				It("should stay in meltown when multiple reconciles happen", func() {
+					result, err := act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.RequeueAfter).To(Equal(MeltdownDuration))
+					now := metav1.Now()
+					qJob.Status.LastReconcile = &now
+
+					result, err = act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.Requeue).To(BeFalse())
+					Expect(logs.FilterMessageSnippet("Meltdown in progress").Len()).To(Equal(1))
+				})
+			})
+
 			Context("and the errand is a manual errand", func() {
 				BeforeEach(func() {
 					qJob = env.ErrandQuarksJob("fake-qj", qJob.Namespace)
+					qJobTime := metav1.NewTime(metav1.Now().Add(MeltdownDuration))
+					qJob.Status.LastReconcile = &qJobTime
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					client = fakes.FakeClient{}
 					mgr.GetClientReturns(&client)
@@ -226,6 +263,8 @@ var _ = Describe("ErrandReconciler", func() {
 			Context("and the errand is an auto-errand", func() {
 				BeforeEach(func() {
 					qJob = env.AutoErrandQuarksJob("fake-qj")
+					qJobTime := metav1.NewTime(metav1.Now().Add(MeltdownDuration))
+					qJob.Status.LastReconcile = &qJobTime
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					client = fakes.FakeClient{}
 					statusWriter = fakes.FakeStatusWriter{}
@@ -251,15 +290,6 @@ var _ = Describe("ErrandReconciler", func() {
 					result, err := act()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
-				})
-
-				It("should requeue reconcile when quarks job is in meltdown", func() {
-					now := metav1.Now()
-					qJob.Status.LastReconcile = &now
-
-					result, err := act()
-					Expect(err).ToNot(HaveOccurred())
-					Expect(result.RequeueAfter).To(Equal(config.MeltdownRequeueAfter))
 				})
 
 				It("handles an error when updating job's strategy failed", func() {
@@ -307,7 +337,7 @@ var _ = Describe("ErrandReconciler", func() {
 					statusWriter.UpdateCalls(statusCallQueue.Calls)
 
 					result, err := act()
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).To(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
 					Expect(logs.FilterMessageSnippet("Failed to update reconcile timestamp on job").Len()).To(Equal(1))
 				})
@@ -329,6 +359,8 @@ var _ = Describe("ErrandReconciler", func() {
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					qJobName = "fake-qj"
 					qJob = env.AutoErrandQuarksJob(qJobName)
+					qJobTime := metav1.NewTime(metav1.Now().Add(MeltdownDuration))
+					qJob.Status.LastReconcile = &qJobTime
 					qJob.Spec.Template = env.ConfigJobTemplate()
 					qJob.Spec.UpdateOnConfigChange = true
 					qJob.Spec.Trigger.Strategy = qjv1a1.TriggerOnce

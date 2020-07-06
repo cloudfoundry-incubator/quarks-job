@@ -84,9 +84,33 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if meltdown.NewWindow(r.config.MeltdownDuration, qJob.Status.LastReconcile).Contains(time.Now()) {
-		ctxlog.WithEvent(qJob, "Meltdown").Debugf(ctx, "Resource '%s' is in meltdown, requeue reconcile after %s", request.NamespacedName, r.config.MeltdownRequeueAfter)
-		return reconcile.Result{RequeueAfter: r.config.MeltdownRequeueAfter}, nil
+	negativeTime := metav1.Date(0001, 1, 1, -1, 0, 0, 0, time.UTC)
+	if qJob.Status.LastReconcile.Equal(&negativeTime) || qJob.Status.LastReconcile == nil {
+		ctxlog.Debug(ctx, "Rohit Svk : Setting lastReconcile to now")
+		now := metav1.Now()
+		qJob.Status.LastReconcile = &now
+
+		err := r.client.Status().Update(ctx, qJob)
+		if err != nil {
+			ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
+			return reconcile.Result{}, err
+		}
+
+		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
+	}
+
+	if meltdown.NewWindow(10*time.Second, qJob.Status.LastReconcile).Contains(time.Now()) {
+		ctxlog.Debug(ctx, "Rohit Svk : Skipping reconcile as it is within 10 seconds")
+		ctxlog.WithEvent(qJob, "Meltdown").Debugf(ctx, "Resource '%s' is in meltdown, requeue reconcile skipped.", qJob.Name)
+		return reconcile.Result{}, nil
+	}
+
+	ctxlog.Debug(ctx, "Rohit Svk : Setting back to negative time")
+	qJob.Status.LastReconcile = &negativeTime
+	err := r.client.Status().Update(ctx, qJob)
+	if err != nil {
+		ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
+		return reconcile.Result{}, err
 	}
 
 	if qJob.Spec.Trigger.Strategy == qjv1a1.TriggerNow {
@@ -122,9 +146,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 
 	// Reset status
 	qJob.Status.Completed = false
-	now := metav1.Now()
-	qJob.Status.LastReconcile = &now
-	err := r.client.Status().Update(ctx, qJob)
+	err = r.client.Status().Update(ctx, qJob)
 	if err != nil {
 		ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
 		return reconcile.Result{Requeue: false}, nil

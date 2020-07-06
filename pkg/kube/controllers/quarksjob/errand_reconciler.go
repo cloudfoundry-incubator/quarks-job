@@ -22,6 +22,8 @@ import (
 var _ reconcile.Reconciler = &ErrandReconciler{}
 
 const (
+	// ReconcileSkipDuration is the duration of merging consecutive triggers.
+	ReconcileSkipDuration = 10 * time.Second
 	// EnvKubeAz is set by available zone name
 	EnvKubeAz = "KUBE_AZ"
 	// EnvBoshAz is set by available zone name
@@ -72,7 +74,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	ctx, cancel := context.WithTimeout(r.ctx, r.config.CtxTimeOut)
 	defer cancel()
 
-	ctxlog.Info(ctx, "Reconciling errand job ", request.NamespacedName)
+	ctxlog.Infof(ctx, "Reconciling errand job '%s'", request.NamespacedName)
 	if err := r.client.Get(ctx, request.NamespacedName, qJob); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Do not requeue, quarks job is probably deleted.
@@ -84,9 +86,29 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
-	if meltdown.NewWindow(r.config.MeltdownDuration, qJob.Status.LastReconcile).Contains(time.Now()) {
-		ctxlog.WithEvent(qJob, "Meltdown").Debugf(ctx, "Resource '%s' is in meltdown, requeue reconcile after %s", request.NamespacedName, r.config.MeltdownRequeueAfter)
-		return reconcile.Result{RequeueAfter: r.config.MeltdownRequeueAfter}, nil
+	if qJob.Status.LastReconcile == nil {
+		now := metav1.Now()
+		qJob.Status.LastReconcile = &now
+
+		err := r.client.Status().Update(ctx, qJob)
+		if err != nil {
+			return reconcile.Result{}, ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
+		}
+		ctxlog.Infof(ctx, "Meltdown started for '%s'", request.NamespacedName)
+
+		return reconcile.Result{RequeueAfter: ReconcileSkipDuration}, nil
+	}
+
+	if meltdown.NewWindow(ReconcileSkipDuration, qJob.Status.LastReconcile).Contains(time.Now()) {
+		ctxlog.Infof(ctx, "Meltdown in progress for '%s'", request.NamespacedName)
+		return reconcile.Result{}, nil
+	}
+
+	ctxlog.Infof(ctx, "Meltdown ended for '%s'", request.NamespacedName)
+	qJob.Status.LastReconcile = nil
+	err := r.client.Status().Update(ctx, qJob)
+	if err != nil {
+		return reconcile.Result{}, ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
 	}
 
 	if qJob.Spec.Trigger.Strategy == qjv1a1.TriggerNow {
@@ -118,16 +140,6 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 			ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", qJob.GetNamespacedName(), err)
 			return reconcile.Result{Requeue: false}, nil
 		}
-	}
-
-	// Reset status
-	qJob.Status.Completed = false
-	now := metav1.Now()
-	qJob.Status.LastReconcile = &now
-	err := r.client.Status().Update(ctx, qJob)
-	if err != nil {
-		ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
-		return reconcile.Result{Requeue: false}, nil
 	}
 
 	return reconcile.Result{}, nil

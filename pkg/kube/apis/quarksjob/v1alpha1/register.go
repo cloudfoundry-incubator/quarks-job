@@ -99,7 +99,8 @@ var (
 					Type: "object",
 					Properties: map[string]extv1.JSONSchemaProps{
 						"lastReconcile": {
-							Type: "string",
+							Type:     "string",
+							Nullable: true,
 						},
 						"completed": {
 							Type: "boolean",

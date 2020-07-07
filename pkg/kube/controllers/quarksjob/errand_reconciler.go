@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/meltdown"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
@@ -85,9 +85,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	negativeTime := metav1.Date(0001, 1, 1, -1, 0, 0, 0, time.UTC)
-
 	if qJob.Status.LastReconcile.Equal(&negativeTime) || qJob.Status.LastReconcile == nil {
-		ctxlog.Debug(ctx, "Rohit Svk : Setting lastReconcile to now")
 		now := metav1.Now()
 		qJob.Status.LastReconcile = &now
 
@@ -96,17 +94,17 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 			ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
 			return reconcile.Result{}, err
 		}
+		ctxlog.Info(ctx, "Meltdown started for ", request.NamespacedName)
 
 		return reconcile.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
 	if meltdown.NewWindow(10*time.Second, qJob.Status.LastReconcile).Contains(time.Now()) {
-		ctxlog.Debug(ctx, "Rohit Svk : Skipping reconcile as it is within 10 seconds")
-		ctxlog.WithEvent(qJob, "Meltdown").Debugf(ctx, "Resource '%s' is in meltdown, requeue reconcile skipped.", qJob.Name)
+		ctxlog.Info(ctx, "Meltdown in progress for ", request.NamespacedName)
 		return reconcile.Result{}, nil
 	}
 
-	ctxlog.Debug(ctx, "Rohit Svk : Setting back to negative time")
+	ctxlog.Info(ctx, "Meltdown ended for ", request.NamespacedName)
 	qJob.Status.LastReconcile = &negativeTime
 	err := r.client.Status().Update(ctx, qJob)
 	if err != nil {
@@ -123,7 +121,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 	}
 
 	r.injectContainerEnv(&qJob.Spec.Template.Spec.Template.Spec)
-	if retry, err := r.jobCreator.Create(ctx, *qJob, request.Namespace); err != nil {
+	if retry, err := r.jobCreator.Create(ctx, *qJob); err != nil {
 		return reconcile.Result{}, ctxlog.WithEvent(qJob, "CreateJobError").Errorf(ctx, "Failed to create job '%s': %s", qJob.GetNamespacedName(), err)
 	} else if retry {
 		ctxlog.Infof(ctx, "Retrying to create job '%s'", qJob.GetNamespacedName())
@@ -143,6 +141,14 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 			ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", qJob.GetNamespacedName(), err)
 			return reconcile.Result{Requeue: false}, nil
 		}
+	}
+
+	// Reset status
+	qJob.Status.Completed = false
+	err = r.client.Status().Update(ctx, qJob)
+	if err != nil {
+		ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to update reconcile timestamp on job '%s' (%v): %s", qJob.GetNamespacedName(), qJob.ResourceVersion, err)
+		return reconcile.Result{Requeue: false}, nil
 	}
 
 	return reconcile.Result{}, nil

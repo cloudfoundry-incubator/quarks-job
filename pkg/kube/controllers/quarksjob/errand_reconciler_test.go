@@ -13,6 +13,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -24,9 +25,7 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	. "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
-	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
@@ -46,6 +45,8 @@ var _ = Describe("ErrandReconciler", func() {
 			setOwnerReferenceCallCount int
 		)
 
+		namespace := corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "default", Labels: map[string]string{qjv1a1.LabelServiceAccount: "persist-output"}}}
+
 		newRequest := func(qJob qjv1a1.QuarksJob) reconcile.Request {
 			return reconcile.Request{
 				NamespacedName: types.NamespacedName{
@@ -57,6 +58,9 @@ var _ = Describe("ErrandReconciler", func() {
 
 		clientGetStub := func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 			switch obj := obj.(type) {
+			case *corev1.Namespace:
+				namespace.DeepCopyInto(obj)
+				return nil
 			case *qjv1a1.QuarksJob:
 				qJob.DeepCopyInto(obj)
 				return nil
@@ -74,7 +78,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 		JustBeforeEach(func() {
 			ctx := ctxlog.NewParentContext(log)
-			config := config.NewConfigWithTimeout(10 * time.Second)
+			config := helper.NewConfigWithTimeout(10 * time.Second)
 			reconciler = NewErrandReconciler(
 				ctx,
 				config,
@@ -107,8 +111,11 @@ var _ = Describe("ErrandReconciler", func() {
 
 				qJobName = "fake-qj"
 				qJob = env.ErrandQuarksJob(qJobName, qJob.Namespace)
+				qJobTime := v1.NewTime(v1.Now().Add(10 * time.Second))
+				qJob.Status.LastReconcile = &qJobTime
 				serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 				client.GetCalls(clientGetStub)
+				client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
 				request = newRequest(qJob)
 			})
 
@@ -187,9 +194,44 @@ var _ = Describe("ErrandReconciler", func() {
 				statusWriter fakes.FakeStatusWriter
 			)
 
-			Context("and the errand is a manual errand", func() {
+			Context("meltdown should work", func() {
 				BeforeEach(func() {
 					qJob = env.ErrandQuarksJob("fake-qj", qJob.Namespace)
+					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
+					client = fakes.FakeClient{}
+					mgr.GetClientReturns(&client)
+					client.GetCalls(clientGetStub)
+					client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
+
+					request = newRequest(qJob)
+				})
+
+				It("it should go into meltdown", func() {
+					result, err := act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.RequeueAfter).To(Equal(10 * time.Second))
+				})
+
+				It("it should stay in meltown when multiple reconciles happen", func() {
+					result, err := act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.RequeueAfter).To(Equal(10 * time.Second))
+					now := v1.Now()
+					qJob.Status.LastReconcile = &now
+
+					result, err = act()
+					Expect(err).ToNot(HaveOccurred())
+					Expect(result.Requeue).To(BeFalse())
+					Expect(logs.FilterMessageSnippet("Meltdown in progress").Len()).To(Equal(1))
+				})
+			})
+
+			Context("and the errand is a manual errand", func() {
+
+				BeforeEach(func() {
+					qJob = env.ErrandQuarksJob("fake-qj", qJob.Namespace)
+					qJobTime := v1.NewTime(v1.Now().Add(10 * time.Second))
+					qJob.Status.LastReconcile = &qJobTime
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					client = fakes.FakeClient{}
 					mgr.GetClientReturns(&client)
@@ -222,6 +264,8 @@ var _ = Describe("ErrandReconciler", func() {
 			Context("and the errand is an auto-errand", func() {
 				BeforeEach(func() {
 					qJob = env.AutoErrandQuarksJob("fake-qj")
+					qJobTime := v1.NewTime(v1.Now().Add(10 * time.Second))
+					qJob.Status.LastReconcile = &qJobTime
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					client = fakes.FakeClient{}
 					statusWriter = fakes.FakeStatusWriter{}
@@ -250,12 +294,12 @@ var _ = Describe("ErrandReconciler", func() {
 				})
 
 				It("should requeue reconcile when quarks job is in meltdown", func() {
-					now := metav1.Now()
-					qJob.Status.LastReconcile = &now
+					qJobTime := v1.NewTime(v1.Now().Add(5 * time.Second))
+					qJob.Status.LastReconcile = &qJobTime
 
 					result, err := act()
 					Expect(err).ToNot(HaveOccurred())
-					Expect(result.RequeueAfter).To(Equal(sharedcfg.MeltdownRequeueAfter))
+					Expect(result.Requeue).To(BeFalse())
 				})
 
 				It("handles an error when updating job's strategy failed", func() {
@@ -269,6 +313,7 @@ var _ = Describe("ErrandReconciler", func() {
 							return nil
 						},
 					)
+
 					client.UpdateCalls(callQueue.Calls)
 
 					result, err := act()
@@ -303,7 +348,7 @@ var _ = Describe("ErrandReconciler", func() {
 					statusWriter.UpdateCalls(statusCallQueue.Calls)
 
 					result, err := act()
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).To(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
 					Expect(logs.FilterMessageSnippet("Failed to update reconcile timestamp on job").Len()).To(Equal(1))
 				})
@@ -328,6 +373,8 @@ var _ = Describe("ErrandReconciler", func() {
 					qJob.Spec.Template = env.ConfigJobTemplate()
 					qJob.Spec.UpdateOnConfigChange = true
 					qJob.Spec.Trigger.Strategy = qjv1a1.TriggerOnce
+					qJobTime := v1.NewTime(v1.Now().Add(10 * time.Second))
+					qJob.Status.LastReconcile = &qJobTime
 					client = fakes.FakeClient{}
 					mgr.GetClientReturns(&client)
 					client.StatusCalls(func() crc.StatusWriter { return &fakes.FakeStatusWriter{} })
@@ -338,6 +385,9 @@ var _ = Describe("ErrandReconciler", func() {
 				It("should trigger the job", func() {
 					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 						switch obj := obj.(type) {
+						case *corev1.Namespace:
+							namespace.DeepCopyInto(obj)
+							return nil
 						case *qjv1a1.QuarksJob:
 							qJob.DeepCopyInto(obj)
 							return nil
@@ -373,6 +423,9 @@ var _ = Describe("ErrandReconciler", func() {
 				It("should skip when references are missing", func() {
 					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 						switch obj := obj.(type) {
+						case *corev1.Namespace:
+							namespace.DeepCopyInto(obj)
+							return nil
 						case *qjv1a1.QuarksJob:
 							qJob.DeepCopyInto(obj)
 							return nil
@@ -390,6 +443,9 @@ var _ = Describe("ErrandReconciler", func() {
 
 					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
 						switch obj := obj.(type) {
+						case *corev1.Namespace:
+							namespace.DeepCopyInto(obj)
+							return nil
 						case *qjv1a1.QuarksJob:
 							qJob.DeepCopyInto(obj)
 							return nil

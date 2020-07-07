@@ -25,7 +25,6 @@ import (
 	"code.cloudfoundry.org/quarks-job/pkg/kube/controllers"
 	cfakes "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/fakes"
 	qj "code.cloudfoundry.org/quarks-job/pkg/kube/controllers/quarksjob"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	helper "code.cloudfoundry.org/quarks-utils/testing/testhelper"
@@ -77,11 +76,12 @@ var _ = Describe("ReconcileJob", func() {
 			return nil
 		})
 		manager.GetClientReturns(client)
+		client.StatusCalls(func() crc.StatusWriter { return &cfakes.FakeStatusWriter{} })
 	})
 
 	JustBeforeEach(func() {
 		ctx := ctxlog.NewParentContext(log)
-		config := config.NewConfigWithTimeout(10 * time.Second)
+		config := helper.NewConfigWithTimeout(10 * time.Second)
 		reconciler, _ = qj.NewJobReconciler(ctx, config, manager)
 		qJob, job, pod1 = env.DefaultQuarksJobWithSucceededJob("foo", request.Namespace)
 	})
@@ -120,6 +120,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(1))
+			Expect(client.StatusCallCount()).To(Equal(1))
 		})
 
 		It("deletes owned pod together with the job", func() {
@@ -131,6 +132,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(2))
+			Expect(client.StatusCallCount()).To(Equal(1))
 		})
 
 		It("deletes latest owned pod together with the job", func() {
@@ -168,6 +170,7 @@ var _ = Describe("ReconcileJob", func() {
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(2))
+			Expect(client.StatusCallCount()).To(Equal(1))
 		})
 
 		It("handles an error when getting job's quarks job reference failed", func() {

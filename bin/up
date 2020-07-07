@@ -3,6 +3,4 @@
 set -e
 
 bin/build
-
-echo "watching namespace: $WATCH_NAMESPACE"
 binaries/quarks-job $*

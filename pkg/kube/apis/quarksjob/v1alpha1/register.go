@@ -101,6 +101,9 @@ var (
 						"lastReconcile": {
 							Type: "string",
 						},
+						"completed": {
+							Type: "boolean",
+						},
 					},
 				},
 			},

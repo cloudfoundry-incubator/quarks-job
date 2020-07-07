@@ -1,8 +1,8 @@
 # Publishing
 
-We're publishing docker images and helm charts over Travis. The travis will run these two jobs on master branch.
+We're publishing docker images and helm charts over Github Actions. The Github Actions will run these two jobs on master branch.
 
-The Travis job needs the following credentials defined in "Repository Settings":
+The Github Action job needs the following credentials defined in "Repository Settings":
 
 ```bash
 DOCKER_IMAGE_ORG="DOCKER IMAGE ORGANIZATION"

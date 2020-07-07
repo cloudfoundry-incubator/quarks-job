@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 )
 
@@ -32,6 +32,9 @@ func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) err
 	if err != nil {
 		return err
 	}
+
+	nsPredicate := newNSPredicate(ctx, mgr.GetClient(), config.MonitoredID)
+
 	predicate := predicate.Funcs{
 		// We're only interested in Jobs going from Active to final state (Succeeded or Failed)
 		CreateFunc:  func(e event.CreateEvent) bool { return false },
@@ -51,7 +54,7 @@ func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) err
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(o).Debug(
 					ctx, e.MetaNew, "batchv1.Job",
-					fmt.Sprintf("Update predicate passed for '%s/%s', existing batchv1.Job has changed to a final state, either succeeded or failed",
+					fmt.Sprintf("Update predicate passed for '%s/%s', existing batchv1.Job has changed to a defined final state",
 						e.MetaNew.GetNamespace(),
 						e.MetaNew.GetName()),
 				)
@@ -60,7 +63,7 @@ func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) err
 			return shouldProcessEvent
 		},
 	}
-	return jobController.Watch(&source.Kind{Type: &batchv1.Job{}}, &handler.EnqueueRequestForObject{}, predicate)
+	return jobController.Watch(&source.Kind{Type: &batchv1.Job{}}, &handler.EnqueueRequestForObject{}, nsPredicate, predicate)
 }
 
 // isEJobJob matches our jobs

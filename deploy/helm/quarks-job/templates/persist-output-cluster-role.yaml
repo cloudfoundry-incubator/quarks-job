@@ -1,14 +1,9 @@
-{{- if .Values.global.rbac.create }}
+{{- if and .Values.global.rbac.create .Values.persistOutputClusterRole.create }}
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: quarks-job-persist-output
-  {{- if .Values.global.operator.watchNamespace }}
-  namespace: {{ .Values.global.operator.watchNamespace }}
-  {{- else }}
-  namespace: {{ .Release.Namespace }}
-  {{- end }}
+  name: "{{ .Values.persistOutputClusterRole.name }}"
 rules:
 - apiGroups:
   - ""

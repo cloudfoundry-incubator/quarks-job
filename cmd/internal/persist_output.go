@@ -27,10 +27,9 @@ var persistOutputCmd = &cobra.Command{
 into a versioned secret or kube native secret using flags specified to this command.
 `,
 	RunE: func(_ *cobra.Command, args []string) (err error) {
-
-		namespace := viper.GetString("watch-namespace")
+		namespace := viper.GetString("namespace")
 		if len(namespace) == 0 {
-			return errors.Errorf("persist-output command failed. watch-namespace flag is empty.")
+			return errors.Errorf("persist-output command failed. namespace flag is empty.")
 		}
 
 		// hostname of the container is the pod name in kubernetes
@@ -60,7 +59,17 @@ into a versioned secret or kube native secret using flags specified to this comm
 }
 
 func init() {
+	pf := persistOutputCmd.Flags()
 	rootCmd.AddCommand(persistOutputCmd)
+
+	pf.String("namespace", "default", "namespace where persist output will run")
+	viper.BindPFlag("namespace", pf.Lookup("namespace"))
+
+	argToEnv := map[string]string{
+		"namespace": "NAMESPACE",
+	}
+
+	cmd.AddEnvToUsage(persistOutputCmd, argToEnv)
 }
 
 // authenticateInCluster authenticates with the in cluster and returns the client

@@ -1,5 +1,1 @@
-#!/bin/bash
-set -v
-go list ./... | xargs go vet
-go list ./... | xargs golint
-staticcheck ./...
+../tools/quarks-utils/bin/lint

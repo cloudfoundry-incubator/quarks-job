@@ -5,6 +5,9 @@
 /_tmp
 /vendor
 
+# Tools fetched in runtime
+/tools/
+
 # Created by https://www.gitignore.io/api/go,vim,emacs,visualstudiocode
 ### Emacs ###
 # -*- mode: gitignore; -*-

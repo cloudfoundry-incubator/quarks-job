@@ -18,11 +18,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/client/clientset/versioned"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/testing"
-	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
 	utils "code.cloudfoundry.org/quarks-utils/testing/integration"
 	"code.cloudfoundry.org/quarks-utils/testing/machine"
@@ -33,7 +33,6 @@ type Environment struct {
 	*utils.Environment
 	Machine
 	testing.Catalog
-	Config *config.Config
 }
 
 var (
@@ -44,14 +43,15 @@ var (
 func NewEnvironment(kubeConfig *rest.Config) *Environment {
 	atomic.AddInt32(&namespaceCounter, 1)
 	namespaceID := gomegaConfig.GinkgoConfig.ParallelNode*100 + int(namespaceCounter)
-	shared := &sharedcfg.Config{
+	ns, _ := names.JobName(utils.GetNamespaceName(namespaceID))
+
+	shared := &config.Config{
 		CtxTimeOut:           10 * time.Second,
 		MeltdownDuration:     1 * time.Second,
 		MeltdownRequeueAfter: 500 * time.Millisecond,
 		Fs:                   afero.NewOsFs(),
+		MonitoredID:          ns,
 	}
-
-	ns, _ := names.JobName(utils.GetNamespaceName(namespaceID))
 	return &Environment{
 		Environment: &utils.Environment{
 			ID:         namespaceID,
@@ -61,10 +61,6 @@ func NewEnvironment(kubeConfig *rest.Config) *Environment {
 		},
 		Machine: Machine{
 			Machine: machine.NewMachine(),
-		},
-		Config: &config.Config{
-			Config:         shared,
-			ServiceAccount: serviceAccountName,
 		},
 	}
 }
@@ -93,7 +89,10 @@ func (e *Environment) NamespaceDeletionInProgress(err error) bool {
 
 // SetupNamespace creates the namespace and the clientsets and prepares the teardowm
 func (e *Environment) SetupNamespace() error {
-	nsTeardown, err := e.CreateNamespace(e.Namespace)
+	nsTeardown, err := e.CreateLabeledNamespace(e.Namespace, map[string]string{
+		qjv1a1.LabelNamespace:      e.Namespace,
+		qjv1a1.LabelServiceAccount: serviceAccountName,
+	})
 	if err != nil {
 		return errors.Wrapf(err, "Integration setup failed. Creating namespace %s failed", e.Namespace)
 	}

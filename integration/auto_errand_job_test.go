@@ -59,6 +59,11 @@ var _ = Describe("AutoErrandJob", func() {
 
 				By("Checking pod is still there, because delete label is missing")
 				Expect(env.PodsDeleted(env.Namespace)).To(BeFalse())
+
+				By("Checking qJob status")
+				qj, err := env.GetQuarksJob(env.Namespace, qj.Name)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(qj.Status.Completed).To(BeTrue())
 			})
 
 			Context("when pod template has delete label", func() {
@@ -79,7 +84,7 @@ var _ = Describe("AutoErrandJob", func() {
 						err = env.WaitForJobDeletion(env.Namespace, jobs[0].Name)
 						Expect(err).ToNot(HaveOccurred())
 
-						Expect(env.PodsDeleted(env.Namespace)).To(BeTrue())
+						Expect(env.WaitForPodsDelete(env.Namespace)).To(Succeed())
 					})
 				})
 

@@ -15,10 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"code.cloudfoundry.org/quarks-job/pkg/kube/operator"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
 	"code.cloudfoundry.org/quarks-job/version"
 	"code.cloudfoundry.org/quarks-utils/pkg/cmd"
-	sharedcfg "code.cloudfoundry.org/quarks-utils/pkg/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/logger"
 )
@@ -26,7 +25,7 @@ import (
 var log *zap.SugaredLogger
 
 func wrapError(err error, msg string) error {
-	return errors.Wrap(err, "quarks-job command failed. "+msg)
+	return errors.Wrapf(err, "quarks-job command failed. %s", msg)
 }
 
 var rootCmd = &cobra.Command{
@@ -43,24 +42,20 @@ var rootCmd = &cobra.Command{
 
 		cfg := config.NewDefaultConfig(afero.NewOsFs())
 
-		watchNamespace := cmd.WatchNamespace(cfg.Config, log)
-		log.Infof("Starting quarks-job %s with namespace %s", version.Version, watchNamespace)
+		cmd.MonitoredID(cfg)
+
+		log.Infof("Starting quarks-job %s, monitoring namespaces labeled with '%s'", version.Version, cfg.MonitoredID)
 
 		err = cmd.DockerImage()
 		if err != nil {
 			return wrapError(err, "")
 		}
-		log.Infof("quarks-job docker image: %s", sharedcfg.GetOperatorDockerImage())
+		log.Infof("quarks-job docker image: %s", config.GetOperatorDockerImage())
 
 		cfg.MaxQuarksJobWorkers = viper.GetInt("max-workers")
 
-		serviceAccount := viper.GetString("service-account")
-		if serviceAccount == "" {
-			serviceAccount = "default"
-		}
-		cfg.ServiceAccount = serviceAccount
-
-		cmd.CtxTimeOut(cfg.Config)
+		cmd.CtxTimeOut(cfg)
+		cmd.Meltdown(cfg)
 
 		ctx := ctxlog.NewParentContext(log)
 
@@ -70,7 +65,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		mgr, err := operator.NewManager(ctx, cfg, restConfig, manager.Options{
-			Namespace:          watchNamespace,
 			MetricsBindAddress: "0",
 			LeaderElection:     false,
 		})
@@ -108,19 +102,16 @@ func init() {
 	argToEnv := map[string]string{}
 
 	cmd.CtxTimeOutFlags(pf, argToEnv)
+	cmd.MonitoredIDFlags(pf, argToEnv)
 	cmd.KubeConfigFlags(pf, argToEnv)
 	cmd.LoggerFlags(pf, argToEnv)
-	cmd.WatchNamespaceFlags(pf, argToEnv)
 	cmd.DockerImageFlags(pf, argToEnv, "quarks-job", version.Version)
 	cmd.ApplyCRDsFlags(pf, argToEnv)
+	cmd.MeltdownFlags(pf, argToEnv)
 
 	pf.Int("max-workers", 1, "Maximum number of workers concurrently running the controller")
 	viper.BindPFlag("max-workers", pf.Lookup("max-workers"))
 	argToEnv["max-workers"] = "MAX_WORKERS"
-
-	pf.String("service-account", "default", "service acount for the persist output container in the created jobs")
-	viper.BindPFlag("service-account", pf.Lookup("service-account"))
-	argToEnv["service-account"] = "SERVICE_ACCOUNT"
 
 	// Add env variables to help
 	cmd.AddEnvToUsage(rootCmd, argToEnv)

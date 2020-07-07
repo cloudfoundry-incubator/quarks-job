@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
@@ -39,6 +39,8 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 	if err != nil {
 		return errors.Wrap(err, "Adding Errand controller to manager failed.")
 	}
+
+	nsPredicate := newNSPredicate(ctx, mgr.GetClient(), config.MonitoredID)
 
 	// Trigger when
 	//  * errand jobs are to be run (Spec.Run changes from `manual` to `now` or the job is created with `now`)
@@ -87,7 +89,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 		},
 	}
 
-	err = c.Watch(&source.Kind{Type: &qjv1a1.QuarksJob{}}, &handler.EnqueueRequestForObject{}, p)
+	err = c.Watch(&source.Kind{Type: &qjv1a1.QuarksJob{}}, &handler.EnqueueRequestForObject{}, nsPredicate, p)
 	if err != nil {
 		return errors.Wrapf(err, "Watching Quarks jobs failed in Errand controller.")
 	}
@@ -124,7 +126,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			}
 			return reconciles
 		}),
-	}, p)
+	}, nsPredicate, p)
 	if err != nil {
 		return err
 	}
@@ -173,7 +175,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 
 			return reconciles
 		}),
-	}, p)
+	}, nsPredicate, p)
 
 	return err
 }

@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/config"
+	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
@@ -106,6 +106,14 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 					ctxlog.WithEvent(instance, "DeleteError").Errorf(ctx, "Cannot delete succeeded job's pod: '%s'", err)
 				}
 			}
+		}
+
+		// Update QuarksJob status
+		qj.Status.Completed = true
+		err := r.client.Status().Update(ctx, &qj)
+		if err != nil {
+			ctxlog.WithEvent(&qj, "UpdateError").Errorf(ctx, "Failed to update quarks job status '%s' (%s): %s", qj.GetNamespacedName(), qj.ResourceVersion, err)
+			return reconcile.Result{Requeue: false}, nil
 		}
 	}
 

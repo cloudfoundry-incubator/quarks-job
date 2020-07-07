@@ -80,7 +80,7 @@ func GetReconciles(ctx context.Context, client crc.Client, reconcileType Reconci
 	case ReconcileForQuarksJob:
 		quarksJobs, err := listQuarksJobs(ctx, client, namespace)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to list QuarksJobs for ConfigMap reconciles")
+			return nil, errors.Wrap(err, "failed to list QuarksJobs for reconciles")
 		}
 
 		for _, qJob := range quarksJobs.Items {
@@ -145,7 +145,7 @@ func SkipReconciles(ctx context.Context, client crc.Client, object apis.Object) 
 func listQuarksJobs(ctx context.Context, client crc.Client, namespace string) (*qjv1a1.QuarksJobList, error) {
 	log.Debugf(ctx, "Listing QuarksJobs in namespace '%s'", namespace)
 	result := &qjv1a1.QuarksJobList{}
-	err := client.List(ctx, result)
+	err := client.List(ctx, result, crc.InNamespace(namespace))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list QuarksJobs")
 	}

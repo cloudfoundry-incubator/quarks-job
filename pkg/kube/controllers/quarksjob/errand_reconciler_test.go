@@ -196,6 +196,7 @@ var _ = Describe("ErrandReconciler", func() {
 			Context("meltdown should work", func() {
 				BeforeEach(func() {
 					qJob = env.ErrandQuarksJob("fake-qj", qJob.Namespace)
+					qJob.Status.LastReconcile = nil
 					serviceAccount = env.DefaultServiceAccount("persist-output-service-account", qJob.Namespace)
 					client = fakes.FakeClient{}
 					mgr.GetClientReturns(&client)
@@ -211,14 +212,25 @@ var _ = Describe("ErrandReconciler", func() {
 					Expect(result.RequeueAfter).To(Equal(MeltdownDuration))
 				})
 
-				It("should stay in meltown when multiple reconciles happen", func() {
-					result, err := act()
-					Expect(err).ToNot(HaveOccurred())
-					Expect(result.RequeueAfter).To(Equal(MeltdownDuration))
-					now := metav1.Now()
-					qJob.Status.LastReconcile = &now
+				FIt("should stay in meltown when multiple reconciles happen", func() {
 
-					result, err = act()
+					statusCallQueue := helper.NewCallQueue(
+						func(context context.Context, object runtime.Object) error {
+							switch qJob := object.(type) {
+							case *qjv1a1.QuarksJob:
+								fmt.Println("sdfs")
+								fmt.Println(qJob.Status.LastReconcile)
+								//now := metav1.Now()
+								//qJob.Status.LastReconcile = &now
+							}
+							return nil
+						},
+					)
+					statusWriter.UpdateCalls(statusCallQueue.Calls)
+
+					fmt.Println("Act calling")
+					result, err := act()
+					fmt.Println(logs)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(result.Requeue).To(BeFalse())
 					Expect(logs.FilterMessageSnippet("Meltdown in progress").Len()).To(Equal(1))

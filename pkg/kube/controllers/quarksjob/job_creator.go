@@ -22,9 +22,7 @@ import (
 )
 
 const (
-	outputPersistDirName      = "output-persist-dir"
-	outputPersistDirMountPath = "/mnt/output-persist/"
-	mountPath                 = "/mnt/quarks/"
+	mountPath = "/mnt/quarks/"
 	// EnvNamespace is the namespace in which the jobs run, used by
 	// persist-output to create the secrets
 	EnvNamespace = "NAMESPACE"

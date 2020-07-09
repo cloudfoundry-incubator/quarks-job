@@ -55,7 +55,7 @@ var _ = Describe("ErrandReconciler", func() {
 			}
 		}
 
-		clientGetStub := func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
+		clientGetStub := func(_ context.Context, nn types.NamespacedName, obj runtime.Object) error {
 			switch obj := obj.(type) {
 			case *corev1.Namespace:
 				namespace.DeepCopyInto(obj)
@@ -70,7 +70,7 @@ var _ = Describe("ErrandReconciler", func() {
 			return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
 		}
 
-		setOwnerReference := func(owner, object metav1.Object, scheme *runtime.Scheme) error {
+		setOwnerReference := func(_, _ metav1.Object, _ *runtime.Scheme) error {
 			setOwnerReferenceCallCount++
 			return nil
 		}
@@ -92,7 +92,8 @@ var _ = Describe("ErrandReconciler", func() {
 		}
 
 		BeforeEach(func() {
-			controllers.AddToScheme(scheme.Scheme)
+			err := controllers.AddToScheme(scheme.Scheme)
+			Expect(err).NotTo(HaveOccurred())
 			mgr = &fakes.FakeManager{}
 			setOwnerReferenceCallCount = 0
 			logs, log = helper.NewTestLogger()

@@ -20,6 +20,11 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
+const (
+	// DeleteKind specify the kind of deleting resource.
+	DeleteKind = "pod"
+)
+
 // NewJobReconciler returns a new Reconciler
 func NewJobReconciler(ctx context.Context, config *config.Config, mgr manager.Manager) (reconcile.Reconciler, error) {
 	versionedSecretStore := versionedsecretstore.NewVersionedSecretStore(mgr.GetClient())
@@ -90,20 +95,20 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 		ctxlog.WithEvent(&qj, "DeletingJob").Infof(ctx, "Deleting succeeded job '%s/%s'", request.Namespace, instance.Name)
 		err = r.client.Delete(ctx, instance)
 		if err != nil {
-			ctxlog.WithEvent(instance, "DeleteError").Errorf(ctx, "Cannot delete succeeded job: '%s'", err)
+			_ = ctxlog.WithEvent(instance, "DeleteError").Errorf(ctx, "Cannot delete succeeded job: '%s'", err)
 		}
 
 		if d, ok := instance.Spec.Template.Labels["delete"]; ok {
-			if d == "pod" {
+			if d == DeleteKind {
 				pod, err := r.jobPod(ctx, instance.Name, instance.GetNamespace())
 				if err != nil {
-					ctxlog.WithEvent(instance, "NotFoundError").Errorf(ctx, "Cannot find job's pod: '%s'", err)
+					_ = ctxlog.WithEvent(instance, "NotFoundError").Errorf(ctx, "Cannot find job's pod: '%s'", err)
 					return reconcile.Result{}, nil
 				}
 				ctxlog.WithEvent(&qj, "DeletingJobsPod").Infof(ctx, "Deleting succeeded job's pod '%s/%s'", pod.Namespace, pod.Name)
 				err = r.client.Delete(ctx, pod)
 				if err != nil {
-					ctxlog.WithEvent(instance, "DeleteError").Errorf(ctx, "Cannot delete succeeded job's pod: '%s'", err)
+					_ = ctxlog.WithEvent(instance, "DeleteError").Errorf(ctx, "Cannot delete succeeded job's pod: '%s'", err)
 				}
 			}
 		}
@@ -112,7 +117,7 @@ func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, e
 		qj.Status.Completed = true
 		err := r.client.Status().Update(ctx, &qj)
 		if err != nil {
-			ctxlog.WithEvent(&qj, "UpdateError").Errorf(ctx, "Failed to update quarks job status '%s' (%s): %s", qj.GetNamespacedName(), qj.ResourceVersion, err)
+			_ = ctxlog.WithEvent(&qj, "UpdateError").Errorf(ctx, "Failed to update quarks job status '%s' (%s): %s", qj.GetNamespacedName(), qj.ResourceVersion, err)
 			return reconcile.Result{Requeue: false}, nil
 		}
 	}

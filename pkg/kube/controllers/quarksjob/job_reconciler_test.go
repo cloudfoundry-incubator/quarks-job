@@ -45,7 +45,8 @@ var _ = Describe("ReconcileJob", func() {
 	)
 
 	BeforeEach(func() {
-		controllers.AddToScheme(scheme.Scheme)
+		err := controllers.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
 		manager = &cfakes.FakeManager{}
 		request = reconcile.Request{NamespacedName: types.NamespacedName{Name: "foo", Namespace: "default"}}
 		logs, log = helper.NewTestLogger()
@@ -127,7 +128,7 @@ var _ = Describe("ReconcileJob", func() {
 			if job.Spec.Template.ObjectMeta.Labels == nil {
 				job.Spec.Template.ObjectMeta.Labels = map[string]string{}
 			}
-			job.Spec.Template.ObjectMeta.Labels["delete"] = "pod"
+			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
@@ -165,7 +166,7 @@ var _ = Describe("ReconcileJob", func() {
 			if job.Spec.Template.ObjectMeta.Labels == nil {
 				job.Spec.Template.ObjectMeta.Labels = map[string]string{}
 			}
-			job.Spec.Template.ObjectMeta.Labels["delete"] = "pod"
+			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
 			_, err := reconciler.Reconcile(request)
 			Expect(err).ToNot(HaveOccurred())
@@ -215,7 +216,7 @@ var _ = Describe("ReconcileJob", func() {
 			if job.Spec.Template.ObjectMeta.Labels == nil {
 				job.Spec.Template.ObjectMeta.Labels = map[string]string{}
 			}
-			job.Spec.Template.ObjectMeta.Labels["delete"] = "pod"
+			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
 			client.DeleteCalls(func(context context.Context, object runtime.Object, opts ...crc.DeleteOption) error {
 				switch object.(type) {
@@ -234,7 +235,7 @@ var _ = Describe("ReconcileJob", func() {
 			if job.Spec.Template.ObjectMeta.Labels == nil {
 				job.Spec.Template.ObjectMeta.Labels = map[string]string{}
 			}
-			job.Spec.Template.ObjectMeta.Labels["delete"] = "pod"
+			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
 			client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
 				switch object := object.(type) {
@@ -257,7 +258,7 @@ var _ = Describe("ReconcileJob", func() {
 			if job.Spec.Template.ObjectMeta.Labels == nil {
 				job.Spec.Template.ObjectMeta.Labels = map[string]string{}
 			}
-			job.Spec.Template.ObjectMeta.Labels["delete"] = "pod"
+			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
 			client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
 				switch object := object.(type) {

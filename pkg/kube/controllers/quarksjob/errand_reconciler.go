@@ -47,23 +47,21 @@ func NewErrandReconciler(
 	jc := NewJobCreator(mgr.GetClient(), mgr.GetScheme(), f, config, store)
 
 	return &ErrandReconciler{
-		ctx:               ctx,
-		client:            mgr.GetClient(),
-		config:            config,
-		scheme:            mgr.GetScheme(),
-		setOwnerReference: f,
-		jobCreator:        jc,
+		ctx:        ctx,
+		client:     mgr.GetClient(),
+		config:     config,
+		scheme:     mgr.GetScheme(),
+		jobCreator: jc,
 	}
 }
 
 // ErrandReconciler implements the Reconciler interface.
 type ErrandReconciler struct {
-	ctx               context.Context
-	client            client.Client
-	config            *config.Config
-	scheme            *runtime.Scheme
-	setOwnerReference setOwnerReferenceFunc
-	jobCreator        JobCreator
+	ctx        context.Context
+	client     client.Client
+	config     *config.Config
+	scheme     *runtime.Scheme
+	jobCreator JobCreator
 }
 
 // Reconcile starts jobs for quarks jobs of the type errand with Run being set to 'now' manually.
@@ -137,7 +135,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		// Traverse Strategy into the final 'done' state.
 		qJob.Spec.Trigger.Strategy = qjv1a1.TriggerDone
 		if err := r.client.Update(ctx, qJob); err != nil {
-			ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", qJob.GetNamespacedName(), err)
+			_ = ctxlog.WithEvent(qJob, "UpdateError").Errorf(ctx, "Failed to traverse to 'trigger.strategy=done' on job '%s': %s", qJob.GetNamespacedName(), err)
 			return reconcile.Result{Requeue: false}, nil
 		}
 	}

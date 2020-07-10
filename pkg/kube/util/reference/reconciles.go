@@ -107,41 +107,6 @@ func GetReconciles(ctx context.Context, client crc.Client, reconcileType Reconci
 	return result, nil
 }
 
-// SkipReconciles returns true if the object is stale, and shouldn't be enqueued for reconciliation
-// The object can be a ConfigMap or a Secret
-func SkipReconciles(ctx context.Context, client crc.Client, object apis.Object) bool {
-	var newResourceVersion string
-
-	switch object := object.(type) {
-	case *corev1.ConfigMap:
-		cm := &corev1.ConfigMap{}
-		err := client.Get(ctx, types.NamespacedName{Name: object.Name, Namespace: object.Namespace}, cm)
-		if err != nil {
-			log.Errorf(ctx, "Failed to get ConfigMap '%s/%s': %s", object.Namespace, object.Name, err)
-			return true
-		}
-
-		newResourceVersion = cm.ResourceVersion
-	case *corev1.Secret:
-		s := &corev1.Secret{}
-		err := client.Get(ctx, types.NamespacedName{Name: object.Name, Namespace: object.Namespace}, s)
-		if err != nil {
-			log.Errorf(ctx, "Failed to get Secret '%s/%s': %s", object.Namespace, object.Name, err)
-			return true
-		}
-
-		newResourceVersion = s.ResourceVersion
-	default:
-		return false
-	}
-
-	if object.GetResourceVersion() != newResourceVersion {
-		log.Debugf(ctx, "skip reconcile request for old resource version of '%s'", object.GetName())
-		return true
-	}
-	return false
-}
-
 func listQuarksJobs(ctx context.Context, client crc.Client, namespace string) (*qjv1a1.QuarksJobList, error) {
 	log.Debugf(ctx, "Listing QuarksJobs in namespace '%s'", namespace)
 	result := &qjv1a1.QuarksJobList{}

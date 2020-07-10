@@ -22,6 +22,7 @@ import (
 	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
+	"code.cloudfoundry.org/quarks-utils/pkg/skip"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
@@ -112,7 +113,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			cm := a.Object.(*corev1.ConfigMap)
 
-			if reference.SkipReconciles(ctx, mgr.GetClient(), cm) {
+			if skip.SkipReconciles(ctx, mgr.GetClient(), cm) {
 				return []reconcile.Request{}
 			}
 
@@ -160,7 +161,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
 			s := a.Object.(*corev1.Secret)
 
-			if reference.SkipReconciles(ctx, mgr.GetClient(), s) {
+			if skip.SkipReconciles(ctx, mgr.GetClient(), s) {
 				return []reconcile.Request{}
 			}
 

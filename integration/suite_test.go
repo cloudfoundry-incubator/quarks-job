@@ -10,7 +10,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"code.cloudfoundry.org/quarks-job/integration/environment"
-	cmdHelper "code.cloudfoundry.org/quarks-utils/testing"
 	utils "code.cloudfoundry.org/quarks-utils/testing/integration"
 )
 
@@ -50,9 +49,6 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 var _ = BeforeEach(func() {
 	env = environment.NewEnvironment(kubeConfig)
 
-	SetDefaultEventuallyTimeout(env.PollTimeout)
-	SetDefaultEventuallyPollingInterval(env.PollInterval)
-
 	err := env.SetupClientsets()
 	if err != nil {
 		Expect(err).NotTo(HaveOccurred())
@@ -69,7 +65,7 @@ var _ = BeforeEach(func() {
 		fmt.Printf("WARNING: failed to setup service account: %v\n", err)
 	}
 
-	env.Stop, err = env.StartOperator()
+	err = env.StartOperator()
 	if err != nil {
 		Expect(err).NotTo(HaveOccurred())
 	}
@@ -80,11 +76,5 @@ var _ = AfterEach(func() {
 })
 
 var _ = AfterSuite(func() {
-	// Nuking all namespaces at the end of the run
-	for _, namespace := range namespacesToNuke {
-		err := cmdHelper.DeleteNamespace(namespace)
-		if err != nil && !env.NamespaceDeletionInProgress(err) {
-			fmt.Printf("WARNING: failed to delete namespace %s: %v\n", namespace, err)
-		}
-	}
+	utils.NukeNamespaces(namespacesToNuke)
 })

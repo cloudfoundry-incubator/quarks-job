@@ -3,6 +3,7 @@ package reference
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
@@ -135,8 +136,11 @@ func SkipReconciles(ctx context.Context, client crc.Client, object apis.Object) 
 		return false
 	}
 
-	if object.GetResourceVersion() != newResourceVersion {
-		log.Debugf(ctx, "skip reconcile request for old resource version of '%s'", object.GetName())
+	RV, _ := strconv.Atoi(object.GetResourceVersion())
+	newRV, _ := strconv.Atoi(newResourceVersion)
+	if newRV > RV {
+		//if object.GetResourceVersion() != newResourceVersion {
+		log.Debugf(ctx, "QJOBS:Skipping reconcile request for old resource version of '%s/%s'", object.GetNamespace(), object.GetName())
 		return true
 	}
 	return false

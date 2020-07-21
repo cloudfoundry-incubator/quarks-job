@@ -221,6 +221,13 @@ func (in *SecretOptions) DeepCopyInto(out *SecretOptions) {
 			(*out)[key] = val
 		}
 	}
+	if in.AdditionalSecretAnnotations != nil {
+		in, out := &in.AdditionalSecretAnnotations, &out.AdditionalSecretAnnotations
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 

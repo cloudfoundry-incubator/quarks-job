@@ -94,7 +94,7 @@ func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Resul
 		}
 		ctxlog.Infof(ctx, "Meltdown started for '%s'", request.NamespacedName)
 
-		return reconcile.Result{RequeueAfter: ReconcileSkipDuration}, nil
+		return reconcile.Result{Requeue: true, RequeueAfter: ReconcileSkipDuration}, nil
 	}
 
 	if meltdown.NewWindow(ReconcileSkipDuration, qJob.Status.LastReconcile).Contains(time.Now()) {

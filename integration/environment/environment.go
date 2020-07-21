@@ -2,7 +2,6 @@ package environment
 
 import (
 	"context"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -52,7 +51,7 @@ func NewEnvironment(kubeConfig *rest.Config) *Environment {
 		Fs:                   afero.NewOsFs(),
 		MonitoredID:          ns,
 	}
-	return &Environment{
+	env := &Environment{
 		Environment: &utils.Environment{
 			ID:         namespaceID,
 			Namespace:  ns,
@@ -63,6 +62,10 @@ func NewEnvironment(kubeConfig *rest.Config) *Environment {
 			Machine: machine.NewMachine(),
 		},
 	}
+	gomega.SetDefaultEventuallyTimeout(env.PollTimeout)
+	gomega.SetDefaultEventuallyPollingInterval(env.PollInterval)
+
+	return env
 }
 
 // SetupClientsets initializes kube clientsets
@@ -81,38 +84,13 @@ func (e *Environment) SetupClientsets() error {
 	return nil
 }
 
-// NamespaceDeletionInProgress returns true if the error indicates deletion will happen
-// eventually
-func (e *Environment) NamespaceDeletionInProgress(err error) bool {
-	return strings.Contains(err.Error(), "namespace will automatically be purged")
-}
-
 // SetupNamespace creates the namespace and the clientsets and prepares the teardowm
 func (e *Environment) SetupNamespace() error {
-	nsTeardown, err := e.CreateLabeledNamespace(e.Namespace, map[string]string{
-		qjv1a1.LabelNamespace:      e.Namespace,
-		qjv1a1.LabelServiceAccount: serviceAccountName,
-	})
-	if err != nil {
-		return errors.Wrapf(err, "Integration setup failed. Creating namespace %s failed", e.Namespace)
-	}
-
-	e.Teardown = func(wasFailure bool) {
-		if wasFailure {
-			utils.DumpENV(e.Namespace)
-		}
-
-		err := nsTeardown()
-		if err != nil {
-			gomega.Expect(err).NotTo(gomega.HaveOccurred())
-		}
-
-		if e.Stop != nil {
-			close(e.Stop)
-		}
-	}
-
-	return nil
+	return utils.SetupNamespace(e.Environment, e.Machine.Machine,
+		map[string]string{
+			qjv1a1.LabelNamespace:      e.Namespace,
+			qjv1a1.LabelServiceAccount: serviceAccountName,
+		})
 }
 
 const serviceAccountName = "persist-output-service-account"

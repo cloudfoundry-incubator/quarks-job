@@ -23,7 +23,8 @@ var _ reconcile.Reconciler = &ErrandReconciler{}
 
 const (
 	// ReconcileSkipDuration is the duration of merging consecutive triggers.
-	ReconcileSkipDuration = 10 * time.Second
+	ReconcileSkipDuration = 20 * time.Second
+
 	// EnvKubeAz is set by available zone name
 	EnvKubeAz = "KUBE_AZ"
 	// EnvBoshAz is set by available zone name

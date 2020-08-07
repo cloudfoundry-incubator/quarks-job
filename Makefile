@@ -34,8 +34,7 @@ gen-kube: tools
 	$(QUARKS_UTILS)/bin/gen-kube
 
 gen-command-docs:
-	rm -f docs/commands/*
-	go run cmd/docs/gen-command-docs.go
+	go run cmd/docs/gen-command-docs.go docs/commands/
 
 ############ COVERAGE TARGETS ############
 

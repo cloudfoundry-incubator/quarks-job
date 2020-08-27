@@ -14,7 +14,7 @@
 A `QuarksJob` allows the developer to run jobs when something interesting happens. It also allows the developer to store the output of the job into a `Secret`.
 The job started by an `QuarksJob` is deleted automatically after it succeeds.
 
-[See the official documentation for more informations](https://quarks.suse.dev/docs/components/quarksjob/)
+[See the official documentation for more informations](https://quarks.suse.dev/docs/quarks-job/)
 
 ----
 

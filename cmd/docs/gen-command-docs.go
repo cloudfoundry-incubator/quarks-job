@@ -8,20 +8,9 @@ import (
 	cmd "code.cloudfoundry.org/quarks-job/cmd/internal"
 )
 
-const (
-	index = `---
-title: "Quarks Job"
-linkTitle: "Quarks Job"
-weight: 20
-description: >
-    Quarks Job CLI options
----
-	`
-)
-
 func main() {
 	docDir := os.Args[1]
-	if err := utils.GenCLIDocsyMarkDown(cmd.NewOperatorCommand(), docDir, index); err != nil {
+	if err := utils.GenCLIDocsyMarkDown(cmd.NewOperatorCommand(), docDir); err != nil {
 		panic(err)
 	}
 }

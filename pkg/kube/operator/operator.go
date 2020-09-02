@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -45,25 +46,27 @@ func NewManager(ctx context.Context, config *config.Config, cfg *rest.Config, op
 
 // ApplyCRDs applies a collection of CRDs into the cluster
 func ApplyCRDs(ctx context.Context, config *rest.Config) error {
-	exClient, err := extv1client.NewForConfig(config)
+	client, err := extv1client.NewForConfig(config)
 	if err != nil {
 		return errors.Wrap(err, "Could not get kube client")
 	}
 
-	err = crd.ApplyCRD(
-		ctx,
-		exClient,
+	b := crd.New(
 		qjv1a1.QuarksJobResourceName,
-		qjv1a1.QuarksJobResourceKind,
-		qjv1a1.QuarksJobResourcePlural,
-		qjv1a1.QuarksJobResourceShortNames,
+		extv1.CustomResourceDefinitionNames{
+			Kind:       qjv1a1.QuarksJobResourceKind,
+			Plural:     qjv1a1.QuarksJobResourcePlural,
+			ShortNames: qjv1a1.QuarksJobResourceShortNames,
+		},
 		qjv1a1.SchemeGroupVersion,
-		&qjv1a1.QuarksJobValidation,
 	)
+
+	err = b.WithValidation(&qjv1a1.QuarksJobValidation).Build().Apply(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "failed to apply CRD '%s'", qjv1a1.QuarksJobResourceName)
 	}
-	err = crd.WaitForCRDReady(ctx, exClient, qjv1a1.QuarksJobResourceName)
+
+	err = crd.WaitForCRDReady(ctx, client, qjv1a1.QuarksJobResourceName)
 	if err != nil {
 		return errors.Wrapf(err, "failed to wait for CRD '%s' ready", qjv1a1.QuarksJobResourceName)
 	}

@@ -61,7 +61,10 @@ func ApplyCRDs(ctx context.Context, config *rest.Config) error {
 		qjv1a1.SchemeGroupVersion,
 	)
 
-	err = b.WithValidation(&qjv1a1.QuarksJobValidation).Build().Apply(ctx, client)
+	err = b.WithValidation(&qjv1a1.QuarksJobValidation).
+		WithAdditionalPrinterColumns(qjv1a1.QuarksJobAdditionalPrinterColumns).
+		Build().
+		Apply(ctx, client)
 	if err != nil {
 		return errors.Wrapf(err, "failed to apply CRD '%s'", qjv1a1.QuarksJobResourceName)
 	}

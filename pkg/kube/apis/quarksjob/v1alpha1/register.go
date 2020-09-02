@@ -111,6 +111,31 @@ var (
 		},
 	}
 
+	// QuarksJobAdditionalPrinterColumns are used by `kubectl get`
+	QuarksJobAdditionalPrinterColumns = []extv1.CustomResourceColumnDefinition{
+		{
+			Name:        "completed",
+			Type:        "boolean",
+			Description: "",
+			Priority:    0,
+			JSONPath:    ".status.completed",
+		},
+		{
+			Name:        "strategy",
+			Type:        "string",
+			Description: "",
+			Priority:    10,
+			JSONPath:    ".spec.trigger.strategy",
+		},
+		{
+			Name:        "updateOnConfigChange",
+			Type:        "boolean",
+			Description: "",
+			Priority:    20,
+			JSONPath:    ".spec.updateOnConfigChange",
+		},
+	}
+
 	// QuarksJobResourceName is the resource name of QuarksJob
 	QuarksJobResourceName = fmt.Sprintf("%s.%s", QuarksJobResourcePlural, apis.GroupName)
 

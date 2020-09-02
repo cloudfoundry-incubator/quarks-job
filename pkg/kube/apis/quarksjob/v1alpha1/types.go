@@ -181,7 +181,7 @@ func NewFileToSecret(fileName string, secretName string, versioned bool, annotat
 			Versioned:                   versioned,
 			PersistenceMethod:           PersistOneToOne,
 			AdditionalSecretAnnotations: annotations,
-      AdditionalSecretLabels:      labels,
+			AdditionalSecretLabels:      labels,
 		},
 	}
 }
@@ -195,12 +195,12 @@ func NewFileToSecrets(fileName string, secretName string, versioned bool, annota
 			Versioned:                   versioned,
 			PersistenceMethod:           PersistUsingFanOut,
 			AdditionalSecretAnnotations: annotations,
-      AdditionalSecretLabels:      labels,
+			AdditionalSecretLabels:      labels,
 		},
 	}
 }
 
-// PrefixedPaths retuns all output file names, prefixed with the `prefix`
+// PrefixedPaths returns all output file names, prefixed with the `prefix`
 func (f FilesToSecrets) PrefixedPaths(prefix string) []string {
 	paths := make([]string, 0, len(f))
 	for fileName := range f {

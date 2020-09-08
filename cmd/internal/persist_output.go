@@ -42,7 +42,9 @@ into a versioned secret or kube native secret using flags specified to this comm
 		}
 
 		log = logger.NewControllerLogger(cmd.LogLevel())
-		defer log.Sync()
+		defer func() {
+			_ = log.Sync()
+		}()
 
 		// Authenticate with the cluster
 		clientSet, versionedClientSet, err := authenticateInCluster(log)

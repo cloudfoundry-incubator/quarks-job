@@ -70,7 +70,7 @@ var _ = Describe("ErrandReconciler", func() {
 			return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
 		}
 
-		setOwnerReference := func(_, _ metav1.Object, _ *runtime.Scheme) error {
+		setOwnerReference := func(_, _ metav1.Object, _ *runtime.Scheme) error { // nolint
 			setOwnerReferenceCallCount++
 			return nil
 		}

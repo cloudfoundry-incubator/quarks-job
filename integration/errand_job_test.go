@@ -33,7 +33,7 @@ var _ = Describe("ErrandJob", func() {
 
 	AfterEach(func() {
 		Expect(env.TearDownAll(tearDowns)).To(Succeed())
-		env.FlushLog()
+		_ = env.FlushLog()
 	})
 
 	JustBeforeEach(func() {

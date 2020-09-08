@@ -62,5 +62,5 @@ var _ = BeforeEach(func() {
 })
 
 var _ = AfterEach(func() {
-	e2ehelper.TearDownAll(teardowns)
+	_ = e2ehelper.TearDownAll(teardowns)
 })

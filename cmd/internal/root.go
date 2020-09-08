@@ -33,7 +33,9 @@ var rootCmd = &cobra.Command{
 	Short: "quarks-job starts the operator",
 	RunE: func(_ *cobra.Command, args []string) error {
 		log = logger.NewControllerLogger(cmd.LogLevel())
-		defer log.Sync()
+		defer func() {
+			_ = log.Sync()
+		}()
 
 		restConfig, err := cmd.KubeConfig(log)
 		if err != nil {

@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("AutoErrandJob", func() {
 	AfterEach(func() {
-		env.FlushLog()
+		_ = env.FlushLog()
 	})
 
 	Context("when using an AutoErrandJob", func() {

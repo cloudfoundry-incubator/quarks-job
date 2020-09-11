@@ -14,10 +14,10 @@ import (
 	crc "sigs.k8s.io/controller-runtime/pkg/client"
 
 	qjv1a1 "code.cloudfoundry.org/quarks-job/pkg/kube/apis/quarksjob/v1alpha1"
-	"code.cloudfoundry.org/quarks-job/pkg/kube/util/reference"
 	"code.cloudfoundry.org/quarks-utils/pkg/config"
 	"code.cloudfoundry.org/quarks-utils/pkg/ctxlog"
 	"code.cloudfoundry.org/quarks-utils/pkg/names"
+	"code.cloudfoundry.org/quarks-utils/pkg/podref"
 	vss "code.cloudfoundry.org/quarks-utils/pkg/versionedsecretstore"
 )
 
@@ -165,7 +165,7 @@ func (j jobCreatorImpl) Create(ctx context.Context, qJob qjv1a1.QuarksJob) (bool
 }
 
 func (j jobCreatorImpl) validateReferences(ctx context.Context, qJob qjv1a1.QuarksJob) error {
-	configMaps := reference.ReferencedConfigMaps(qJob)
+	configMaps := podref.GetConfMapRefFromPod(qJob.Spec.Template.Spec.Template.Spec)
 	configMap := &corev1.ConfigMap{}
 	for configMapName := range configMaps {
 		if err := j.client.Get(ctx, crc.ObjectKey{Name: configMapName, Namespace: qJob.Namespace}, configMap); err != nil {
@@ -176,7 +176,7 @@ func (j jobCreatorImpl) validateReferences(ctx context.Context, qJob qjv1a1.Quar
 		}
 	}
 
-	secrets := reference.ReferencedSecrets(qJob)
+	secrets := podref.GetSecretRefFromPodSpec(qJob.Spec.Template.Spec.Template.Spec)
 	secret := &corev1.Secret{}
 	for secretName := range secrets {
 		if err := j.client.Get(ctx, crc.ObjectKey{Name: secretName, Namespace: qJob.Namespace}, secret); err != nil {

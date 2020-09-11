@@ -116,7 +116,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 				return []reconcile.Request{}
 			}
 
-			reconciles, err := reference.GetReconciles(ctx, mgr.GetClient(), reference.ReconcileForQuarksJob, cm)
+			reconciles, err := reference.GetReconciles(ctx, mgr.GetClient(), cm)
 			if err != nil {
 				ctxlog.Errorf(ctx, "Failed to calculate reconciles for config '%s/%s': %v", cm.Namespace, cm.Name, err)
 			}
@@ -164,7 +164,7 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 				return []reconcile.Request{}
 			}
 
-			reconciles, err := reference.GetReconciles(ctx, mgr.GetClient(), reference.ReconcileForQuarksJob, s)
+			reconciles, err := reference.GetReconciles(ctx, mgr.GetClient(), s)
 			if err != nil {
 				ctxlog.Errorf(ctx, "Failed to calculate reconciles for secret '%s/%s': %v", s.Namespace, s.Name, err)
 			}

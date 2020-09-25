@@ -1,7 +1,7 @@
 module code.cloudfoundry.org/quarks-job
 
 require (
-	code.cloudfoundry.org/quarks-utils v0.0.0-20200911114130-7b6fe4c269e6
+	code.cloudfoundry.org/quarks-utils v0.0.0-20200925080335-c7a1b00f2647
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pkg/errors v0.8.1

@@ -1,5 +1,3 @@
-name-template: '$PREVIOUS_TAG 🌈'
-tag-template: '$PREVIOUS_TAG'
 categories:
   - title: '🚀 Features'
     labels:

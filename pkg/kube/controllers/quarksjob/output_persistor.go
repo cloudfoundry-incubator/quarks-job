@@ -328,10 +328,11 @@ func (po *OutputPersistor) createVersionedSecret(
 ) error {
 	ownerName := qJob.GetName()
 	ownerID := qJob.GetUID()
+	ownerKind := qjv1a1.QuarksJobResourceKind
 	sourceDescription := "created by quarksJob"
 
 	store := versionedsecretstore.NewClientsetVersionedSecretStore(po.clientSet)
-	err := store.Create(context.Background(), po.namespace, ownerName, ownerID, name, data, annotations, labels, sourceDescription)
+	err := store.Create(context.Background(), po.namespace, ownerName, ownerID, ownerKind, name, data, annotations, labels, sourceDescription)
 	if err != nil {
 		if !versionedsecretstore.IsSecretIdenticalError(err) {
 			return errors.Wrap(err, "failed to create versioned secret")

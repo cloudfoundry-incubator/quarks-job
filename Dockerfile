@@ -12,6 +12,7 @@ RUN bin/build && \
     cp -p binaries/quarks-job /usr/local/bin/quarks-job
 
 FROM $BASE_IMAGE
+LABEL org.opencontainers.image.source https://github.com/cloudfoundry-incubator/quarks-job
 RUN groupadd -g 1000 quarks && \
     useradd -r -u 1000 -g quarks quarks
 USER quarks

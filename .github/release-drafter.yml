@@ -1,5 +1,5 @@
-name-template: 'v$RESOLVED_VERSION 🌈'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: '$PREVIOUS_TAG 🌈'
+tag-template: '$PREVIOUS_TAG'
 categories:
   - title: '🚀 Features'
     labels:
@@ -15,6 +15,10 @@ categories:
 change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 change-title-escapes: '\<*_&' # You can add # and @ to disable mentions, and add ` to disable code blocks.
 template: |
+
+  * https://hub.helm.sh/charts/quarks/quarks-job
+  * https://hub.docker.com/r/cfcontainerization/quarks-job/tags
+
   ## Changes
 
   $CHANGES

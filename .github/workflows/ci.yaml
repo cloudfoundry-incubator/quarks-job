@@ -2,6 +2,8 @@ name: quarks-job-ci
 
 on:
   pull_request:
+  schedule:
+    - cron:  '0 0 * * *'
 
 jobs:
   unit-tests:

@@ -36,7 +36,7 @@ jobs:
         git fetch --unshallow
         GITHUB_ACTION_BRANCH=${GITHUB_REF#refs/heads/}
         . bin/include/versioning
-        echo "##[set-output name=version;]$(echo $ARTIFACT_VERSION"
+        echo "##[set-output name=version;]$(echo $ARTIFACT_VERSION)"
       id: prepare_version_env
 
     - name: Vendor go mod dependencies

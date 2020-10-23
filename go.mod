@@ -1,7 +1,7 @@
 module code.cloudfoundry.org/quarks-job
 
 require (
-	code.cloudfoundry.org/quarks-utils v0.0.2-0.20200925150425-86012dcc3927
+	code.cloudfoundry.org/quarks-utils v0.0.2-0.20201023094315-093d282bd4ab
 	github.com/go-logr/logr v0.1.0
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.1
@@ -19,4 +19,4 @@ require (
 	sigs.k8s.io/controller-runtime v0.6.3
 )
 
-go 1.14
+go 1.15

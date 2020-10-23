@@ -3,7 +3,7 @@ module code.cloudfoundry.org/quarks-job
 require (
 	code.cloudfoundry.org/quarks-utils v0.0.2-0.20200925150425-86012dcc3927
 	github.com/go-logr/logr v0.1.0
-	github.com/onsi/ginkgo v1.12.1
+	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/afero v1.2.2

@@ -46,17 +46,17 @@ func AddJob(ctx context.Context, config *config.Config, mgr manager.Manager) err
 				return false
 			}
 
-			if !isEJobJob(e.MetaNew.GetLabels()) {
+			if !isEJobJob(e.ObjectNew.GetLabels()) {
 				return false
 			}
 
 			shouldProcessEvent := o.Status.Succeeded == 1 || o.Status.Failed > *o.Spec.BackoffLimit
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(o).Debug(
-					ctx, e.MetaNew, "batchv1.Job",
+					ctx, e.ObjectNew, "batchv1.Job",
 					fmt.Sprintf("Update predicate passed for '%s/%s', existing batchv1.Job has changed to a defined final state",
-						e.MetaNew.GetNamespace(),
-						e.MetaNew.GetName()),
+						e.ObjectNew.GetNamespace(),
+						e.ObjectNew.GetName()),
 				)
 			}
 

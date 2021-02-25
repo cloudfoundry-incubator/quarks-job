@@ -9,9 +9,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	crc "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -29,7 +29,7 @@ var _ = Describe("nsPredicate", func() {
 
 	BeforeEach(func() {
 		client = &fakes.FakeClient{}
-		client.GetCalls(func(context context.Context, nn types.NamespacedName, object runtime.Object) error {
+		client.GetCalls(func(context context.Context, nn types.NamespacedName, object crc.Object) error {
 			switch object := object.(type) {
 			case *corev1.Namespace:
 				namespace.DeepCopyInto(object)
@@ -50,7 +50,7 @@ var _ = Describe("nsPredicate", func() {
 					},
 				},
 			}
-			e = event.CreateEvent{Meta: &namespace.ObjectMeta}
+			e = event.CreateEvent{Object: &namespace}
 		})
 
 		Context("when monitor id is different", func() {
@@ -81,7 +81,7 @@ var _ = Describe("nsPredicate", func() {
 					Name: "n1234",
 				},
 			}
-			e = event.CreateEvent{Meta: &namespace.ObjectMeta}
+			e = event.CreateEvent{Object: &namespace}
 		})
 
 		Context("when monitor id is different", func() {

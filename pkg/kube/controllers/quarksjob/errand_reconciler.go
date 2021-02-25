@@ -54,7 +54,7 @@ type ErrandReconciler struct {
 }
 
 // Reconcile starts jobs for quarks jobs of the type errand with Run being set to 'now' manually.
-func (r *ErrandReconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ErrandReconciler) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 	qJob := &qjv1a1.QuarksJob{}
 
 	// Set the ctx to be Background, as the top-level context for incoming requests.

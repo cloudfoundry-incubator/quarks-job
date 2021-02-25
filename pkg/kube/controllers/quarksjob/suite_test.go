@@ -17,5 +17,5 @@ func TestQuarksJob(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// setup logging for controller-runtime
-	logf.SetLogger(zap.Logger(true))
+	logf.SetLogger(zap.New(zap.UseDevMode(true)))
 })

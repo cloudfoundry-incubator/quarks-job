@@ -14,7 +14,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -52,7 +51,7 @@ var _ = Describe("ReconcileJob", func() {
 		logs, log = helper.NewTestLogger()
 
 		client = &cfakes.FakeClient{}
-		client.GetCalls(func(context context.Context, nn types.NamespacedName, object runtime.Object) error {
+		client.GetCalls(func(context context.Context, nn types.NamespacedName, object crc.Object) error {
 			switch object := object.(type) {
 			case *qjv1a1.QuarksJob:
 				qJob.DeepCopyInto(object)
@@ -63,7 +62,7 @@ var _ = Describe("ReconcileJob", func() {
 			}
 			return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
 		})
-		client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
+		client.ListCalls(func(context context.Context, object crc.ObjectList, _ ...crc.ListOption) error {
 			switch object := object.(type) {
 			case *corev1.PodList:
 				list := corev1.PodList{
@@ -88,7 +87,7 @@ var _ = Describe("ReconcileJob", func() {
 	})
 
 	act := func() (reconcile.Result, error) {
-		return reconciler.Reconcile(request)
+		return reconciler.Reconcile(context.Background(), request)
 	}
 
 	Context("and the quarks job does not exist", func() {
@@ -118,7 +117,7 @@ var _ = Describe("ReconcileJob", func() {
 
 	Context("With a succeeded Job", func() {
 		It("deletes the job immediately", func() {
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(1))
 			Expect(client.StatusCallCount()).To(Equal(1))
@@ -130,7 +129,7 @@ var _ = Describe("ReconcileJob", func() {
 			}
 			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(2))
 			Expect(client.StatusCallCount()).To(Equal(1))
@@ -138,7 +137,7 @@ var _ = Describe("ReconcileJob", func() {
 
 		It("deletes latest owned pod together with the job", func() {
 			var latestTimestamp metav1.Time
-			client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
+			client.ListCalls(func(context context.Context, object crc.ObjectList, _ ...crc.ListOption) error {
 				switch object := object.(type) {
 				case *corev1.PodList:
 					pod2 := *pod1
@@ -154,7 +153,7 @@ var _ = Describe("ReconcileJob", func() {
 				}
 				return nil
 			})
-			client.DeleteCalls(func(context context.Context, object runtime.Object, opts ...crc.DeleteOption) error {
+			client.DeleteCalls(func(context context.Context, object crc.Object, opts ...crc.DeleteOption) error {
 				switch pod := object.(type) {
 				case *corev1.Pod:
 					Expect(pod.GetCreationTimestamp()).To(Equal(latestTimestamp))
@@ -168,7 +167,7 @@ var _ = Describe("ReconcileJob", func() {
 			}
 			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(client.DeleteCallCount()).To(Equal(2))
 			Expect(client.StatusCallCount()).To(Equal(1))
@@ -177,13 +176,13 @@ var _ = Describe("ReconcileJob", func() {
 		It("handles an error when getting job's quarks job reference failed", func() {
 			job.ObjectMeta.OwnerReferences = []metav1.OwnerReference{}
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("could not find parent quarksJob reference for Job"))
 		})
 
 		It("handles an error when getting job's quarks job parent reference failed", func() {
-			client.GetCalls(func(context context.Context, nn types.NamespacedName, object runtime.Object) error {
+			client.GetCalls(func(context context.Context, nn types.NamespacedName, object crc.Object) error {
 				switch object := object.(type) {
 				case *batchv1.Job:
 					job.DeepCopyInto(object)
@@ -192,13 +191,13 @@ var _ = Describe("ReconcileJob", func() {
 				return apierrors.NewNotFound(schema.GroupResource{}, nn.Name)
 			})
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("getting parent quarksJob in Job Reconciler for job"))
 		})
 
 		It("handles an error when deleting job failed", func() {
-			client.DeleteCalls(func(context context.Context, object runtime.Object, opts ...crc.DeleteOption) error {
+			client.DeleteCalls(func(context context.Context, object crc.Object, opts ...crc.DeleteOption) error {
 				switch object := object.(type) {
 				case *batchv1.Job:
 					Expect(object.GetName()).To(Equal("foo-job"))
@@ -207,7 +206,7 @@ var _ = Describe("ReconcileJob", func() {
 				return nil
 			})
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot delete succeeded job").Len()).To(Equal(1))
 		})
@@ -218,7 +217,7 @@ var _ = Describe("ReconcileJob", func() {
 			}
 			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
-			client.DeleteCalls(func(context context.Context, object runtime.Object, opts ...crc.DeleteOption) error {
+			client.DeleteCalls(func(context context.Context, object crc.Object, opts ...crc.DeleteOption) error {
 				switch object.(type) {
 				case *corev1.Pod:
 					return fmt.Errorf("fake-error")
@@ -226,7 +225,7 @@ var _ = Describe("ReconcileJob", func() {
 				return nil
 			})
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot delete succeeded job's pod").Len()).To(Equal(1))
 		})
@@ -237,7 +236,7 @@ var _ = Describe("ReconcileJob", func() {
 			}
 			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
-			client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
+			client.ListCalls(func(context context.Context, object crc.ObjectList, _ ...crc.ListOption) error {
 				switch object := object.(type) {
 				case *corev1.PodList:
 					return fmt.Errorf("fake-error")
@@ -248,7 +247,7 @@ var _ = Describe("ReconcileJob", func() {
 				return nil
 			})
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot find job's pod").Len()).To(Equal(1))
 			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Listing job's '%s/%s' pods failed.", job.Namespace, job.Name)).Len()).To(Equal(1))
@@ -260,7 +259,7 @@ var _ = Describe("ReconcileJob", func() {
 			}
 			job.Spec.Template.ObjectMeta.Labels["delete"] = qj.DeleteKind
 
-			client.ListCalls(func(context context.Context, object runtime.Object, _ ...crc.ListOption) error {
+			client.ListCalls(func(context context.Context, object crc.ObjectList, _ ...crc.ListOption) error {
 				switch object := object.(type) {
 				case *corev1.PodList:
 					list := corev1.PodList{}
@@ -272,7 +271,7 @@ var _ = Describe("ReconcileJob", func() {
 				return nil
 			})
 
-			_, err := reconciler.Reconcile(request)
+			_, err := reconciler.Reconcile(context.Background(), request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(logs.FilterMessageSnippet("Cannot find job's pod").Len()).To(Equal(1))
 			Expect(logs.FilterMessageSnippet(fmt.Sprintf("Job '%s/%s' does not own any pods?", job.Namespace, job.Name)).Len()).To(Equal(1))

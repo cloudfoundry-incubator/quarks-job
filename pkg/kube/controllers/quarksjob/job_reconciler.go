@@ -52,7 +52,7 @@ type ReconcileJob struct {
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
-func (r *ReconcileJob) Reconcile(request reconcile.Request) (reconcile.Result, error) {
+func (r *ReconcileJob) Reconcile(_ context.Context, request reconcile.Request) (reconcile.Result, error) {
 	instance := &batchv1.Job{}
 
 	// Set the ctx to be Background, as the top-level context for incoming requests.

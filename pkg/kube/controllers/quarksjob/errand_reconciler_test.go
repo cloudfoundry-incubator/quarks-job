@@ -55,7 +55,7 @@ var _ = Describe("ErrandReconciler", func() {
 			}
 		}
 
-		clientGetStub := func(_ context.Context, nn types.NamespacedName, obj runtime.Object) error {
+		clientGetStub := func(_ context.Context, nn types.NamespacedName, obj crc.Object) error {
 			switch obj := obj.(type) {
 			case *corev1.Namespace:
 				namespace.DeepCopyInto(obj)
@@ -88,7 +88,7 @@ var _ = Describe("ErrandReconciler", func() {
 		})
 
 		act := func() (reconcile.Result, error) {
-			return reconciler.Reconcile(request)
+			return reconciler.Reconcile(context.TODO(), request)
 		}
 
 		BeforeEach(func() {
@@ -207,7 +207,7 @@ var _ = Describe("ErrandReconciler", func() {
 					request = newRequest(qJob)
 
 					statusCallQueue := helper.NewCallQueue(
-						func(context context.Context, object runtime.Object) error {
+						func(context context.Context, object crc.Object) error {
 							switch qJob := object.(type) {
 							case *qjv1a1.QuarksJob:
 								Expect(qJob.Status.LastReconcile).NotTo(BeNil())
@@ -261,7 +261,7 @@ var _ = Describe("ErrandReconciler", func() {
 					Expect(qJob.Spec.Trigger.Strategy).To(Equal(qjv1a1.TriggerNow))
 
 					callQueue := helper.NewCallQueue(
-						func(context context.Context, object runtime.Object) error {
+						func(context context.Context, object crc.Object) error {
 							switch qJob := object.(type) {
 							case *qjv1a1.QuarksJob:
 								Expect(qJob.Spec.Trigger.Strategy).To(Equal(qjv1a1.TriggerManual))
@@ -294,7 +294,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 				It("should set the trigger strategy to done and immediately trigger the job", func() {
 					callQueue := helper.NewCallQueue(
-						func(context context.Context, object runtime.Object) error {
+						func(context context.Context, object crc.Object) error {
 							switch qJob := object.(type) {
 							case *qjv1a1.QuarksJob:
 								Expect(qJob.Spec.Trigger.Strategy).To(Equal(qjv1a1.TriggerDone))
@@ -311,7 +311,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 				It("handles an error when updating job's strategy failed", func() {
 					callQueue := helper.NewCallQueue(
-						func(context context.Context, object runtime.Object) error {
+						func(context context.Context, object crc.Object) error {
 							switch qJob := object.(type) {
 							case *qjv1a1.QuarksJob:
 								Expect(qJob.Spec.Trigger.Strategy).To(Equal(qjv1a1.TriggerDone))
@@ -330,7 +330,7 @@ var _ = Describe("ErrandReconciler", func() {
 
 				It("handles an error when updating job's reconcile timestamp failed", func() {
 					callQueue := helper.NewCallQueue(
-						func(context context.Context, object runtime.Object) error {
+						func(context context.Context, object crc.Object) error {
 							switch qJob := object.(type) {
 							case *qjv1a1.QuarksJob:
 								Expect(qJob.Spec.Trigger.Strategy).To(Equal(qjv1a1.TriggerDone))
@@ -341,7 +341,7 @@ var _ = Describe("ErrandReconciler", func() {
 					client.UpdateCalls(callQueue.Calls)
 
 					statusCallQueue := helper.NewCallQueue(
-						func(context context.Context, object runtime.Object) error {
+						func(context context.Context, object crc.Object) error {
 							switch qJob := object.(type) {
 							case *qjv1a1.QuarksJob:
 								if qJob.Status.LastReconcile == nil {
@@ -389,7 +389,7 @@ var _ = Describe("ErrandReconciler", func() {
 				})
 
 				It("should trigger the job", func() {
-					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
+					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj crc.Object) error {
 						switch obj := obj.(type) {
 						case *corev1.Namespace:
 							namespace.DeepCopyInto(obj)
@@ -411,7 +411,7 @@ var _ = Describe("ErrandReconciler", func() {
 					})
 
 					callQueue := helper.NewCallQueue(
-						func(context context.Context, object runtime.Object) error {
+						func(context context.Context, object crc.Object) error {
 							switch qJob := object.(type) {
 							case *qjv1a1.QuarksJob:
 								Expect(qJob.Spec.Trigger.Strategy).To(Equal(qjv1a1.TriggerDone))
@@ -427,7 +427,7 @@ var _ = Describe("ErrandReconciler", func() {
 				})
 
 				It("should skip when references are missing", func() {
-					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
+					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj crc.Object) error {
 						switch obj := obj.(type) {
 						case *corev1.Namespace:
 							namespace.DeepCopyInto(obj)
@@ -447,7 +447,7 @@ var _ = Describe("ErrandReconciler", func() {
 					Expect(result.Requeue).To(BeTrue())
 					Expect(logs.FilterMessageSnippet(fmt.Sprintf("Skip create job '/%s' due to configMap 'config1' not found", qJobName)).Len()).To(Equal(1))
 
-					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj runtime.Object) error {
+					client.GetCalls(func(ctx context.Context, nn types.NamespacedName, obj crc.Object) error {
 						switch obj := obj.(type) {
 						case *corev1.Namespace:
 							namespace.DeepCopyInto(obj)

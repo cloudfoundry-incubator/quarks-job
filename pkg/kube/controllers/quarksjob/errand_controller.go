@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -51,10 +52,10 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			shouldProcessEvent := qJob.Spec.Trigger.Strategy == qjv1a1.TriggerNow || qJob.Spec.Trigger.Strategy == qjv1a1.TriggerOnce
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(qJob).Debug(
-					ctx, e.Meta, qjv1a1.QuarksJobResourceName,
+					ctx, e.Object, qjv1a1.QuarksJobResourceName,
 					fmt.Sprintf("Create predicate passed for '%s/%s', existing quarksJob spec.Trigger.Strategy  matches the values 'now' or 'once'",
-						e.Meta.GetNamespace(),
-						e.Meta.GetName()),
+						e.Object.GetNamespace(),
+						e.Object.GetName()),
 				)
 			}
 
@@ -78,10 +79,10 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			shouldProcessEvent := enqueueForManualErrand || enqueueForConfigChange
 			if shouldProcessEvent {
 				ctxlog.NewPredicateEvent(o).Debug(
-					ctx, e.MetaNew, qjv1a1.QuarksJobResourceName,
+					ctx, e.ObjectNew, qjv1a1.QuarksJobResourceName,
 					fmt.Sprintf("Update predicate passed for '%s/%s', a change in it´s referenced secrets have been detected",
-						e.MetaNew.GetNamespace(),
-						e.MetaNew.GetName()),
+						e.ObjectNew.GetNamespace(),
+						e.ObjectNew.GetName()),
 				)
 			}
 
@@ -108,9 +109,9 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 		},
 	}
 
-	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			cm := a.Object.(*corev1.ConfigMap)
+	err = c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, handler.EnqueueRequestsFromMapFunc(
+		func(a client.Object) []reconcile.Request {
+			cm := a.(*corev1.ConfigMap)
 
 			if reference.SkipReconciles(ctx, mgr.GetClient(), cm) {
 				return []reconcile.Request{}
@@ -122,11 +123,10 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			}
 
 			for _, reconciliation := range reconciles {
-				ctxlog.NewMappingEvent(a.Object).Debug(ctx, reconciliation, "QuarksJob", a.Meta.GetName(), names.ConfigMap)
+				ctxlog.NewMappingEvent(a).Debug(ctx, reconciliation, "QuarksJob", a.GetName(), names.ConfigMap)
 			}
 			return reconciles
-		}),
-	}, nsPredicate, p)
+		}), nsPredicate, p)
 	if err != nil {
 		return err
 	}
@@ -156,9 +156,9 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 		},
 	}
 
-	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, &handler.EnqueueRequestsFromMapFunc{
-		ToRequests: handler.ToRequestsFunc(func(a handler.MapObject) []reconcile.Request {
-			s := a.Object.(*corev1.Secret)
+	err = c.Watch(&source.Kind{Type: &corev1.Secret{}}, handler.EnqueueRequestsFromMapFunc(
+		func(a client.Object) []reconcile.Request {
+			s := a.(*corev1.Secret)
 
 			if reference.SkipReconciles(ctx, mgr.GetClient(), s) {
 				return []reconcile.Request{}
@@ -170,12 +170,11 @@ func AddErrand(ctx context.Context, config *config.Config, mgr manager.Manager) 
 			}
 
 			for _, reconciliation := range reconciles {
-				ctxlog.NewMappingEvent(a.Object).Debug(ctx, reconciliation, "QuarksJob", a.Meta.GetName(), names.Secret)
+				ctxlog.NewMappingEvent(a).Debug(ctx, reconciliation, "QuarksJob", a.GetName(), names.Secret)
 			}
 
 			return reconciles
-		}),
-	}, nsPredicate, p)
+		}), nsPredicate, p)
 
 	return err
 }

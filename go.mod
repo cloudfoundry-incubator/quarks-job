@@ -23,5 +23,3 @@ require (
 )
 
 go 1.15
-
-replace code.cloudfoundry.org/quarks-utils => ../quarks-utils

@@ -1,7 +1,7 @@
 module code.cloudfoundry.org/quarks-job
 
 require (
-	code.cloudfoundry.org/quarks-utils v0.0.2
+	code.cloudfoundry.org/quarks-utils v0.0.3-0.20210303091853-3b41f4b87e33
 	github.com/go-logr/logr v0.3.0
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
 	github.com/onsi/ginkgo v1.14.2

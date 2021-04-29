@@ -1,0 +1,18 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "11:00"
+  ignore:
+  - dependency-name: github.com/spf13/afero
+    versions:
+    - 1.5.1
+  - dependency-name: k8s.io/apiextensions-apiserver
+    versions:
+    - 0.20.2
+    - 0.20.4
+  - dependency-name: github.com/pkg/errors
+    versions:
+    - 0.9.1

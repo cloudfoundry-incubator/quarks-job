@@ -74,3 +74,4 @@ global:
     create: true
     # name is  the name of the single namespace.
     name: staging
+affinity:

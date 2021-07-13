@@ -13,6 +13,9 @@ spec:
       labels:
         name: quarks-job
     spec:
+      {{- if .Values.affinity }}
+      affinity: {{ .Values.affinity | toJson }}
+      {{- end }}
       serviceAccountName: {{ template "quarks-job.serviceAccountName" . }}
       containers:
         - name: quarks-job

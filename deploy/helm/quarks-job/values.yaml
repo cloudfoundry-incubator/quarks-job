@@ -74,3 +74,15 @@ global:
     create: true
     # name is  the name of the single namespace.
     name: staging
+# Scheduling pod on specific nodes by adding labels to nodes
+# Example
+# affinity:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#       - matchExpressions:
+#         - key: NODE_LABEL_KEY
+#           operator: In
+#           values: 
+#           - NODE_LABEL_VALUE
+affinity: {}

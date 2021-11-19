@@ -23,3 +23,4 @@ require (
 )
 
 go 1.15
+replace code.cloudfoundry.org/quarks-utils => github.com/HCL-Cloud-Native-Labs/quarks-utils v0.0.2

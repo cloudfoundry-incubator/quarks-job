@@ -72,7 +72,7 @@ $ helm delete quarks-job --purge
 | `serviceAccount.name`                             | If not set and `create` is `true`, a name is generated using the fullname of the chart |                                                |
 | `global.singleNamespace.create`                   | If true, create a service account and a single watch namespace                         | `true`                                         |
 | `global.singleNamespace.name`                     | Namespace the operator will watch for Quarks jobs                                      | `staging`                                      |
-
+| `affinity`                     |  Scheduling pod on specicifc nodes by adding labels to nodes                                      | `affinity`                                      |
 ## RBAC
 
 By default, the helm chart will install RBAC ClusterRole and ClusterRoleBinding based on the chart release name, it will also grant the ClusterRole to an specific service account, which have the same name of the chart release.
